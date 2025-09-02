@@ -37,7 +37,7 @@ List of devices attached
 ```
 | If an Android emulator is running or a device is connected via USB, it will appear here.
 
-## React Native Navigation Overview
+### React Native Navigation Overview
 React Native supports multiple navigation patterns. Here’s a quick reference:
 1. Stack Navigation
 - Screens are pushed on top of each other like a stack of cards.
