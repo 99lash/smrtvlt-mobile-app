@@ -1,18 +1,20 @@
-import { StyleSheet, Text, View } from 'react-native'
-import React from 'react'
+import { StyleSheet, Text, View } from 'react-native';
+import React from 'react';
 import './global.css';
-import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaProvider } from 'react-native-safe-area-context';
+import { NavigationContainer } from '@react-navigation/native';
+import MainTabNavigator from './src/navigation/MainTabNavigator';
 
 const App = () => {
   return (
     <SafeAreaProvider>
-      <SafeAreaView>
-        <Text className='text-yellow-800 text-3xl'>App</Text>
-      </SafeAreaView>
+        <NavigationContainer>
+          <MainTabNavigator />
+        </NavigationContainer>
     </SafeAreaProvider>
-  )
-}
+  );
+};
 
-export default App
+export default App;
 
-const styles = StyleSheet.create({})
+const styles = StyleSheet.create({});
