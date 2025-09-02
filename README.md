@@ -1,5 +1,5 @@
 # Android Environment Setup
-## Prerequisites
+### Prerequisites
 - Android Studio installed
 - Java SDK (Temurin recommended)
 - Basic familiarity with React Native
