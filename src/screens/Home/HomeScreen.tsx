@@ -1,6 +1,7 @@
 // src/screens/Home/HomeScreen.tsx
 import React from 'react';
 import { View, Text, ScrollView, TouchableOpacity, Switch } from 'react-native';
+import { useColorScheme as useNativeWindColorScheme } from 'nativewind';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { HomeStackParamList } from '../../types/navigation';
@@ -81,6 +82,8 @@ function NotificationCard({ type, icon, title, timestamp, priority, unread, onDi
 
 export default function HomeScreen({ navigation }: Props) {
   const [unreadOnly, setUnreadOnly] = React.useState(false);
+  const { colorScheme, setColorScheme } = useNativeWindColorScheme();
+  const isDark = colorScheme === 'dark';
 
   return (
     <SafeAreaView className="flex-1 bg-neutral-bg">
@@ -92,7 +95,9 @@ export default function HomeScreen({ navigation }: Props) {
             <Text className="text-neutral-text text-xl font-bold ml-2">SmartVault</Text>
           </View>
           <View className="flex-row items-center space-x-3">
-            <Moon size={20} color="#9ca3af" />
+            <TouchableOpacity onPress={() => setColorScheme(isDark ? 'light' : 'dark')} accessibilityRole="button">
+              <Moon size={20} color={isDark ? '#f9fafb' : '#9ca3af'} />
+            </TouchableOpacity>
             <Wifi size={20} color="#22c55e" />
             <Text className="text-success text-sm font-medium">Secured</Text>
           </View>
@@ -178,7 +183,7 @@ export default function HomeScreen({ navigation }: Props) {
           <View className="space-y-2">
             <TouchableOpacity
               className="bg-primary rounded-lg p-3 flex-row items-center"
-              onPress={() => navigation.getParent()?.navigate('Users')}
+              onPress={() => navigation.getParent()?.navigate('Settings', { screen: 'AddUser' })}
             >
               <Users size={20} color="#ffffff" />
               <Text className="text-white font-medium ml-3">Add New User</Text>
@@ -186,7 +191,7 @@ export default function HomeScreen({ navigation }: Props) {
             
             <TouchableOpacity
               className="bg-neutral-border rounded-lg p-3 flex-row items-center"
-              onPress={() => navigation.getParent()?.navigate('Users')}
+              onPress={() => navigation.getParent()?.navigate('Settings', { screen: 'ManagePermissions' })}
             >
               <Settings size={20} color="#9ca3af" />
               <Text className="text-neutral-text font-medium ml-3">Manage Permissions</Text>

@@ -17,6 +17,8 @@ export type SettingsStackParamList = {
   DeviceManagement: undefined;
   AddNewDevice: undefined;
   Provisioning: undefined;
+  AddUser: undefined;
+  ManagePermissions: undefined;
 };
 
 // Activity Stack

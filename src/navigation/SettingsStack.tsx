@@ -5,6 +5,8 @@ import SettingsDetailScreen from '../screens/Settings/SettingsDetailScreen';
 import AddNewDeviceScreen from '../screens/Settings/AddNewDeviceScreen';
 import DeviceManagementScreen from '../screens/Settings/DeviceManagementScreen';
 import ProvisioningScreen from '../screens/Settings/ProvisioningScreen';
+import AddUserScreen from '../screens/Settings/AddUserScreen';
+import ManagePermissionsScreen from '../screens/Settings/ManagePermissionsScreen';
 
 import { SettingsStackParamList } from '../types/navigation';
 
@@ -36,6 +38,18 @@ export default function SettingsStack() {
         name="Provisioning"
         component={ProvisioningScreen}
         options={{ title: 'Add New Device' }}
+      />
+
+      <Stack.Screen
+        name="AddUser"
+        component={AddUserScreen}
+        options={{ title: 'Add User' }}
+      />
+
+      <Stack.Screen
+        name="ManagePermissions"
+        component={ManagePermissionsScreen}
+        options={{ title: 'Manage Permissions' }}
       />
 
       <Stack.Screen name="SettingsDetail" component={SettingsDetailScreen} />
