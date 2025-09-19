@@ -9,7 +9,7 @@ const Stack = createNativeStackNavigator<ActivityStackParamList>();
 
 export default function ActivityStack() {
   return (
-    <Stack.Navigator>
+    <Stack.Navigator initialRouteName="ActivityMain">
       <Stack.Screen name="ActivityMain" component={ActivityScreen} />
       <Stack.Screen name="ActivityDetail" component={ActivityDetailScreen} />
     </Stack.Navigator>

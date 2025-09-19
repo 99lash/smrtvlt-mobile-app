@@ -176,17 +176,26 @@ export default function HomeScreen({ navigation }: Props) {
           </View>
           
           <View className="space-y-2">
-            <TouchableOpacity className="bg-primary rounded-lg p-3 flex-row items-center">
+            <TouchableOpacity
+              className="bg-primary rounded-lg p-3 flex-row items-center"
+              onPress={() => navigation.getParent()?.navigate('Users')}
+            >
               <Users size={20} color="#ffffff" />
               <Text className="text-white font-medium ml-3">Add New User</Text>
             </TouchableOpacity>
             
-            <TouchableOpacity className="bg-neutral-border rounded-lg p-3 flex-row items-center">
+            <TouchableOpacity
+              className="bg-neutral-border rounded-lg p-3 flex-row items-center"
+              onPress={() => navigation.getParent()?.navigate('Users')}
+            >
               <Settings size={20} color="#9ca3af" />
               <Text className="text-neutral-text font-medium ml-3">Manage Permissions</Text>
             </TouchableOpacity>
             
-            <TouchableOpacity className="bg-neutral-border rounded-lg p-3 flex-row items-center">
+            <TouchableOpacity
+              className="bg-neutral-border rounded-lg p-3 flex-row items-center"
+              onPress={() => navigation.getParent()?.navigate('Activity')}
+            >
               <Activity size={20} color="#9ca3af" />
               <Text className="text-neutral-text font-medium ml-3">View User Activity</Text>
             </TouchableOpacity>
@@ -236,7 +245,7 @@ export default function HomeScreen({ navigation }: Props) {
             </View>
           </View>
           
-          <TouchableOpacity className="mt-3">
+          <TouchableOpacity className="mt-3" onPress={() => navigation.getParent()?.navigate('Activity')}>
             <Text className="text-primary text-sm font-medium">View All User Activity</Text>
           </TouchableOpacity>
         </View>
