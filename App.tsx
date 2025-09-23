@@ -1,10 +1,12 @@
-import { StyleSheet, Text, View, useColorScheme } from 'react-native';
+
 import React from 'react';
-import './global.css';
+import { useColorScheme } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { NavigationContainer, DefaultTheme, DarkTheme } from '@react-navigation/native';
-import MainTabNavigator from './src/navigation/MainTabNavigator';
 import { useColorScheme as useNativeWindColorScheme } from 'nativewind';
+import { ProvisioningProvider } from './src/presentation/hooks/provisioning/useProvisioning';
+import BottomTabNavigator from './src/presentation/navigation/BottomTabNavigator';
+import './global.css';
 
 const App = () => {
   const rnScheme = useColorScheme();
@@ -18,13 +20,13 @@ const App = () => {
 
   return (
     <SafeAreaProvider>
+      <ProvisioningProvider>
         <NavigationContainer theme={rnScheme === 'dark' ? DarkTheme : DefaultTheme}>
-          <MainTabNavigator />
+          <BottomTabNavigator />
         </NavigationContainer>
+      </ProvisioningProvider>
     </SafeAreaProvider>
   );
 };
 
 export default App;
-
-const styles = StyleSheet.create({});

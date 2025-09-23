@@ -3,4 +3,8 @@ plugins { id("com.facebook.react.settings") }
 extensions.configure(com.facebook.react.ReactSettingsExtension){ ex -> ex.autolinkLibrariesFromCommand() }
 rootProject.name = 'SmartVaultApp'
 include ':app'
+// === Add ESP32 Provisioning Android library ===
+include ':esp_idf_provisioning'
+project(':esp_idf_provisioning').projectDir = new File('C:/Users/maryn/Projects/esp-idf-provisioning-android/provisioning')
+// ================================================
 includeBuild('../node_modules/@react-native/gradle-plugin')
