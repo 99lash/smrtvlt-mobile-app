@@ -1,10 +1,8 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useWiFiScanning } from '../provisioning/useWiFiScanning';
 import { useProvisioning } from '../provisioning/useProvisioning';
-import {
-  PROVISIONING_CONSTANTS,
-  type ProvisioningError,
-} from '../../../types/provisioningConstants';
+import { PROVISIONING_CONSTANTS } from '../../../utils/provisioningConstants';
+import type { ProvisioningError } from '../../../types/ProvisioningTypes';
 
 /**
  * Custom hook for WiFi provisioning logic

@@ -1,5 +1,3 @@
-import type { ESPDevice } from '@orbital-systems/react-native-esp-idf-provisioning';
-
 /**
  * Constants for the Provisioning component
  * Centralizes configuration values and removes magic strings/numbers
@@ -57,26 +55,3 @@ export const PROVISIONING_CONSTANTS = {
     PROOF_OF_POSSESSION: 'abcd1234', // Replace with your ESP32's actual POP key
   },
 } as const;
-
-/**
- * Type definitions for provisioning-related data
- */
-export interface ProvisioningError {
-  message: string;
-  code?: string;
-  details?: unknown;
-}
-
-export interface WiFiNetwork {
-  ssid: string;
-  rssi: number;
-  security?: string;
-}
-
-export interface ProvisioningState {
-  isScanning: boolean;
-  isProvisioning: boolean;
-  selectedDevice: ESPDevice | null;
-  selectedNetwork: string | null;
-  error: ProvisioningError | null;
-}

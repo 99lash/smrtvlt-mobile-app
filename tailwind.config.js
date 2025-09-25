@@ -18,12 +18,25 @@ module.exports = {
           light: '#cbd5e1', // slate-300
         },
         neutral: {
-          bg: '#f8fafc', // slate-50 (app background)
-          surface: '#ffffff', // cards/surfaces
-          border: '#e2e8f0', // slate-200
           text: '#0f172a', // slate-900
-          muted: '#64748b', // slate-500 (secondary text)
           DEFAULT: '#f8fafc',
+        },
+        bg:{
+          default: '#f8fafc',
+          dark: '#1b1c1b',
+        },
+        border:{
+          default:'#e2e8f0',
+          dark:'#595c58',
+        },
+        muted:{
+          default: '#64748b',
+          dark: '#393a38',
+        },
+        surface:{
+          default: '#ffffff',
+          active: '#eff1ed',
+          dark: '#1b1c1b',
         },
         success: {
           DEFAULT: '#22c55e', // green-500
@@ -36,7 +49,7 @@ module.exports = {
           light: '#fde68a', // amber-300
         },
         error: {
-          DEFAULT: '#ef4444', // red-500
+          DEFAULT: '#f87171', // red-500
           dark: '#b91c1c', // red-700
           light: '#fca5a5', // red-300
         },

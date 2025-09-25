@@ -5,7 +5,7 @@ import CustomModal from '../modals/CustomModal';
 import ProvisioningHeader from './ProvisioningHeader';
 import ButtonPrimary from '../buttons/ButtonPrimary';
 import DeviceList from './DeviceList';
-import { PROVISIONING_CONSTANTS } from '../../../types/provisioningConstants';
+import { PROVISIONING_CONSTANTS } from '../../../utils/provisioningConstants';
 import type { ESPDevice } from '@orbital-systems/react-native-esp-idf-provisioning';
 
 interface DeviceScanningModalProps {

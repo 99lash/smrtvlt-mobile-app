@@ -1,5 +1,5 @@
 import React, { ReactElement } from "react";
-import { FlatList, View, Text, TouchableOpacity } from "react-native";
+import { FlatList, View, Text, Pressable } from "react-native";
 
 type BorderedListProps<T> = {
   data: T[];
@@ -44,12 +44,12 @@ function BorderedList<T>({
           const isSelected = selectedId && getId ? selectedId === getId(item) : false;
 
           return (
-            <TouchableOpacity
+            <Pressable
               disabled={!onItemPress}
               onPress={() => onItemPress?.(item, index)}
               className={`flex-row items-center justify-between p-3 border-b border-neutral-border ${
                 index === data.length - 1 ? "border-b-0" : ""
-              } ${isSelected ? "bg-primary-light" : "bg-neutral-surface"}`}
+              } ${isSelected ? "bg-surface-active" : "bg-surface-default"}`}
               style={{ minHeight: itemHeight }}
             >
               <View className="flex-row items-center flex-1">
@@ -58,7 +58,9 @@ function BorderedList<T>({
                   renderItem(item, index, isSelected)
                 ) : (
                   <Text
-                    className={`flex-1 ${isSelected ? "bg-neutral-surface" : "text-neutral-text"}`}
+                    className={`flex-1 ${
+                      isSelected ? "text-primary font-semibold" : "text-neutral-text"
+                    }`}
                     style={{ flexWrap: "wrap" }}
                   >
                     {String(item)}
@@ -67,7 +69,7 @@ function BorderedList<T>({
               </View>
 
               {rightContent && <View className="ml-2">{rightContent}</View>}
-            </TouchableOpacity>
+            </Pressable>
           );
         }}
       />

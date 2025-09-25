@@ -14,3 +14,43 @@ export interface LogEntry {
   updated_at?: string;
   deleted_at?: string;
 }
+
+// UI-specific types for ActivityScreen
+export type ActivityStatus = 'success' | 'failed' | 'warning';
+
+export type ActivityEventType =
+  | 'vault_unlock'
+  | 'failed_unlock'
+  | 'user_added'
+  | 'tamper_alert'
+  | 'remote_unlock'
+  | 'failed_pin'
+  | 'settings_updated';
+
+export interface ActivityUser {
+  initials: string;
+  name: string;
+}
+
+export interface ActivityLog {
+  id: string;
+  status: ActivityStatus;
+  eventType: ActivityEventType;
+  title: string;
+  timestamp: string;
+  user: ActivityUser;
+  description: string;
+}
+
+export interface ActivityScreenProps {
+  navigation: any; // Can be improved with proper navigation types
+}
+
+export interface FilterState {
+  searchQuery: string;
+  selectedUser: string;
+  selectedStatus: string;
+  selectedDate: string;
+}
+
+export type FilterValue = string;

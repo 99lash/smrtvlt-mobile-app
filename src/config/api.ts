@@ -1,7 +1,7 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 // --- BASE URL from .env or fallback ---
-const BASE_URL = process.env.BASE_URL || 'http://192.168.1.8:8000'; // adjust per device setup
+const BASE_URL = process.env.BASE_URL || 'http://192.168.1.25:8000'; // adjust per device setup
 if (__DEV__) {
   console.log('Loaded BASE_URL from env:', process.env.BASE_URL);
 }

@@ -11,7 +11,7 @@ import { useDeviceScanning } from '../../hooks/provisioning/useDeviceScanning';
 import { useWiFiProvisioning } from '../../hooks/provisioning/useWiFiProvisioning';
 import { useSuccessNotification } from '../../hooks/provisioning/useSuccessNotification';
 import { useProvisioningFailure } from '../../hooks/provisioning/useProvisioningFailure';
-import { PROVISIONING_CONSTANTS } from '../../../types/provisioningConstants';
+import { PROVISIONING_CONSTANTS } from '../../../utils/provisioningConstants';
 import type { ESPDevice } from '@orbital-systems/react-native-esp-idf-provisioning';
 
 /**
@@ -165,8 +165,6 @@ const Provisioning = () => {
           <ButtonPrimary
             title={PROVISIONING_CONSTANTS.MESSAGES.PROVISION_NEW_DEVICE}
             onPress={() => {
-              console.log('=== PROVISION NEW DEVICE BUTTON PRESSED ===');
-              console.log('Current scanModalVisible state:', scanModalVisible);
               resetSuccessTrigger(); // Reset success trigger for new session
               setScanModalVisible(true);
               console.log('Set scanModalVisible to true');
@@ -179,17 +177,6 @@ const Provisioning = () => {
             }
             className="w-full"
           />
-        </View>
-
-
-        {/* Status Text */}
-        <View className="px-4">
-          <Text className="text-gray-600 text-center text-sm">
-            {selectedDevice
-              ? `Ready to provision: ${selectedDevice.name}`
-              : "Click above to start provisioning a new device"
-            }
-          </Text>
         </View>
       </View>
 

@@ -46,7 +46,7 @@ const ButtonPrimary: React.FC<ButtonPrimaryProps> = ({
             <View className="mr-2">{styledIcon}</View>
           )}
           <Text
-            className={`text-neutral-surface text-base text-center ${textClassName}`}
+            className={`text-neutral text-base text-center ${textClassName}`}
           >
             {title}
           </Text>
