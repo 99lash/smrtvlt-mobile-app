@@ -1,16 +1,18 @@
 import React, { useState } from 'react';
-import { View, Text } from 'react-native';
+import { View, Text, Alert } from 'react-native';
 import { Plus } from 'lucide-react-native';
 import { useProvisioning } from '../../hooks/provisioning/useProvisioning';
 import ButtonPrimary from '../buttons/ButtonPrimary';
 import DeviceScanningModal from './DeviceScanningModal';
 import WiFiCredentialsModal from './WiFiCredentialsModal';
+import VaultConfigurationModal from './VaultConfigurationModal';
 import SuccessBanner from '../banner/SuccessBanner';
 import FailureBanner from '../banner/FailureBanner';
 import { useDeviceScanning } from '../../hooks/provisioning/useDeviceScanning';
 import { useWiFiProvisioning } from '../../hooks/provisioning/useWiFiProvisioning';
 import { useSuccessNotification } from '../../hooks/provisioning/useSuccessNotification';
 import { useProvisioningFailure } from '../../hooks/provisioning/useProvisioningFailure';
+import { useVaultCreation } from '../../hooks/provisioning/useVaultCreation';
 import { PROVISIONING_CONSTANTS } from '../../../utils/provisioningConstants';
 import type { ESPDevice } from '@orbital-systems/react-native-esp-idf-provisioning';
 
@@ -33,11 +35,13 @@ const Provisioning = () => {
   // Modal state
   const [scanModalVisible, setScanModalVisible] = useState(false);
   const [wifiModalVisible, setWifiModalVisible] = useState(false);
+  const [vaultConfigModalVisible, setVaultConfigModalVisible] = useState(false);
   const [pendingDevice, setPendingDevice] = useState<ESPDevice | null>(null);
 
   // Custom hooks for business logic
   const deviceScanning = useDeviceScanning();
   const wifiProvisioning = useWiFiProvisioning();
+  const vaultCreation = useVaultCreation();
   const { showFailure, hideFailure } = useProvisioningFailure(log);
 
   // Centralized modal reset functionality
@@ -47,6 +51,7 @@ const Provisioning = () => {
     // Hide all modals
     setScanModalVisible(false);
     setWifiModalVisible(false);
+    setVaultConfigModalVisible(false);
 
     // Clear device state
     setSelectedDevice(null);
@@ -58,6 +63,9 @@ const Provisioning = () => {
     // Reset WiFi provisioning state
     wifiProvisioning.resetProvisioning();
 
+    // Reset vault creation state
+    vaultCreation.resetCreation();
+
     console.log('=== ALL MODALS RESET ===');
   };
 
@@ -67,8 +75,6 @@ const Provisioning = () => {
 
   // Handle device selection from scanning modal
   const handleDeviceSelect = (device: ESPDevice) => {
-    console.log('=== DEVICE SELECTED ===');
-    console.log('Setting device:', device.name);
     setPendingDevice(device); // Store device locally first
     setSelectedDevice(device); // Set the device in the provisioning context
     setScanModalVisible(false);
@@ -78,17 +84,29 @@ const Provisioning = () => {
 
   // Handle WiFi provisioning completion
   const handleWiFiProvisioned = () => {
-    console.log('=== WIFI PROVISIONING COMPLETED ===');
+    console.log('=== 🚀 WIFI PROVISIONING COMPLETED - OPENING VAULT CONFIG ===');
+    console.log('Closing WiFi modal and opening vault configuration modal...');
+
     setWifiModalVisible(false);
-    setSelectedDevice(null); // Clear the selected device
-    setPendingDevice(null); // Clear the pending device
+    // Don't clear device yet - we need it for vault configuration
     deviceScanning.resetScanning();
+    wifiProvisioning.resetProvisioning();
+
+    // Show vault configuration modal
+    setVaultConfigModalVisible(true);
+    console.log('✅ Vault configuration modal should now be visible');
   };
 
   // Set up WiFi provisioning success handler
   React.useEffect(() => {
+    console.log('=== PROVISIONING SUCCESS DETECTION ===');
+    console.log('Current provisioning error:', wifiProvisioning.provisioningError);
+
     if (wifiProvisioning.provisioningError?.code === 'PROVISIONING_SUCCESS') {
+      console.log('🎉 WiFi provisioning success detected! Opening vault config modal...');
       handleWiFiProvisioned();
+    } else if (wifiProvisioning.provisioningError?.code) {
+      console.log('❌ Provisioning error detected:', wifiProvisioning.provisioningError.code);
     }
   }, [wifiProvisioning.provisioningError]);
 
@@ -99,6 +117,26 @@ const Provisioning = () => {
       setWifiModalVisible(false);
     }
   }, [wifiModalVisible, selectedDevice]);
+
+  // Handle vault creation completion
+  const handleVaultCreated = (vaultData: any) => {
+    console.log('=== VAULT CREATED SUCCESSFULLY ===');
+    console.log('Vault data:', vaultData);
+
+    // Close WiFi modal (which now contains vault config)
+    setWifiModalVisible(false);
+
+    // Clear device state
+    setSelectedDevice(null);
+    setPendingDevice(null);
+
+    // Show success message
+    Alert.alert(
+      'Success!',
+      `Vault "${vaultData.name}" has been created successfully!\n\nVault ID: ${vaultData.device_id}\nYou are now the admin of this vault.`,
+      [{ text: 'OK' }]
+    );
+  };
 
   // Handle successful provisioning - allow new device provisioning
   React.useEffect(() => {
@@ -232,6 +270,16 @@ const Provisioning = () => {
         startWiFiScan={wifiProvisioning.startWiFiScan}
         isFormValid={wifiProvisioning.isFormValid}
       />
+
+      {/* Vault Configuration Modal */}
+      <VaultConfigurationModal
+        visible={vaultConfigModalVisible}
+        onClose={() => setVaultConfigModalVisible(false)}
+        selectedDevice={selectedDevice}
+        onVaultCreated={handleVaultCreated}
+        isCreating={vaultCreation.isCreating}
+      />
+
     </View>
   );
 };

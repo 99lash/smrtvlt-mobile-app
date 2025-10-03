@@ -38,7 +38,7 @@ export const ActivityCard: React.FC<ActivityCardProps> = React.memo(({ log }) =>
         </View>
         <View className="flex-1">
           <View className="flex-row items-center justify-between mb-1">
-            <Text className="text-neutral-text text-base font-medium">
+            <Text className="text-bg-default text-base font-medium">
               {log.title}
             </Text>
             <View className={`${getStatusColor()} px-2 py-1 rounded-full`}>
@@ -47,7 +47,7 @@ export const ActivityCard: React.FC<ActivityCardProps> = React.memo(({ log }) =>
               </Text>
             </View>
           </View>
-          <Text className="text-neutral-text text-sm mb-1">
+          <Text className="text-bg-default text-sm mb-1">
             {log.description}
           </Text>
           <View className="flex-row items-center justify-between">

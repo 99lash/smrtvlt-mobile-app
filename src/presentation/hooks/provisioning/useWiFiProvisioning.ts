@@ -101,6 +101,12 @@ export const useWiFiProvisioning = () => {
         customData: customData
       });
 
+      // Set success indicator
+      setProvisioningError({
+        message: 'WiFi provisioning completed successfully',
+        code: 'PROVISIONING_SUCCESS',
+      });
+
       // Reset form on success
       setSelectedSSID(null);
       setWifiPassword('');

@@ -4,13 +4,13 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { LogOut } from 'lucide-react-native';
 import { useAuthContext } from '../context/AuthContext';
 import ButtonPrimary from '../component/buttons/ButtonPrimary';
-import Provisioning from '../component/provisioning/Provisioning'
+import Provisioning from '../component/provisioning/Provisioning';
 const SettingsScreen = () => {
   const { logout } = useAuthContext();
 
   const handleLogout = () => {
     //TODO Refactor logout btn
-    Alert.alert(
+    Alert.alert( 
       'Logout',
       'Are you sure you want to logout?',
       [

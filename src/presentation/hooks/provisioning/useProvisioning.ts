@@ -19,7 +19,7 @@ export const ProvisioningProvider: React.FC<{ children: React.ReactNode }> = ({ 
     setLog('Scanning for devices...');
     try {
       const found = await ESPProvisionManager.searchESPDevices(
-        'ESP32_PROV',
+        'SV',
         ESPTransport.ble,
         ESPSecurity.secure2
       );

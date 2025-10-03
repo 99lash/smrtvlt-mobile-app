@@ -1,15 +1,19 @@
 import React, { useEffect, useCallback, useState } from 'react';
 import { View, Text, FlatList, TouchableOpacity, ActivityIndicator } from 'react-native';
-import { RefreshCw } from 'lucide-react-native';
+import { RefreshCw, UserPlus, QrCode } from 'lucide-react-native';
 import type { UsersScreenProps } from '../../types/UserTypes';
 import { USER_CONSTANTS } from '../../utils/userConstants';
-import { useUserManagement } from '../hooks/useUserManagement';
-import { useAuthContext } from '../context/AuthContext';
-import { Badge, UserItem, RegisterModal } from '../component/users';
-import ButtonPrimary from '../component/buttons/ButtonPrimary';
-import FailureBanner from '../component/banner/FailureBanner';
+import { useUserManagement } from '../../presentation/hooks/useUserManagement';
+import { useAuthContext } from '../../presentation/context/AuthContext';
+import { Badge, UserItem } from '../../presentation/component/users';
+import ButtonPrimary from '../../presentation/component/buttons/ButtonPrimary';
+import FailureBanner from '../../presentation/component/banner/FailureBanner';
+import { useVaultInvitation } from '../../presentation/hooks/useVaultInvitation';
+import InvitationModal from '../../presentation/component/invitations/InvitationModal';
+import QRScannerModal from '../../presentation/component/invitations/QRScannerModal';
 export default function UsersScreen({ navigation }: UsersScreenProps) {
-  const [showRegisterModal, setShowRegisterModal] = useState(false);
+  const [showInvitationModal, setShowInvitationModal] = useState(false);
+  const [showQRScannerModal, setShowQRScannerModal] = useState(false);
   const { user: currentUser, isLoading: authLoading } = useAuthContext();
 
   const {
@@ -30,12 +34,22 @@ export default function UsersScreen({ navigation }: UsersScreenProps) {
     navigation.navigate('UsersDetail', { userId });
   }, [navigation]);
 
-  const handleAddUser = useCallback(() => {
-    setShowRegisterModal(true);
+  const handleInviteUser = useCallback(() => {
+    setShowInvitationModal(true);
   }, []);
 
-  const handleRegisterSuccess = useCallback(() => {
-    // Refresh the users list after successful registration
+  const handleScanQRCode = useCallback(() => {
+    setShowQRScannerModal(true);
+  }, []);
+
+  const handleInvitationCreated = useCallback((inviteCode: string) => {
+    console.log('Invitation created:', inviteCode);
+    // Could show a success message or copy to clipboard
+  }, []);
+
+  const handleInvitationAccepted = useCallback((vaultId: number, role: string) => {
+    console.log('Invitation accepted for vault:', vaultId, 'with role:', role);
+    // Refresh users list to show new member
     refreshUsers();
   }, [refreshUsers]);
 
@@ -72,11 +86,26 @@ export default function UsersScreen({ navigation }: UsersScreenProps) {
             size={USER_CONSTANTS.UI.ICON_SIZE}
           />
         </TouchableOpacity>
-        <ButtonPrimary
-          title={USER_CONSTANTS.MESSAGES.ADD_USER}
-          onPress={handleAddUser}
-          className="px-4 py-2"
-        />
+        <View className="flex-row items-center space-x-2">
+          <TouchableOpacity
+            onPress={handleScanQRCode}
+            className="p-2 bg-neutral-800 rounded-lg mr-2"
+            accessible={true}
+            accessibilityRole="button"
+            accessibilityLabel="Scan invitation QR code"
+            accessibilityHint="Scan QR code to join a vault"
+          >
+            <QrCode
+              color={USER_CONSTANTS.COLORS.ICON_DEFAULT}
+              size={USER_CONSTANTS.UI.ICON_SIZE}
+            />
+          </TouchableOpacity>
+          <ButtonPrimary
+            title="Invite User"
+            onPress={handleInviteUser}
+            className="px-4 py-2"
+          />
+        </View>
       </View>
     </View>
   );
@@ -165,11 +194,18 @@ export default function UsersScreen({ navigation }: UsersScreenProps) {
         />
       )}
 
-      {/* Register Modal */}
-      <RegisterModal
-        visible={showRegisterModal}
-        onClose={() => setShowRegisterModal(false)}
-        onRegisterSuccess={handleRegisterSuccess}
+      {/* Invitation Modals */}
+      <InvitationModal
+        visible={showInvitationModal}
+        onClose={() => setShowInvitationModal(false)}
+        vaultId={1} // TODO: Get actual vault ID from context
+        onInvitationCreated={handleInvitationCreated}
+      />
+
+      <QRScannerModal
+        visible={showQRScannerModal}
+        onClose={() => setShowQRScannerModal(false)}
+        onInvitationAccepted={handleInvitationAccepted}
       />
     </View>
   );

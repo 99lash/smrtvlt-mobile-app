@@ -14,6 +14,7 @@ interface WiFiCredentialsModalProps {
   visible: boolean;
   onClose: () => void;
   selectedDevice: ESPDevice | null;
+  onVaultCreated?: (vaultData: any) => void;
   // WiFi provisioning state and actions
   selectedSSID: string | null;
   wifiPassword: string;
@@ -82,13 +83,12 @@ const WiFiCredentialsModal: React.FC<WiFiCredentialsModalProps> = ({
       icon={<Wifi size={PROVISIONING_CONSTANTS.UI.ICON_SIZE} color={PROVISIONING_CONSTANTS.UI.ICON_COLOR} />}
       iconPosition="left"
       primaryAction={{
-        label: PROVISIONING_CONSTANTS.MESSAGES.CONFIRM,
+        label: "Next",
         onPress: () => {
-          console.log('=== BUTTON CLICKED ===');
-          console.log('Button was clicked!');
+          console.log('=== WIFI PROVISION BUTTON CLICKED ===');
           handleProvisionWiFi();
         },
-        disabled: false, // Force enable to test
+        disabled: false, // Enable the button
         loading: isProvisioning,
       }}
       secondaryAction={{
