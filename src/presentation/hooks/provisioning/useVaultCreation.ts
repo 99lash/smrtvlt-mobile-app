@@ -36,8 +36,10 @@ export const useVaultCreation = () => {
 
       console.log('🔐 Authentication token found, proceeding with vault creation');
 
-      // API server URL - use the configured BASE_URL from environment
-      const API_BASE_URL = 'https://quenchlessly-headachy-enriqueta.ngrok-free.dev';
+      // API server URL - use environment-based configuration
+      const API_BASE_URL = __DEV__
+        ? 'http://192.168.1.8:8000'
+        : 'https://quenchlessly-headachy-enriqueta.ngrok-free.dev';
       const endpoint = `${API_BASE_URL}/vaults/`;
 
       // Also try alternative endpoints if the main one fails

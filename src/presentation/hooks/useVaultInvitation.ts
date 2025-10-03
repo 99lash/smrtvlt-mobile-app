@@ -1,13 +1,15 @@
 import { useState, useCallback } from 'react';
 
-// Use the same BASE_URL as UserService for consistency
+// Use environment variable for API base URL with fallback
 const API_CONFIG = {
-  BASE_URL: 'https://quenchlessly-headachy-enriqueta.ngrok-free.dev',
+  BASE_URL: __DEV__
+    ? 'http://192.168.1.8:8000'
+    : 'https://quenchlessly-headachy-enriqueta.ngrok-free.dev',
 };
 
 interface InvitationData {
   vault_id: number;
-  role: 'admin' | 'member' | 'guest';
+  role: 'admin' | 'member' | 'guest'; 
   expires_in_hours: number;
 }
 

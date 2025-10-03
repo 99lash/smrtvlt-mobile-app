@@ -1,8 +1,10 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { UserRegistrationRequest, UserRegistrationResponse, UserLoginRequest, UserLoginResponse, User, ApiError } from '../types/UserTypes';
 
-// Use the ngrok URL from .env.local
-const BASE_URL = 'https://quenchlessly-headachy-enriqueta.ngrok-free.dev';
+// Use environment variable for API base URL with fallback
+const BASE_URL = __DEV__
+  ? 'http://192.168.1.8:8000'
+  : 'https://quenchlessly-headachy-enriqueta.ngrok-free.dev';
 
 export class UserService {
   private static readonly API_TIMEOUT = 10000; // 10 seconds
