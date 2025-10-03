@@ -1,5 +1,5 @@
 import React, { useEffect, useCallback, useState } from 'react';
-import { View, Text, FlatList, TouchableOpacity, ActivityIndicator } from 'react-native';
+import { View, Text, FlatList, TouchableOpacity, ActivityIndicator, Alert, Modal } from 'react-native';
 import { RefreshCw, UserPlus, QrCode } from 'lucide-react-native';
 import type { UsersScreenProps } from '../../types/UserTypes';
 import { USER_CONSTANTS } from '../../utils/userConstants';
@@ -11,9 +11,14 @@ import FailureBanner from '../../presentation/component/banner/FailureBanner';
 import { useVaultInvitation } from '../../presentation/hooks/useVaultInvitation';
 import InvitationModal from '../../presentation/component/invitations/InvitationModal';
 import QRScannerModal from '../../presentation/component/invitations/QRScannerModal';
+import { UserService } from '../../service/UserService';
 export default function UsersScreen({ navigation }: UsersScreenProps) {
   const [showInvitationModal, setShowInvitationModal] = useState(false);
   const [showQRScannerModal, setShowQRScannerModal] = useState(false);
+  const [selectedVaultId, setSelectedVaultId] = useState<number | null>(null);
+  const [userVaults, setUserVaults] = useState<any[]>([]);
+  const [isLoadingVaults, setIsLoadingVaults] = useState(false);
+  const [showVaultSelector, setShowVaultSelector] = useState(false);
   const { user: currentUser, isLoading: authLoading } = useAuthContext();
 
   const {
@@ -25,18 +30,120 @@ export default function UsersScreen({ navigation }: UsersScreenProps) {
     refreshUsers,
   } = useUserManagement();
 
+  // Load user's accessible vaults
+  const loadUserVaults = useCallback(async () => {
+    if (!currentUser) return;
+
+    setIsLoadingVaults(true);
+    try {
+      const token = await UserService.getStoredToken();
+      if (!token) {
+        Alert.alert('Error', 'Authentication required');
+        return;
+      }
+
+      console.log('Loading user vaults from:', `${process.env.BASE_URL || 'https://quenchlessly-headachy-enriqueta.ngrok-free.dev'}/vault-memberships/user/vaults`);
+      console.log('BASE_URL value:', process.env.BASE_URL);
+
+      const response = await fetch(`${process.env.BASE_URL || 'https://quenchlessly-headachy-enriqueta.ngrok-free.dev'}/vault-memberships/user/vaults`, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        console.log('Vault data received:', data);
+        if (data.success) {
+          setUserVaults(data.data);
+          console.log('User vaults loaded:', data.data.length);
+        } else {
+          console.error('API returned error:', data);
+          Alert.alert('Error', data.detail || 'Failed to load accessible vaults');
+        }
+      } else {
+        const errorText = await response.text();
+        console.error('Failed to load user vaults:', {
+          status: response.status,
+          statusText: response.statusText,
+          body: errorText,
+          url: response.url
+        });
+        Alert.alert('Error', `Failed to load accessible vaults (${response.status})`);
+      }
+    } catch (error) {
+      console.error('Error loading user vaults:', error);
+      Alert.alert('Error', 'Network error while loading vaults');
+    } finally {
+      setIsLoadingVaults(false);
+    }
+  }, [currentUser]);
+
   // Load users on component mount
   useEffect(() => {
     refreshUsers();
   }, [refreshUsers]);
 
+  // Load user's vaults when user is available
+  useEffect(() => {
+    if (currentUser) {
+      loadUserVaults();
+    }
+  }, [currentUser, loadUserVaults]);
+
   const handleUserPress = useCallback((userId: string) => {
     navigation.navigate('UsersDetail', { userId });
   }, [navigation]);
 
-  const handleInviteUser = useCallback(() => {
-    setShowInvitationModal(true);
-  }, []);
+  const handleInviteUser = useCallback(async () => {
+    if (userVaults.length === 0) {
+      Alert.alert('No Vaults', 'You need access to at least one vault to invite users.');
+      return;
+    }
+
+    if (userVaults.length === 1) {
+      // Only one vault, check if user is admin before proceeding
+      const vault = userVaults[0];
+      console.log('Checking admin access for vault:', vault.vault_id);
+
+      const token = await UserService.getStoredToken();
+      if (!token) {
+        Alert.alert('Error', 'Authentication required');
+        return;
+      }
+
+      try {
+        const adminResponse = await fetch(`${process.env.BASE_URL || 'https://quenchlessly-headachy-enriqueta.ngrok-free.dev'}/vault-memberships/vaults/${vault.vault_id}/admin-check`, {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+          },
+        });
+
+        console.log('Admin check response:', adminResponse.status);
+
+        if (adminResponse.ok) {
+          const adminData = await adminResponse.json();
+          console.log('Admin check result:', adminData);
+
+          if (adminData.success && adminData.data.is_admin) {
+            setSelectedVaultId(vault.vault_id);
+            setShowInvitationModal(true);
+          } else {
+            Alert.alert('Permission Denied', 'You need admin access to this vault to invite users.');
+          }
+        } else {
+          Alert.alert('Error', 'Failed to check vault permissions');
+        }
+      } catch (error) {
+        console.error('Admin check error:', error);
+        Alert.alert('Error', 'Failed to verify vault permissions');
+      }
+    } else {
+      // Multiple vaults, show selection modal
+      setShowVaultSelector(true);
+    }
+  }, [userVaults]);
 
   const handleScanQRCode = useCallback(() => {
     setShowQRScannerModal(true);
@@ -197,8 +304,11 @@ export default function UsersScreen({ navigation }: UsersScreenProps) {
       {/* Invitation Modals */}
       <InvitationModal
         visible={showInvitationModal}
-        onClose={() => setShowInvitationModal(false)}
-        vaultId={1} // TODO: Get actual vault ID from context
+        onClose={() => {
+          setShowInvitationModal(false);
+          setSelectedVaultId(null);
+        }}
+        vaultId={selectedVaultId || 1}
         onInvitationCreated={handleInvitationCreated}
       />
 
@@ -207,6 +317,89 @@ export default function UsersScreen({ navigation }: UsersScreenProps) {
         onClose={() => setShowQRScannerModal(false)}
         onInvitationAccepted={handleInvitationAccepted}
       />
+
+      {/* Vault Selection Modal */}
+      <Modal visible={showVaultSelector} animationType="slide">
+        <View className="flex-1 bg-black">
+          {/* Header */}
+          <View className="flex-row items-center justify-between p-4 border-b border-neutral-800">
+            <Text className="text-white text-lg font-semibold">
+              Select Vault
+            </Text>
+            <TouchableOpacity onPress={() => setShowVaultSelector(false)}>
+              <Text className="text-blue-400 text-base">Cancel</Text>
+            </TouchableOpacity>
+          </View>
+
+          {/* Vault List */}
+          {userVaults.length > 0 ? (
+            <FlatList
+              data={userVaults}
+              keyExtractor={(vault) => vault.vault_id.toString()}
+              renderItem={({ item }) => (
+                <TouchableOpacity
+                  className="bg-neutral-800 p-4 mb-2 rounded-lg mx-4"
+                  onPress={async () => {
+                    console.log('Selected vault:', item.vault_id, 'Role:', item.role);
+
+                    // Check if user has admin access for this vault
+                    const token = await UserService.getStoredToken();
+                    if (!token) {
+                      Alert.alert('Error', 'Authentication required');
+                      return;
+                    }
+
+                    try {
+                      const adminResponse = await fetch(`${process.env.BASE_URL || 'https://quenchlessly-headachy-enriqueta.ngrok-free.dev'}/vault-memberships/vaults/${item.vault_id}/admin-check`, {
+                        headers: {
+                          'Authorization': `Bearer ${token}`,
+                        },
+                      });
+
+                      if (adminResponse.ok) {
+                        const adminData = await adminResponse.json();
+                        if (adminData.success && adminData.data.is_admin) {
+                          setSelectedVaultId(item.vault_id);
+                          setShowVaultSelector(false);
+                          setShowInvitationModal(true);
+                        } else {
+                          Alert.alert('Permission Denied', `You need admin access to invite users to Vault ${item.vault_id}. Current role: ${item.role}`);
+                        }
+                      } else {
+                        Alert.alert('Error', 'Failed to check vault permissions');
+                      }
+                    } catch (error) {
+                      console.error('Admin check error:', error);
+                      Alert.alert('Error', 'Failed to verify vault permissions');
+                    }
+                  }}
+                >
+                  <Text className="text-white font-medium text-base">
+                    Vault ID: {item.vault_id}
+                  </Text>
+                  <Text className="text-neutral-400 text-sm capitalize">
+                    Role: {item.role}
+                  </Text>
+                  <Text className="text-neutral-500 text-xs">
+                    Member since: {new Date(item.created_at).toLocaleDateString()}
+                  </Text>
+                </TouchableOpacity>
+              )}
+              contentContainerStyle={{ paddingBottom: 20 }}
+              showsVerticalScrollIndicator={false}
+            />
+          ) : (
+            <View className="flex-1 justify-center items-center px-4">
+              <Text className="text-neutral-400 text-center mb-4">
+                No accessible vaults found
+              </Text>
+              <Text className="text-neutral-500 text-center text-sm">
+                You need access to at least one vault to invite users
+              </Text>
+            </View>
+          )}
+        </View>
+      </Modal>
     </View>
   );
 }

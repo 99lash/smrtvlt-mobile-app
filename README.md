@@ -48,3 +48,7 @@ React Native supports multiple navigation patterns. Here’s a quick reference:
 3. Drawer Navigation
 - Provides a slide-out menu to switch screens.
 - Common in apps with many sections.
+
+
+npx react-native run-android
+

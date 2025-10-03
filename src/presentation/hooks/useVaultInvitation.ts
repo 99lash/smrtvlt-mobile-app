@@ -8,8 +8,9 @@ const API_CONFIG = {
 };
 
 interface InvitationData {
-  vault_id: number;
-  role: 'admin' | 'member' | 'guest'; 
+  vault_id: number;  // This is the integer vault ID
+  device_id?: string; // Add device_id as optional for admin check
+  role: 'admin' | 'member' | 'guest';
   expires_in_hours: number;
 }
 
@@ -48,6 +49,34 @@ export const useVaultInvitation = () => {
     setError(null);
 
     try {
+      // First, check if user is admin of the vault (use device_id, not vault_id)
+      console.log("vault id : " + invitationData.vault_id);
+      const adminCheckResponse = await fetch(`${API_CONFIG.BASE_URL}/vault-memberships/vaults/${invitationData.vault_id}/admin-check`, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+      });
+
+      if (!adminCheckResponse.ok) {
+        if (adminCheckResponse.status === 403) {
+          throw new Error('Admin access required to create invitations 1');
+        } else {
+          throw new Error('Failed to verify admin access');
+        }
+      }
+
+      const adminCheckResult = await adminCheckResponse.json();
+      console.log('Admin check result structure:', adminCheckResult);
+
+      // Handle both old format (is_admin at root) and new format (is_admin in data)
+      const isAdmin = adminCheckResult.is_admin || (adminCheckResult.data && adminCheckResult.data.is_admin);
+
+      if (!isAdmin) {
+        throw new Error('Admin access required to create invitations 2');
+      }
+
+      // If admin check passes, create the invitation
       const response = await fetch(`${API_CONFIG.BASE_URL}/vault-invitations/`, {
         method: 'POST',
         headers: {
@@ -142,6 +171,39 @@ export const useVaultInvitation = () => {
     }
   }, []);
 
+  const checkVaultAdmin = useCallback(async (
+    vaultId: number,
+    token: string
+  ): Promise<boolean> => {
+    setIsLoading(true);
+    setError(null);
+
+    try {
+      const response = await fetch(`${API_CONFIG.BASE_URL}/vault-memberships/vaults/${vaultId}/admin-check`, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+      });
+
+      if (response.ok) {
+        const result = await response.json();
+        // Handle both old format (is_admin at root) and new format (is_admin in data)
+        const isAdmin = result.is_admin || (result.data && result.data.is_admin);
+        return isAdmin || false;
+      } else if (response.status === 403) {
+        return false;
+      } else {
+        throw new Error('Failed to check admin status');
+      }
+    } catch (err) {
+      console.error('Admin check failed:', err);
+      return false;
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
+
   const getVaultInvitations = useCallback(async (
     vaultId: number,
     adminToken: string
@@ -177,6 +239,7 @@ export const useVaultInvitation = () => {
     validateInvitation,
     acceptInvitation,
     getVaultInvitations,
+    checkVaultAdmin,
     isLoading,
     error,
   };
