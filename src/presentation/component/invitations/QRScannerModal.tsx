@@ -2,7 +2,6 @@ import React, { useState } from 'react';
 import {
   View,
   Text,
-  Modal,
   TouchableOpacity,
   Alert,
   ActivityIndicator,
@@ -10,7 +9,8 @@ import {
   KeyboardAvoidingView,
   Platform
 } from 'react-native';
-import { X, Edit3, CheckCircle } from 'lucide-react-native';
+import { Edit3, CheckCircle, QrCode } from 'lucide-react-native';
+import CustomModal from '../modals/CustomModal'; 
 import { useAuthContext } from '../../context/AuthContext';
 import { useVaultInvitation } from '../../hooks/vault/useVaultInvitation';
 import { UserService } from '../../../service/UserService';
@@ -95,116 +95,147 @@ export default function QRScannerModal({
     onClose();
   };
 
-  const renderMenu = () => (
-    <View className="flex-1 justify-center items-center p-6">
-      <Text className="text-white text-xl font-semibold mb-8">Join Vault</Text>
+  const getModalTitle = () => {
+    switch (mode) {
+      case 'menu':
+        return 'Join Vault';
+      case 'manual':
+        return 'Enter Invitation Code';
+      case 'success':
+        return 'Success!';
+      default:
+        return 'Join Vault';
+    }
+  };
 
-      <TouchableOpacity
-        onPress={() => setMode('manual')}
-        className="bg-blue-600 p-4 rounded-lg items-center mb-4 w-full"
-      >
-        <Edit3 color="white" size={24} />
-        <Text className="text-white font-semibold mt-2">Enter Code Manually</Text>
-        <Text className="text-blue-200 text-sm mt-1">Type the invitation code</Text>
-      </TouchableOpacity>
+  const getPrimaryAction = () => {
+    switch (mode) {
+      case 'menu':
+        return undefined; // No primary action for menu
+      case 'manual':
+        return {
+          label: isProcessing ? 'Processing...' : 'Accept Invitation',
+          onPress: () => processInvitationCode(manualCode),
+          disabled: isProcessing || !manualCode.trim(),
+          loading: isProcessing,
+        };
+      case 'success':
+        return {
+          label: 'Continue',
+          onPress: handleClose,
+        };
+      default:
+        return undefined;
+    }
+  };
 
-      <TouchableOpacity
-        onPress={() => Alert.alert('Coming Soon', 'QR scanning will be available after installing expo-barcode-scanner')}
-        className="bg-neutral-700 p-4 rounded-lg items-center w-full"
-      >
-        <View className="w-6 h-6 border-2 border-neutral-400 rounded mb-2" />
-        <Text className="text-neutral-300 font-semibold">Scan QR Code</Text>
-        <Text className="text-neutral-400 text-sm mt-1">Install expo-barcode-scanner</Text>
-      </TouchableOpacity>
+  const getSecondaryAction = () => {
+    switch (mode) {
+      case 'menu':
+        return {
+          label: 'Cancel',
+          onPress: handleClose,
+        };
+      case 'manual':
+        return {
+          label: 'Back',
+          onPress: () => setMode('menu'),
+        };
+      case 'success':
+        return undefined; // No secondary action for success
+      default:
+        return {
+          label: 'Cancel',
+          onPress: handleClose,
+        };
+    }
+  };
 
-      <TouchableOpacity
-        onPress={handleClose}
-        className="mt-8 p-3"
-      >
-        <Text className="text-neutral-400">Cancel</Text>
-      </TouchableOpacity>
-    </View>
-  );
+  const renderContent = () => {
+    switch (mode) {
+      case 'menu':
+        return (
+          <View className="w-full">
+            <TouchableOpacity
+              onPress={() => setMode('manual')}
+              className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4"
+            >
+              <View className="flex-row items-center">
+                <Edit3 color="#3B82F6" size={24} />
+                <View className="ml-3 flex-1">
+                  <Text className="text-blue-800 font-semibold">Enter Code Manually</Text>
+                  <Text className="text-blue-600 text-sm mt-1">Type the invitation code</Text>
+                </View>
+              </View>
+            </TouchableOpacity>
 
-  const renderManualEntry = () => (
-    <KeyboardAvoidingView
-      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-      className="flex-1"
-    >
-      <View className="flex-1 justify-center p-6">
-        <View className="flex-row items-center justify-between mb-6">
-          <Text className="text-white text-xl font-semibold">Enter Invitation Code</Text>
-          <TouchableOpacity onPress={() => setMode('menu')} className="p-2">
-            <X color="#9CA3AF" size={24} />
-          </TouchableOpacity>
-        </View>
+            <TouchableOpacity
+              onPress={() => Alert.alert('Coming Soon', 'QR scanning will be available after installing expo-barcode-scanner')}
+              className="bg-gray-50 border border-gray-300 rounded-lg p-4"
+            >
+              <View className="flex-row items-center">
+                <View className="w-6 h-6 border-2 border-gray-400 rounded mr-3" />
+                <View className="flex-1">
+                  <Text className="text-gray-600 font-semibold">Scan QR Code</Text>
+                  <Text className="text-gray-500 text-sm mt-1">Install expo-barcode-scanner</Text>
+                </View>
+              </View>
+            </TouchableOpacity>
+          </View>
+        );
 
-        <Text className="text-neutral-300 mb-4">
-          Enter the invitation code you received from the vault admin:
-        </Text>
+      case 'manual':
+        return (
+          <KeyboardAvoidingView
+            behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+            className="w-full"
+          >
+            <View className="w-full">
+              <Text className="text-gray-700 mb-4">
+                Enter the invitation code you received from the vault admin:
+              </Text>
 
-        <TextInput
-          value={manualCode}
-          onChangeText={setManualCode}
-          placeholder="Enter invitation code..."
-          className="bg-neutral-800 text-white p-4 rounded-lg mb-6 border border-neutral-700 text-lg font-mono"
-          placeholderTextColor="#6B7280"
-          autoCapitalize="none"
-          autoCorrect={false}
-        />
+              <TextInput
+                value={manualCode}
+                onChangeText={setManualCode}
+                placeholder="Enter invitation code..."
+                className="bg-gray-50 text-gray-800 p-4 rounded-lg mb-6 border border-gray-300 text-lg font-mono"
+                placeholderTextColor="#9CA3AF"
+                autoCapitalize="none"
+                autoCorrect={false}
+              />
+            </View>
+          </KeyboardAvoidingView>
+        );
 
-        <TouchableOpacity
-          onPress={() => processInvitationCode(manualCode)}
-          disabled={isProcessing || !manualCode.trim()}
-          className={`p-4 rounded-lg items-center mb-4 ${
-            isProcessing || !manualCode.trim()
-              ? 'bg-neutral-700'
-              : 'bg-blue-600'
-          }`}
-        >
-          {isProcessing ? (
-            <ActivityIndicator color="white" />
-          ) : (
-            <Text className="text-white font-semibold">Accept Invitation</Text>
-          )}
-        </TouchableOpacity>
+      case 'success':
+        return (
+          <View className="w-full items-center py-4">
+            <CheckCircle color="#10B981" size={64} />
+            <Text className="text-gray-800 text-xl font-semibold mt-4 mb-2">
+              Invitation Accepted!
+            </Text>
+            <Text className="text-gray-600 text-center">
+              You now have access to the vault
+            </Text>
+          </View>
+        );
 
-        <TouchableOpacity
-          onPress={() => setMode('menu')}
-          className="p-3 items-center"
-        >
-          <Text className="text-neutral-400">Back</Text>
-        </TouchableOpacity>
-      </View>
-    </KeyboardAvoidingView>
-  );
-
-  const renderSuccess = () => (
-    <View className="flex-1 justify-center items-center p-6">
-      <CheckCircle color="#10B981" size={64} />
-      <Text className="text-white text-xl font-semibold mt-4 mb-2">
-        Invitation Accepted!
-      </Text>
-      <Text className="text-neutral-400 text-center">
-        You now have access to the vault
-      </Text>
-    </View>
-  );
-
-  if (!visible) return null;
+      default:
+        return null;
+    }
+  };
 
   return (
-    <Modal
+    <CustomModal
       visible={visible}
-      animationType="slide"
-      presentationStyle="pageSheet"
-      onRequestClose={handleClose}
+      onClose={handleClose}
+      title={getModalTitle()}
+      icon={<QrCode size={24} color="#3B82F6" />}
+      primaryAction={getPrimaryAction()}
+      secondaryAction={getSecondaryAction()}
     >
-      <View className="flex-1 bg-black">
-        {mode === 'menu' && renderMenu()}
-        {mode === 'manual' && renderManualEntry()}
-        {mode === 'success' && renderSuccess()}
-      </View>
-    </Modal>
+      {renderContent()}
+    </CustomModal>
   );
 }
