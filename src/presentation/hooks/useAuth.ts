@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
-import { UserService } from '../../service/UserService';
+import { AuthService } from '../../service/AuthService';
+import { UserDataService } from '../../service/UserDataService';
 
 export interface AuthState {
   isAuthenticated: boolean;
@@ -23,12 +24,12 @@ export const useAuth = () => {
       setAuthState(prev => ({ ...prev, isLoading: true }));
 
       // Check if token exists
-      const token = await UserService.getStoredToken();
+      const token = await AuthService.getStoredToken();
 
       if (token) {
         // Validate token with backend and get user info
         try {
-          const user = await UserService.getCurrentUser();
+          const user = await UserDataService.getCurrentUser();
           if (user) {
             setAuthState({
               isAuthenticated: true,
@@ -37,7 +38,7 @@ export const useAuth = () => {
             });
           } else {
             // Token exists but user fetch failed, clear token
-            await UserService.clearToken();
+            await AuthService.clearToken();
             setAuthState({
               isAuthenticated: false,
               isLoading: false,
@@ -47,7 +48,7 @@ export const useAuth = () => {
         } catch (userError) {
           console.error('Failed to fetch user info:', userError);
           // Token exists but user fetch failed, clear token
-          await UserService.clearToken();
+          await AuthService.clearToken();
           setAuthState({
             isAuthenticated: false,
             isLoading: false,
@@ -73,7 +74,7 @@ export const useAuth = () => {
 
   const login = async (username: string, password: string) => {
     try {
-      await UserService.login({ username, password });
+      await AuthService.login({ username, password });
       await checkAuthStatus(); // Re-check auth status after login
       return true;
     } catch (error) {
@@ -84,7 +85,7 @@ export const useAuth = () => {
 
   const logout = async () => {
     try {
-      await UserService.clearToken();
+      await AuthService.clearToken();
       setAuthState({
         isAuthenticated: false,
         isLoading: false,

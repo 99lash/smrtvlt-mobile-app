@@ -50,6 +50,24 @@ export interface ApiError {
   status_code?: number;
 }
 
+export interface VaultMembershipResponse {
+  id: number;
+  user_id: number;
+  vault_id: number;
+  role: string;
+  created_at: string;
+  updated_at: string | null;
+  username: string | null;
+  first_name: string | null;
+  last_name: string | null;
+}
+
+export interface VaultMembersResponse {
+  success: boolean;
+  data: VaultMembershipResponse[];
+  detail?: string;
+}
+
 export interface UsersScreenNavigationProp {
   navigate: (screen: string, params?: { userId: string }) => void;
 }

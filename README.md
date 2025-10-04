@@ -52,3 +52,4 @@ React Native supports multiple navigation patterns. Here’s a quick reference:
 
 npx react-native run-android
 
+npx react-native start

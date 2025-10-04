@@ -18,7 +18,7 @@ try {
   QRCode = null;
 }
 import { useAuthContext } from '../../../presentation/context/AuthContext';
-import { useVaultInvitation } from '../../../presentation/hooks/useVaultInvitation';
+import { useVaultInvitation } from '../../hooks/vault/useVaultInvitation';
 import { UserService } from '../../../service/UserService';
 
 interface InvitationModalProps {

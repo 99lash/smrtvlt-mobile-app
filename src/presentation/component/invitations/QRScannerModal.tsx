@@ -12,7 +12,7 @@ import {
 } from 'react-native';
 import { X, Edit3, CheckCircle } from 'lucide-react-native';
 import { useAuthContext } from '../../context/AuthContext';
-import { useVaultInvitation } from '../../hooks/useVaultInvitation';
+import { useVaultInvitation } from '../../hooks/vault/useVaultInvitation';
 import { UserService } from '../../../service/UserService';
 
 interface QRScannerModalProps {

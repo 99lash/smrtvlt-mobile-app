@@ -1,7 +1,7 @@
 import { useState, useMemo, useCallback } from 'react';
-import type { User, UserManagementHookReturn } from '../../types/UserTypes';
-import { UserService } from '../../service/UserService';
-import { useAuthContext } from '../context/AuthContext';
+import type { User, UserManagementHookReturn } from '../../../types/UserTypes';
+import { UserService } from '../../../service/UserService';
+import { useAuthContext } from '../../context/AuthContext';
 
 export const useUserManagement = (): UserManagementHookReturn => {
   const [users, setUsers] = useState<User[]>([]);

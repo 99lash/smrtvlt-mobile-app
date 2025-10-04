@@ -1,5 +1,5 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { UserRegistrationRequest, UserRegistrationResponse, UserLoginRequest, UserLoginResponse, User, ApiError } from '../types/UserTypes';
+import { UserRegistrationRequest, UserRegistrationResponse, UserLoginRequest, UserLoginResponse, User, ApiError, VaultMembersResponse, VaultMembershipResponse } from '../types/UserTypes';
 
 // Use environment variable for API base URL with fallback
 const BASE_URL = __DEV__
@@ -260,140 +260,158 @@ export class UserService {
   }
 
   /**
-   * Fetch users who share vault access with the specified user
-   * @param userId - The user ID to find shared vault access for
-   * @returns Promise<User[]>
-   * @throws Error with specific message based on API response
-   */
-  static async fetchSharedVaultUsers(userId: number): Promise<User[]> {
-    const url = `${BASE_URL}/users/vault/${userId}`;
+    * Fetch users who share vault access with the specified user
+    * @param userId - The user ID to find shared vault access for
+    * @returns Promise<User[]>
+    * @throws Error with specific message based on API response
+    */
+   static async fetchSharedVaultUsers(userId: number): Promise<User[]> {
+     if (__DEV__) {
+       console.log('UserService - Fetching shared vault users for user ID:', userId);
+       console.log('UserService - BASE_URL:', BASE_URL);
+       console.log('UserService - Token preview:', (await this.getStoredToken())?.substring(0, 20) + '...');
+     }
 
-    if (__DEV__) {
-      console.log('UserService - Fetching shared vault users for user ID:', userId);
-      console.log('UserService - Target URL:', url);
-      console.log('UserService - BASE_URL:', BASE_URL);
-      console.log('UserService - Token preview:', (await this.getStoredToken())?.substring(0, 20) + '...');
-    }
+     try {
+       const token = await this.getStoredToken();
+       if (!token) {
+         if (__DEV__) {
+           console.error('UserService - No authentication token found');
+         }
+         throw new Error('No authentication token found');
+       }
 
-    try {
-      const token = await this.getStoredToken();
-      if (!token) {
-        if (__DEV__) {
-          console.error('UserService - No authentication token found');
-        }
-        throw new Error('No authentication token found');
-      }
+       // First, get the current user's vaults to find shared access
+       const currentUser = await this.getCurrentUser();
+       if (!currentUser) {
+         throw new Error('Unable to get current user information');
+       }
 
-      if (__DEV__) {
-        console.log('UserService - Making GET request to:', url);
-        console.log('UserService - Request headers:', {
-          'Authorization': `Bearer ${token.substring(0, 20)}...`,
-          'Content-Type': 'application/json',
-        });
-      }
+       // Get current user's vault memberships
+       const vaultsUrl = `${BASE_URL}/vault-memberships/user/vaults`;
 
-      const response = await fetch(url, {
-        method: 'GET',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        },
-      });
+       if (__DEV__) {
+         console.log('UserService - Fetching current user vaults from:', vaultsUrl);
+       }
 
-      if (__DEV__) {
-        console.log('UserService - Response status:', response.status);
-        console.log('UserService - Response ok:', response.ok);
-        console.log('UserService - Response headers:', Object.fromEntries(response.headers.entries()));
-      }
+       const vaultsResponse = await fetch(vaultsUrl, {
+         method: 'GET',
+         headers: {
+           'Authorization': `Bearer ${token}`,
+           'Content-Type': 'application/json',
+         },
+       });
 
-      if (!response.ok) {
-        let errorMessage = `API error: ${response.status} ${response.statusText}`;
+       if (!vaultsResponse.ok) {
+         throw new Error(`Failed to fetch user vaults: ${vaultsResponse.status}`);
+       }
 
-        // Handle specific error cases based on status codes
-        switch (response.status) {
-          case 401:
-            errorMessage = 'Authentication required to fetch shared vault users';
-            break;
-          case 403:
-            errorMessage = 'Insufficient permissions to view shared vault users';
-            break;
-          case 404:
-            errorMessage = 'User not found or no shared vault access';
-            break;
-          case 500:
-            errorMessage = 'Server error occurred while fetching shared vault users';
-            break;
-          default:
-            try {
-              const errorText = await response.text();
-              errorMessage = `Failed to fetch shared vault users: ${errorText}`;
-            } catch (textError) {
-              errorMessage = `Failed to fetch shared vault users: ${response.status}`;
-            }
-        }
+       const vaultsData = await vaultsResponse.json();
+       const userVaults = vaultsData.data || [];
 
-        if (__DEV__) {
-          console.error('UserService - API error details:', errorMessage);
-        }
+       if (__DEV__) {
+         console.log('UserService - Current user vaults:', userVaults.length);
+       }
 
-        throw new Error(errorMessage);
-      }
+       // Collect all users from shared vaults (excluding current user)
+       const sharedUsersMap = new Map<number, User>();
 
-      const users: User[] = await response.json();
+       for (const vaultMembership of userVaults) {
+         const vaultId = vaultMembership.vault_id;
 
-      if (__DEV__) {
-        console.log('UserService - Successfully fetched shared vault users:', users.length);
-        console.log('UserService - Users sharing vault access:', users.map(u => `${u.firstName || u.username || `User ${u.id}`}`));
-        console.log('UserService - First user (if any):', users[0]);
-      }
+         if (__DEV__) {
+           console.log('UserService - Fetching members for vault ID:', vaultId);
+         }
 
-      return users;
+         const membersUrl = `${BASE_URL}/vault-memberships/vault/${vaultId}`;
 
-    } catch (error) {
-      if (__DEV__) {
-        console.error('UserService - Fetch shared vault users error:', error);
+         const membersResponse = await fetch(membersUrl, {
+           method: 'GET',
+           headers: {
+             'Authorization': `Bearer ${token}`,
+             'Content-Type': 'application/json',
+           },
+         });
 
-        // Type-safe error logging
-        if (error instanceof Error) {
-          console.error('UserService - Error type:', error.constructor.name);
-          console.error('UserService - Error message:', error.message);
-          console.error('UserService - Error stack:', error.stack);
-        } else {
-          console.error('UserService - Non-Error object thrown:', error);
-        }
+         if (membersResponse.ok) {
+           const membersData: VaultMembersResponse = await membersResponse.json();
 
-        // Log additional context for debugging
-        console.error('UserService - BASE_URL being used:', BASE_URL);
-        console.error('UserService - Full shared vault users URL:', url);
-        console.error('UserService - Target user ID:', userId);
+           if (membersData.success && membersData.data) {
+             for (const memberData of membersData.data) {
+               // Skip the current user
+               if (memberData.user_id !== currentUser.id) {
+                 // Convert membership data to User format
+                 const user: User = {
+                   id: memberData.user_id,
+                   firstName: memberData.first_name || undefined,
+                   lastName: memberData.last_name || undefined,
+                   username: memberData.username || undefined,
+                   role: memberData.role === 'admin' ? 'admin' : 'user',
+                   status: 'active', // Default status since not provided by API
+                   lastAccess: memberData.created_at,
+                   enabled: true // Default enabled since not provided by API
+                 };
 
-        // Check if it's a network error
-        if (error instanceof TypeError && 'message' in error && error.message.includes('fetch')) {
-          console.error('UserService - This appears to be a network connectivity error');
-          console.error('UserService - Possible causes:');
-          console.error('UserService - 1. Server is not running');
-          console.error('UserService - 2. Incorrect BASE_URL');
-          console.error('UserService - 3. Network connectivity issues');
-          console.error('UserService - 4. Firewall blocking the request');
-        }
-      }
+                 sharedUsersMap.set(user.id, user);
+               }
+             }
+           }
+         }
+       }
 
-      // Re-throw with more context if it's already a handled error
-      if (error instanceof Error) {
-        throw error;
-      }
+       const sharedUsers = Array.from(sharedUsersMap.values());
 
-      // Handle network errors
-      if (error instanceof TypeError && error.message.includes('fetch')) {
-        console.warn('UserService - Network error detected, backend may be unavailable');
-        console.warn('UserService - Returning empty array as fallback');
-        // Return empty array instead of throwing error for better UX
-        return [];
-      }
+       if (__DEV__) {
+         console.log('UserService - Successfully fetched shared vault users:', sharedUsers.length);
+         console.log('UserService - Users sharing vault access:', sharedUsers.map(u => `${u.firstName || u.username || `User ${u.id}`}`));
+       }
 
-      throw new Error('Network error occurred while fetching shared vault users');
-    }
-  }
+       return sharedUsers;
+
+     } catch (error) {
+       if (__DEV__) {
+         console.error('UserService - Fetch shared vault users error:', error);
+
+         // Type-safe error logging
+         if (error instanceof Error) {
+           console.error('UserService - Error type:', error.constructor.name);
+           console.error('UserService - Error message:', error.message);
+           console.error('UserService - Error stack:', error.stack);
+         } else {
+           console.error('UserService - Non-Error object thrown:', error);
+         }
+
+         // Log additional context for debugging
+         console.error('UserService - BASE_URL being used:', BASE_URL);
+         console.error('UserService - Target user ID:', userId);
+
+         // Check if it's a network error
+         if (error instanceof TypeError && 'message' in error && error.message.includes('fetch')) {
+           console.error('UserService - This appears to be a network connectivity error');
+           console.error('UserService - Possible causes:');
+           console.error('UserService - 1. Server is not running');
+           console.error('UserService - 2. Incorrect BASE_URL');
+           console.error('UserService - 3. Network connectivity issues');
+           console.error('UserService - 4. Firewall blocking the request');
+         }
+       }
+
+       // Re-throw with more context if it's already a handled error
+       if (error instanceof Error) {
+         throw error;
+       }
+
+       // Handle network errors
+       if (error instanceof TypeError && error.message.includes('fetch')) {
+         console.warn('UserService - Network error detected, backend may be unavailable');
+         console.warn('UserService - Returning empty array as fallback');
+         // Return empty array instead of throwing error for better UX
+         return [];
+       }
+
+       throw new Error('Network error occurred while fetching shared vault users');
+     }
+   }
 
   /**
    * @deprecated Use fetchSharedVaultUsers instead for vault-specific user fetching
