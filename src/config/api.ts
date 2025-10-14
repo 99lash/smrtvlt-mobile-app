@@ -20,7 +20,7 @@ export const API_CONFIG = {
   
   DEFAULTS: {
     VAULT_ID: parseInt(process.env.DEFAULT_VAULT_ID || '2', 10),
-    PREFIXES: (process.env.DEFAULT_PREFIXES || 'Locked,Tamper,DUAL,Failure').split(','),
+    PREFIXES: (process.env.DEFAULT_PREFIXES || 'Locked,Tamper,DUAL,Failure,NFC').split(','),
     LOG_LIMIT: 50,
     LOG_OFFSET: 0,
   },
@@ -38,10 +38,12 @@ export const EVENT_WS_URL = process.env.EVENT_WS_URL || `${wsProtocol}${wsHost}$
 
 // Development logging
 if (__DEV__) {
+  console.log('🔧 === API CONFIG DEBUG ===');
   console.log('[API Config] BASE_URL:', API_CONFIG.BASE_URL);
   console.log('[API Config] DEFAULT_VAULT_ID:', API_CONFIG.DEFAULTS.VAULT_ID);
   console.log('[API Config] DEFAULT_PREFIXES:', API_CONFIG.DEFAULTS.PREFIXES);
   console.log('[API Config] WS URL:', EVENT_WS_URL);
+  console.log('🔧 === API CONFIG DEBUG END ===');
 }
 
 // ============================================================================

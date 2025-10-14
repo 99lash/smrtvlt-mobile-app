@@ -36,7 +36,7 @@ export class UserDataService {
       this.logError('getCurrentUser', error);
 
       // If network error or server unreachable, don't clear token
-      if (error instanceof Error && error.message.includes('fetch')) {
+      if (this.isNetworkError(error)) {
         return null;
       }
 
@@ -55,83 +55,24 @@ export class UserDataService {
   static async fetchSharedVaultUsers(userId: number): Promise<User[]> {
     if (__DEV__) {
       console.log('UserDataService - Fetching shared vault users for user ID:', userId);
-      console.log('UserDataService - Token preview:', (await this.getStoredToken())?.substring(0, 20) + '...');
     }
 
     try {
       const token = await this.getStoredToken();
       if (!token) {
-        if (__DEV__) {
-          console.error('UserDataService - No authentication token found');
-        }
         throw new Error('No authentication token found');
       }
 
-      // First, get the current user's vaults to find shared access
       const currentUser = await this.getCurrentUser();
       if (!currentUser) {
         throw new Error('Unable to get current user information');
       }
 
-      // Get current user's vault memberships
-      const vaultsData = await ApiService.get<VaultMembersResponse>('/vault-memberships/user/vaults', token);
-      const userVaults = vaultsData.data || [];
-
-      if (__DEV__) {
-        console.log('UserDataService - Current user vaults:', userVaults.length);
-      }
-
-      // Collect all users from shared vaults (excluding current user)
-      const sharedUsersMap = new Map<number, User>();
-
-      for (const vaultMembership of userVaults) {
-        const vaultId = vaultMembership.vault_id;
-
-        if (__DEV__) {
-          console.log('UserDataService - Fetching members for vault ID:', vaultId);
-        }
-
-        const membersUrl = `${API_CONFIG.BASE_URL}/vault-memberships/vault/${vaultId}`;
-
-        const membersResponse = await fetch(membersUrl, {
-          method: 'GET',
-          headers: {
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json',
-          },
-        });
-
-        if (membersResponse.ok) {
-          const membersData: VaultMembersResponse = await membersResponse.json();
-
-          if (membersData.success && membersData.data) {
-            for (const memberData of membersData.data) {
-              // Skip the current user
-              if (memberData.user_id !== currentUser.id) {
-                // Convert membership data to User format
-                const user: User = {
-                  id: memberData.user_id,
-                  firstName: memberData.first_name || undefined,
-                  lastName: memberData.last_name || undefined,
-                  username: memberData.username || undefined,
-                  role: memberData.role === 'admin' ? 'admin' : 'user',
-                  status: 'active', // Default status since not provided by API
-                  lastAccess: memberData.created_at,
-                  enabled: true // Default enabled since not provided by API
-                };
-
-                sharedUsersMap.set(user.id, user);
-              }
-            }
-          }
-        }
-      }
-
-      const sharedUsers = Array.from(sharedUsersMap.values());
+      const userVaults = await this.fetchUserVaults(token);
+      const sharedUsers = await this.collectSharedUsers(userVaults, currentUser.id, token);
 
       if (__DEV__) {
         console.log('UserDataService - Successfully fetched shared vault users:', sharedUsers.length);
-        console.log('UserDataService - Users sharing vault access:', sharedUsers.map(u => `${u.firstName || u.username || `User ${u.id}`}`));
       }
 
       return sharedUsers;
@@ -140,9 +81,10 @@ export class UserDataService {
       this.logError('fetchSharedVaultUsers', error, { userId });
 
       // Handle network errors gracefully
-      if (error instanceof TypeError && error.message.includes('fetch')) {
-        console.warn('UserDataService - Network error detected, backend may be unavailable');
-        console.warn('UserDataService - Returning empty array as fallback');
+      if (this.isNetworkError(error)) {
+        if (__DEV__) {
+          console.warn('UserDataService - Network error detected, returning empty array');
+        }
         return [];
       }
 
@@ -177,13 +119,137 @@ export class UserDataService {
 
     } catch (error) {
       this.logError('fetchUsers', error);
-      throw this.processError(error, 'fetching users');
+      throw new Error(`Failed to fetch users: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
   }
 
   /**
+   * Fetch user's vault memberships
+   * @private
+   */
+  private static async fetchUserVaults(token: string): Promise<VaultMembershipResponse[]> {
+    const vaultsData = await ApiService.get<VaultMembersResponse>(
+      '/vault-memberships/user/vaults',
+      token
+    );
+
+    if (__DEV__) {
+      console.log('UserDataService - User vaults count:', vaultsData.data?.length || 0);
+    }
+
+    return vaultsData.data || [];
+  }
+
+  /**
+   * Collect all users from shared vaults
+   * @private
+   */
+  private static async collectSharedUsers(
+    vaults: VaultMembershipResponse[],
+    currentUserId: number,
+    token: string
+  ): Promise<User[]> {
+    const sharedUsersMap = new Map<number, User>();
+
+    for (const vaultMembership of vaults) {
+      try {
+        const members = await this.fetchVaultMembers(vaultMembership.vault_id, token);
+        
+        for (const member of members) {
+          if (member.user_id !== currentUserId) {
+            const user = this.transformMemberToUser(member);
+            sharedUsersMap.set(user.id, user);
+          }
+        }
+      } catch (error) {
+        // Log but continue to next vault
+        if (__DEV__) {
+          console.warn(`UserDataService - Failed to fetch members for vault ${vaultMembership.vault_id}`, error);
+        }
+      }
+    }
+
+    return Array.from(sharedUsersMap.values());
+  }
+
+  /**
+   * Fetch members of a specific vault
+   * @private
+   */
+  private static async fetchVaultMembers(vaultId: number, token: string): Promise<any[]> {
+    if (__DEV__) {
+      console.log('UserDataService - Fetching members for vault ID:', vaultId, 'Type:', typeof vaultId);
+    }
+
+    try {
+      // Use direct fetch instead of ApiService to handle the response format better
+      const membersUrl = `${API_CONFIG.BASE_URL}/vault-memberships/vault/${vaultId}`;
+      console.log('UserDataService - Making direct fetch to:', membersUrl);
+
+      const response = await fetch(membersUrl, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+      });
+
+      console.log('UserDataService - Response status:', response.status);
+      console.log('UserDataService - Response ok:', response.ok);
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('UserDataService - Response error text:', errorText);
+        throw new Error(`HTTP ${response.status}: ${errorText}`);
+      }
+
+      const membersData = await response.json();
+      console.log('UserDataService - Raw response data:', membersData);
+
+      // Handle different response formats
+      if (membersData.success && membersData.data) {
+        console.log('UserDataService - Success format, data length:', membersData.data.length);
+        return membersData.data;
+      } else if (Array.isArray(membersData)) {
+        console.log('UserDataService - Array format, length:', membersData.length);
+        return membersData;
+      } else {
+        console.error('UserDataService - Unexpected response format:', membersData);
+        return [];
+      }
+    } catch (error) {
+      console.error('UserDataService - fetchVaultMembers error:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Transform vault member data to User format
+   * @private
+   */
+  private static transformMemberToUser(memberData: any): User {
+    return {
+      id: memberData.user_id,
+      firstName: memberData.first_name || undefined,
+      lastName: memberData.last_name || undefined,
+      username: memberData.username || undefined,
+      role: memberData.role === 'admin' ? 'admin' : 'user',
+      status: 'active',
+      lastAccess: memberData.created_at,
+      enabled: true
+    };
+  }
+
+  /**
+   * Check if error is a network error
+   * @private
+   */
+  private static isNetworkError(error: any): boolean {
+    return error instanceof TypeError && error.message.includes('fetch');
+  }
+
+  /**
    * Get stored authentication token
-   * @returns Promise<string | null>
    * @private
    */
   private static async getStoredToken(): Promise<string | null> {
@@ -199,7 +265,6 @@ export class UserDataService {
 
   /**
    * Clear stored authentication token
-   * @returns Promise<void>
    * @private
    */
   private static async clearToken(): Promise<void> {
@@ -216,67 +281,24 @@ export class UserDataService {
   }
 
   /**
-   * Handle users endpoint errors
-   * @private
-   */
-  private static handleUsersError(status: number): never {
-    switch (status) {
-      case 401:
-        throw new Error('Authentication required to fetch users');
-      case 403:
-        throw new Error('Insufficient permissions to view users');
-      case 500:
-        throw new Error('Server error occurred while fetching users');
-      default:
-        throw new Error(`Failed to fetch users: ${status}`);
-    }
-  }
-
-  /**
    * Centralized error logging
    * @private
    */
   private static logError(operation: string, error: any, context?: any): void {
-    if (__DEV__) {
-      console.error(`UserDataService - ${operation} error:`, error);
+    if (!__DEV__) return;
 
-      if (error instanceof Error) {
-        console.error(`UserDataService - Error type:`, error.constructor.name);
-        console.error(`UserDataService - Error message:`, error.message);
-        console.error(`UserDataService - Error stack:`, error.stack);
-      } else {
-        console.error('UserDataService - Non-Error object thrown:', error);
-      }
+    console.error(`UserDataService - ${operation} error:`, error);
 
-      if (context) {
-        console.error('UserDataService - Operation context:', context);
-      }
-
-      // Check if it's a network error
-      if (error instanceof TypeError && 'message' in error && error.message.includes('fetch')) {
-        console.error('UserDataService - This appears to be a network connectivity error');
-        console.error('UserDataService - Possible causes:');
-        console.error('UserDataService - 1. Server is not running');
-        console.error('UserDataService - 2. Incorrect BASE_URL');
-        console.error('UserDataService - 3. Network connectivity issues');
-        console.error('UserDataService - 4. Firewall blocking the request');
-      }
-    }
-  }
-
-  /**
-   * Process and enhance error messages
-   * @private
-   */
-  private static processError(error: any, operation: string): Error {
     if (error instanceof Error) {
-      return error;
+      console.error(`UserDataService - Error message:`, error.message);
     }
 
-    if (error instanceof TypeError && error.message.includes('fetch')) {
-      return new Error(`Network error occurred during ${operation}`);
+    if (context) {
+      console.error('UserDataService - Context:', context);
     }
 
-    return new Error(`Unknown error occurred during ${operation}`);
+    if (this.isNetworkError(error)) {
+      console.error('UserDataService - Network connectivity issue detected');
+    }
   }
 }

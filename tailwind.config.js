@@ -17,9 +17,9 @@ module.exports = {
           dark: '#475569', // slate-600
           light: '#cbd5e1', // slate-300
         },
-        neutral: {
-          text: '#0f172a', // slate-900
-          DEFAULT: '#f8fafc',
+        text: {
+          default: '#0f172a', // slate-900
+          dark: '#EEEEEE',
         },
         bg:{
           default: '#f8fafc',
@@ -36,7 +36,7 @@ module.exports = {
         surface:{
           default: '#ffffff',
           active: '#eff1ed',
-          dark: '#1b1c1b',
+          dark: '#0F0E0E',
         },
         success: {
           DEFAULT: '#22c55e', // green-500

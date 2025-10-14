@@ -3,9 +3,12 @@ import { API_CONFIG } from '../config/api';
 
 export interface LogEntry {
   id: number;
-  message: string;
-  prefix: string;
-  created_at: string;
+  device_id: string;
+  user_id?: number;
+  event_type: string;
+  details: string;
+  timestamp: string;  // ✅ CHANGED from created_at to timestamp
+  vault_id?: number;
 }
 
 export interface GetLogsParams {
@@ -34,8 +37,30 @@ export class LogService extends ApiService {
       limit: limit.toString(),
     };
 
-    return this.get<LogEntry[]>(endpoint, token, queryParams);
+    console.log('📡 Mobile app requesting logs:', {
+      endpoint,
+      queryParams,
+      vaultId,
+      prefixes: prefixes.join(','),
+      limit  // ✅ Added limit to debug output
+    });
+
+    const response = await this.get<LogEntry[]>(endpoint, token, queryParams);
+
+    console.log('📥 Mobile app received logs:', response.length, 'logs');
+    console.log('🔍 First log received:', response[0]); // ✅ Log the entire first log object
+    
+    if (__DEV__ && response.length > 0) {
+      response.forEach((log, index) => {
+        if (log.details && log.details.includes('NFC:')) {
+          console.log(`  ${index + 1}. ${log.event_type}: ${log.details} (timestamp: ${log.timestamp})`);
+        }
+      });
+    }
+
+    return response;
   }
+
 
   /**
    * Get logs with default parameters
@@ -43,6 +68,17 @@ export class LogService extends ApiService {
   static async getDefaultLogs(token?: string): Promise<LogEntry[]> {
     return this.getFilteredLogs({
       vaultId: API_CONFIG.DEFAULTS.VAULT_ID,
+      token,
+    });
+  }
+
+  /**
+   * Get most recent NFC failed attempt log for registration
+   */
+  static async getMostRecentNFCLog(vaultId: number, token?: string): Promise<LogEntry[]> {
+    return this.getFilteredLogs({
+      vaultId,
+      limit: 1, // ✅ Only get the most recent log
       token,
     });
   }

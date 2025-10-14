@@ -1,28 +1,29 @@
 import { API_CONFIG, StorageService } from '../config/api';
 
-export interface ApiError {
-  status: number;
-  message: string;
-  body?: string;
+export class ApiError extends Error {
+  constructor(
+    public status: number,
+    message: string,
+    public body?: string
+  ) {
+    super(message);
+    this.name = 'ApiError';
+  }
 }
 
 export class ApiService {
   /**
-    * Build full URL from endpoint
-    */
+   * Build full URL from endpoint
+   */
   private static buildUrl(endpoint: string): string {
     return `${API_CONFIG.BASE_URL}${endpoint}`;
   }
 
   /**
-    * Get authorization headers
-    */
+   * Get authorization headers
+   */
   private static async getAuthHeaders(token?: string): Promise<Record<string, string>> {
-    let authToken = token;
-
-    if (!authToken) {
-      authToken = await StorageService.getAccessToken() || undefined;
-    }
+    const authToken = token || await StorageService.getAccessToken();
 
     if (!authToken) {
       throw new Error('No access token available for API call');
@@ -35,8 +36,8 @@ export class ApiService {
   }
 
   /**
-    * Create headers without authentication (for public endpoints)
-    */
+   * Create headers without authentication
+   */
   private static getPublicHeaders(customHeaders: Record<string, string> = {}): Record<string, string> {
     return {
       'Content-Type': 'application/json',
@@ -45,186 +46,200 @@ export class ApiService {
   }
 
   /**
-    * Generic GET request with auth
-    */
+   * Handle API response
+   */
+  private static async handleResponse<T>(response: Response, endpoint: string): Promise<T> {
+    if (!response.ok) {
+      const errorBody = await response.text();
+      
+      if (__DEV__) {
+        console.error('[API Error]', response.status, errorBody);
+      }
+
+      // Parse error message from response body if available
+      let errorMessage = `Request failed with status ${response.status}`;
+      try {
+        const errorJson = JSON.parse(errorBody);
+        errorMessage = errorJson.message || errorJson.detail || errorMessage;
+      } catch {
+        // Use default message if parsing fails
+      }
+
+      throw new ApiError(response.status, errorMessage, errorBody);
+    }
+
+    const data: T = await response.json();
+    
+    if (__DEV__) {
+      console.log('[API Success]', endpoint);
+    }
+
+    return data;
+  }
+
+  /**
+   * Generic request handler
+   */
+  private static async request<T>(
+    endpoint: string,
+    options: RequestInit,
+    logPrefix: string
+  ): Promise<T> {
+    try {
+      const url = this.buildUrl(endpoint);
+
+      if (__DEV__) {
+        console.log(`[${logPrefix}]`, url);
+      }
+
+      const response = await fetch(url, options);
+      return await this.handleResponse<T>(response, endpoint);
+
+    } catch (error) {
+      if (__DEV__) {
+        console.error('[API Request Failed]', endpoint, error);
+      }
+      throw error;
+    }
+  }
+
+  /**
+   * GET request with authentication
+   */
   public static async get<T>(
     endpoint: string,
     token?: string,
     queryParams?: Record<string, string>
   ): Promise<T> {
-    try {
-      const headers = await this.getAuthHeaders(token);
-      let url = this.buildUrl(endpoint);
+    const headers = await this.getAuthHeaders(token);
+    let url = endpoint;
 
-      if (queryParams) {
-        const params = new URLSearchParams(queryParams);
-        url = `${url}?${params}`;
-      }
-
-      if (__DEV__) {
-        console.log('[API GET]', url);
-      }
-
-      const response = await fetch(url, {
-        method: 'GET',
-        headers,
-      });
-
-      if (!response.ok) {
-        const errorBody = await response.text();
-        console.error('[API Error]', response.status, errorBody);
-        throw {
-          status: response.status,
-          message: `HTTP error! status: ${response.status}`,
-          body: errorBody,
-        } as ApiError;
-      }
-
-      const data: T = await response.json();
-      
-      if (__DEV__) {
-        console.log('[API Success]', endpoint);
-      }
-
-      return data;
-    } catch (error) {
-      console.error('[API Request Failed]', endpoint, error);
-      throw error;
+    if (queryParams) {
+      const params = new URLSearchParams(queryParams);
+      url = `${url}?${params}`;
     }
+
+    return this.request<T>(url, {
+      method: 'GET',
+      headers,
+    }, 'API GET');
   }
 
   /**
-    * Generic POST request
-    */
-  public static async post<T>(
+   * POST request with authentication
+   */
+  public static async post<T, B = any>(
     endpoint: string,
-    body: any,
-    headers: Record<string, string> = {}
+    body: B,
+    token?: string
   ): Promise<T> {
-    try {
-      const url = this.buildUrl(endpoint);
+    const headers = await this.getAuthHeaders(token);
 
-      if (__DEV__) {
-        console.log('[API POST]', url);
-      }
-
-      const response = await fetch(url, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          ...headers,
-        },
-        body: JSON.stringify(body),
-      });
-
-      if (!response.ok) {
-        const errorBody = await response.text();
-        console.error('[API Error]', response.status, errorBody);
-        throw {
-          status: response.status,
-          message: `HTTP error! status: ${response.status}`,
-          body: errorBody,
-        } as ApiError;
-      }
-
-      const data: T = await response.json();
-      
-      if (__DEV__) {
-        console.log('[API Success]', endpoint);
-      }
-
-      return data;
-    } catch (error) {
-      console.error('[API Request Failed]', endpoint, error);
-      throw error;
-    }
+    return this.request<T>(endpoint, {
+      method: 'POST',
+      headers,
+      body: JSON.stringify(body),
+    }, 'API POST');
   }
 
   /**
-    * Generic POST request with form data (for login, etc.)
-    */
+   * PUT request with authentication
+   */
+  public static async put<T, B = any>(
+    endpoint: string,
+    body: B,
+    token?: string
+  ): Promise<T> {
+    const headers = await this.getAuthHeaders(token);
+
+    return this.request<T>(endpoint, {
+      method: 'PUT',
+      headers,
+      body: JSON.stringify(body),
+    }, 'API PUT');
+  }
+
+  /**
+   * PATCH request with authentication
+   */
+  public static async patch<T, B = any>(
+    endpoint: string,
+    body: B,
+    token?: string
+  ): Promise<T> {
+    const headers = await this.getAuthHeaders(token);
+
+    return this.request<T>(endpoint, {
+      method: 'PATCH',
+      headers,
+      body: JSON.stringify(body),
+    }, 'API PATCH');
+  }
+
+  /**
+   * DELETE request with authentication
+   */
+  public static async delete<T>(
+    endpoint: string,
+    token?: string
+  ): Promise<T> {
+    const headers = await this.getAuthHeaders(token);
+
+    return this.request<T>(endpoint, {
+      method: 'DELETE',
+      headers,
+    }, 'API DELETE');
+  }
+
+  /**
+   * POST request with form data (for login, file uploads, etc.)
+   */
   public static async postForm<T>(
     endpoint: string,
-    formData: URLSearchParams,
+    formData: URLSearchParams | FormData,
     customHeaders: Record<string, string> = {}
   ): Promise<T> {
-    try {
-      const url = this.buildUrl(endpoint);
-      const headers = this.getPublicHeaders(customHeaders);
+    // Don't set Content-Type for FormData - browser will set it with boundary
+    const headers = formData instanceof FormData 
+      ? customHeaders 
+      : { 'Content-Type': 'application/x-www-form-urlencoded', ...customHeaders };
 
-      if (__DEV__) {
-        console.log('[API POST FORM]', url);
-      }
-
-      const response = await fetch(url, {
-        method: 'POST',
-        headers,
-        body: formData.toString(),
-      });
-
-      if (!response.ok) {
-        const errorBody = await response.text();
-        console.error('[API Error]', response.status, errorBody);
-        throw {
-          status: response.status,
-          message: `HTTP error! status: ${response.status}`,
-          body: errorBody,
-        } as ApiError;
-      }
-
-      const data: T = await response.json();
-
-      if (__DEV__) {
-        console.log('[API Success]', endpoint);
-      }
-
-      return data;
-    } catch (error) {
-      console.error('[API Request Failed]', endpoint, error);
-      throw error;
-    }
+    return this.request<T>(endpoint, {
+      method: 'POST',
+      headers,
+      body: formData instanceof FormData ? formData : formData.toString(),
+    }, 'API POST FORM');
   }
 
   /**
-    * Generic GET request without authentication (for public endpoints)
-    */
+   * GET request without authentication (for public endpoints)
+   */
   public static async getPublic<T>(
     endpoint: string,
     customHeaders: Record<string, string> = {}
   ): Promise<T> {
-    try {
-      const headers = this.getPublicHeaders(customHeaders);
-      const url = this.buildUrl(endpoint);
+    const headers = this.getPublicHeaders(customHeaders);
 
-      if (__DEV__) {
-        console.log('[API GET PUBLIC]', url);
-      }
+    return this.request<T>(endpoint, {
+      method: 'GET',
+      headers,
+    }, 'API GET PUBLIC');
+  }
 
-      const response = await fetch(url, {
-        method: 'GET',
-        headers,
-      });
+  /**
+   * POST request without authentication (for registration, etc.)
+   */
+  public static async postPublic<T, B = any>(
+    endpoint: string,
+    body: B,
+    customHeaders: Record<string, string> = {}
+  ): Promise<T> {
+    const headers = this.getPublicHeaders(customHeaders);
 
-      if (!response.ok) {
-        const errorBody = await response.text();
-        console.error('[API Error]', response.status, errorBody);
-        throw {
-          status: response.status,
-          message: `HTTP error! status: ${response.status}`,
-          body: errorBody,
-        } as ApiError;
-      }
-
-      const data: T = await response.json();
-
-      if (__DEV__) {
-        console.log('[API Success]', endpoint);
-      }
-
-      return data;
-    } catch (error) {
-      console.error('[API Request Failed]', endpoint, error);
-      throw error;
-    }
+    return this.request<T>(endpoint, {
+      method: 'POST',
+      headers,
+      body: JSON.stringify(body),
+    }, 'API POST PUBLIC');
   }
 }
