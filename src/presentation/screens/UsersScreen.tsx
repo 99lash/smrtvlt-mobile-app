@@ -47,9 +47,25 @@ export default function UsersScreen({ navigation }: UsersScreenProps) {
       const userVaults = await VaultService.getUserVaults();
       setVaults(userVaults);
 
-      // Load shared vault users (placeholder - you may want to implement this differently)
-      // const sharedUsers = await UserDataService.fetchSharedVaultUsers(currentUserId);
-      // setUsers(sharedUsers);
+      // Load current user to get user ID for fetching shared users
+      const currentUser = await UserDataService.getCurrentUser();
+      if (currentUser) {
+        console.log('Current user loaded:', currentUser);
+        try {
+          // Load shared vault users using current user's ID
+          console.log('Fetching shared users for user ID:', currentUser.id);
+          const sharedUsers = await UserDataService.fetchSharedVaultUsers(currentUser.id);
+          console.log('Shared users loaded:', sharedUsers.length, sharedUsers);
+          setUsers(sharedUsers);
+        } catch (userError) {
+          console.error('Error fetching shared users:', userError);
+          // Set empty array if user fetching fails, but don't fail the entire load
+          setUsers([]);
+        }
+      } else {
+        console.log('No current user found, cannot load shared users');
+        setUsers([]);
+      }
 
     } catch (err) {
       console.error('Error loading data:', err);
@@ -70,7 +86,6 @@ export default function UsersScreen({ navigation }: UsersScreenProps) {
     }
 
     try {
-      // Create a wrapper function that matches the expected signature
       const checkAdminWrapper = async (vaultId: number) => {
         const token = await UserService.getStoredToken();
         if (!token) return false;

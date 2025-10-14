@@ -13,6 +13,7 @@ export interface LogEntry {
   created_at: string;
   updated_at?: string;
   deleted_at?: string;
+  device_id?: string;
 }
 
 // UI-specific types for ActivityScreen
@@ -54,3 +55,15 @@ export interface FilterState {
 }
 
 export type FilterValue = string;
+
+// NFC Card data types
+export interface NFCCardData {
+  uid: string;
+  isRegistered: boolean;
+}
+
+export interface NFCLogInfo {
+  hasNFCData: boolean;
+  cardUID: string;
+  isFailedAttempt: boolean;
+}

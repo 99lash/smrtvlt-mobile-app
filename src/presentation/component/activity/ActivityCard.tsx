@@ -28,7 +28,7 @@ export const ActivityCard: React.FC<ActivityCardProps> = React.memo(({ log }) =>
   };
 
   return (
-    <View className="bg-neutral-surface rounded-lg p-4 mb-3">
+    <View className="bg-bg-dark  rounded-lg p-4 mb-3">
       <View className="flex-row items-start">
         <View className="mr-3 mt-1">
           <StatusIcon status={log.status} />
@@ -57,11 +57,11 @@ export const ActivityCard: React.FC<ActivityCardProps> = React.memo(({ log }) =>
                   {log.user.initials}
                 </Text>
               </View>
-              <Text className="text-neutral-muted text-sm">
+              <Text className="text-muted-default text-sm">
                 {log.user.name}
               </Text>
             </View>
-            <Text className="text-neutral-muted text-sm">
+            <Text className="text-muted-default text-sm">
               {log.timestamp}
             </Text>
           </View>
