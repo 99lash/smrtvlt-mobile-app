@@ -227,7 +227,8 @@ export const NFCManager: React.FC<NFCManagerProps> = ({
     <>
       <View className="bg-surface-dark rounded-lg p-4 mb-4">
         <View className="flex-row items-center mb-3">
-          <Text className="text-white text-lg font-semibold">NFC-Card Management</Text>
+          <CreditCard size={20} color="#60a5fa" />
+          <Text className="text-white text-lg font-semibold ml-2">NFC-Card Management</Text>
         </View>
         <Text className="text-muted-default mb-4">
           Create and manage NFC-Card id for vault access

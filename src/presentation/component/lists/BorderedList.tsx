@@ -32,7 +32,7 @@ function BorderedList<T>({
 
   return (
     <View
-      className={`border border-neutral-border rounded-xl overflow-hidden ${className}`}
+      className={`border border-border-default dark:border-border-dark rounded-xl overflow-hidden ${className}`}
       style={{ maxHeight }}
     >
       <FlatList
@@ -47,9 +47,9 @@ function BorderedList<T>({
             <Pressable
               disabled={!onItemPress}
               onPress={() => onItemPress?.(item, index)}
-              className={`flex-row items-center justify-between p-3 border-b border-neutral-border ${
+              className={`flex-row items-center justify-between p-3 border-b border-border-default dark:border-border-dark ${
                 index === data.length - 1 ? "border-b-0" : ""
-              } ${isSelected ? "bg-surface-active" : "bg-surface-default"}`}
+              } ${isSelected ? "bg-primary-light" : "bg-surface-default dark:bg-surface-dark"}`}
               style={{ minHeight: itemHeight }}
             >
               <View className="flex-row items-center flex-1">
@@ -59,7 +59,7 @@ function BorderedList<T>({
                 ) : (
                   <Text
                     className={`flex-1 ${
-                      isSelected ? "text-primary font-semibold" : "text-neutral-text"
+                      isSelected ? "text-primary-dark font-semibold" : "text-text-default dark:text-text-dark"
                     }`}
                     style={{ flexWrap: "wrap" }}
                   >

@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { useColorScheme } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
@@ -6,6 +5,7 @@ import { NavigationContainer, DefaultTheme, DarkTheme } from '@react-navigation/
 import { useColorScheme as useNativeWindColorScheme } from 'nativewind';
 import { ProvisioningProvider } from './src/presentation/hooks/provisioning/useProvisioning';
 import { AuthProvider } from './src/presentation/context/AuthContext';
+import { VaultProvider } from './src/presentation/hooks/VaultContext';
 import AppNavigator from './src/presentation/navigation/AppNavigator';
 import './global.css';
 
@@ -22,11 +22,13 @@ const App = () => {
   return (
     <SafeAreaProvider>
       <AuthProvider>
-        <ProvisioningProvider>
-          <NavigationContainer theme={rnScheme === 'dark' ? DarkTheme : DefaultTheme}>
-            <AppNavigator />
-          </NavigationContainer>
-        </ProvisioningProvider>
+        <VaultProvider>
+          <ProvisioningProvider>
+            <NavigationContainer theme={rnScheme === 'dark' ? DarkTheme : DefaultTheme}>
+              <AppNavigator />
+            </NavigationContainer>
+          </ProvisioningProvider>
+        </VaultProvider>
       </AuthProvider>
     </SafeAreaProvider>
   );

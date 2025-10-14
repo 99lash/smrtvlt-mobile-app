@@ -28,7 +28,7 @@ module.exports = {
         border:{
           default:'#e2e8f0',
           dark:'#595c58',
-        },
+        }, 
         muted:{
           default: '#64748b',
           dark: '#393a38',

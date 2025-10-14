@@ -10,6 +10,7 @@ export interface KeypadPin {
   export interface CreateKeypadPinRequest {
     pin_code: string;
     user_id?: number;
+    vault_id?: number;
   }
   
   export interface KeypadPinResponse {

@@ -71,7 +71,7 @@ const VaultConfigurationModal: React.FC<VaultConfigurationModalProps> = ({
       visible={visible}
       onClose={handleClose}
       title="Configure Vault"
-      icon={<Shield size={24} color="#3B82F6" />}
+      icon={<Shield size={24} color="#60a5fa" />}
       iconPosition="left"
       primaryAction={{
         label: "Create Vault",
@@ -86,14 +86,14 @@ const VaultConfigurationModal: React.FC<VaultConfigurationModalProps> = ({
     >
       <View className="mb-4">
         {selectedDevice && (
-          <View className="mb-6 p-4 bg-green-50 rounded-lg border border-green-200">
-            <Text className="text-sm font-medium text-green-800 mb-1">
+          <View className="mb-6 p-4 bg-success-light rounded-lg border border-success-DEFAULT">
+            <Text className="text-sm font-medium text-success-dark mb-1">
               WiFi Configuration Successful! 🎉
             </Text>
-            <Text className="text-lg font-semibold text-green-900">
+            <Text className="text-lg font-semibold text-success-dark">
               {selectedDevice.name}
             </Text>
-            <Text className="text-sm text-green-700 mt-1">
+            <Text className="text-sm text-success-dark mt-1">
               Now let's configure your vault settings
             </Text>
           </View>
@@ -101,11 +101,11 @@ const VaultConfigurationModal: React.FC<VaultConfigurationModalProps> = ({
 
         {/* Authentication check */}
         {!isAuthenticated && (
-          <View className="mb-6 p-4 bg-red-50 rounded-lg border border-red-200">
-            <Text className="text-sm font-medium text-red-800 mb-1">
+          <View className="mb-6 p-4 bg-error-light rounded-lg border border-error-DEFAULT">
+            <Text className="text-sm font-medium text-error-dark mb-1">
               Authentication Required
             </Text>
-            <Text className="text-sm text-red-700">
+            <Text className="text-sm text-error-dark">
               You need to be logged in to create a vault. Please log in and try again.
             </Text>
           </View>
@@ -113,14 +113,15 @@ const VaultConfigurationModal: React.FC<VaultConfigurationModalProps> = ({
 
         {/* Vault Name Input */}
         <View className="mb-4">
-          <Text className="text-sm font-medium text-gray-700 mb-2">
+          <Text className="text-sm font-medium text-text-default dark:text-text-dark mb-2">
             Vault Name *
           </Text>
           <TextInput
             value={vaultName}
             onChangeText={setVaultName}
             placeholder="Enter vault name (e.g., Office Safe)"
-            className="border border-gray-300 rounded-lg px-3 py-3 text-gray-800"
+            className="border border-border-default dark:border-border-dark rounded-lg px-3 py-3 text-text-default dark:text-text-dark bg-surface-default dark:bg-surface-dark"
+            placeholderTextColor="#64748b"
             editable={!isCreating}
             maxLength={100}
           />
@@ -128,28 +129,29 @@ const VaultConfigurationModal: React.FC<VaultConfigurationModalProps> = ({
 
         {/* Location Input */}
         <View className="mb-6">
-          <Text className="text-sm font-medium text-gray-700 mb-2">
+          <Text className="text-sm font-medium text-text-default dark:text-text-dark mb-2">
             Location (Optional)
           </Text>
           <TextInput
             value={location}
             onChangeText={setLocation}
             placeholder="Enter vault location (e.g., 2nd Floor Storage)"
-            className="border border-gray-300 rounded-lg px-3 py-3 text-gray-800"
+            className="border border-border-default dark:border-border-dark rounded-lg px-3 py-3 text-text-default dark:text-text-dark bg-surface-default dark:bg-surface-dark"
+            placeholderTextColor="#64748b"
             editable={!isCreating}
             maxLength={200}
           />
         </View>
 
         {/* Info Text */}
-        <View className="p-3 bg-blue-50 rounded-lg">
-          <Text className="text-sm text-blue-600">
+        <View className="p-3 bg-surface-default dark:bg-surface-dark rounded-lg">
+          <Text className="text-sm text-muted-default dark:text-muted-dark">
             💡 Your vault will be created with the device ID as its unique identifier.
             You'll automatically become the admin of this vault.
           </Text>
         </View>
       </View>
-    </CustomModal>
+    </CustomModal> 
   );
 };
 

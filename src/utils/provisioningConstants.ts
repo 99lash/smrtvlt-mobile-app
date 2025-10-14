@@ -6,7 +6,7 @@
 export const PROVISIONING_CONSTANTS = {
   // UI Messages
   MESSAGES: {
-    SCAN_DEVICES_TITLE: 'Wi-Fi Devices',
+    SCAN_DEVICES_TITLE: 'SmartVault Devices',
     WIFI_CREDENTIALS_TITLE: 'Send Wi-Fi Credentials',
     PROVISION_SUCCESS: 'Provisioning successful',
     PROVISION_FAILED: 'Provisioning failed',

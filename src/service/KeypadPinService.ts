@@ -18,9 +18,23 @@ export class KeypadPinService extends ApiService {
   }
 
   /**
+   * Get keypad PINs for a specific user
+   */
+  static async getPinsByUser(userId: number, token?: string): Promise<KeypadPin[]> {
+    return this.get<KeypadPin[]>('/keypad-pins/', token, { user_id: userId.toString() });
+  }
+
+  /**
    * Assign PIN to user
    */
   static async assignPinToUser(pinId: number, userId: number, token?: string): Promise<void> {
     return this.patch<void>(`/keypad-pins/${pinId}/assign`, { user_id: userId }, token);
+  }
+
+  /**
+   * Delete a keypad PIN
+   */
+  static async deletePin(pinId: number, token?: string): Promise<void> {
+    return this.delete<void>(`/keypad-pins/${pinId}`, token);
   }
 }

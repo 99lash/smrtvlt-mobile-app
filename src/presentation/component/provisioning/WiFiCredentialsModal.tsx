@@ -107,19 +107,19 @@ const WiFiCredentialsModal: React.FC<WiFiCredentialsModalProps> = ({
         {/* Scanning indicator */}
         {scanning && (
           <View className="flex-row items-center justify-center py-3">
-            <ActivityIndicator size="small" color={PROVISIONING_CONSTANTS.UI.SIGNAL_COLOR} />
-            <Text className="ml-2 text-gray-700">{PROVISIONING_CONSTANTS.MESSAGES.SCANNING}</Text>
+            <ActivityIndicator size="small" color="#60a5fa" />
+            <Text className="ml-2 text-muted-default">{PROVISIONING_CONSTANTS.MESSAGES.SCANNING}</Text>
           </View>
         )}
 
         {/* WiFi scan error */}
         {!scanning && wifiScanError && (
-          <Text className="text-red-500 mt-2">{wifiScanError}</Text>
+          <Text className="text-error-DEFAULT mt-2">{wifiScanError}</Text>
         )}
 
         {/* No networks found */}
         {!scanning && !wifiScanError && wifiNetworks.length === 0 && (
-          <Text className="text-gray-500 mt-2">{PROVISIONING_CONSTANTS.MESSAGES.NO_NETWORKS_FOUND}</Text>
+          <Text className="text-muted-default mt-2">{PROVISIONING_CONSTANTS.MESSAGES.NO_NETWORKS_FOUND}</Text>
         )}
 
         {/* WiFi networks list */}
@@ -133,10 +133,10 @@ const WiFiCredentialsModal: React.FC<WiFiCredentialsModalProps> = ({
             selectedId={selectedSSID ?? undefined}
             renderItem={(d, isSelected) => (
               <View
-                className={`px-3 py-2 rounded ${isSelected ? 'bg-blue-100' : ''}`}
+                className={`px-3 py-2 rounded ${isSelected ? 'bg-primary-light' : 'bg-surface-default dark:bg-surface-dark'}`}
               >
                 <Text
-                  className={`${isSelected ? 'text-blue-800' : 'text-neutral-text'} font-medium`}
+                  className={`${isSelected ? 'text-primary-dark' : 'text-text-default dark:text-text-dark'} font-medium`}
                 >
                   {d.ssid}
                 </Text>
@@ -149,25 +149,26 @@ const WiFiCredentialsModal: React.FC<WiFiCredentialsModalProps> = ({
         {/* Password input */}
         {selectedSSID && (
           <View className="mt-3 relative">
-            <Text className="text-gray-700 mb-1">
+            <Text className="text-text-default dark:text-text-dark mb-1">
               {PROVISIONING_CONSTANTS.MESSAGES.ENTER_WIFI_PASSWORD}
             </Text>
-            <View className="flex-row items-center border border-gray-300 rounded px-3 py-2">
+            <View className="flex-row items-center border border-border-default dark:border-border-dark rounded px-3 py-2 bg-surface-default dark:bg-surface-dark">
               <TextInput
                 value={wifiPassword}
                 onChangeText={setWifiPassword}
                 secureTextEntry={!showPassword}
                 placeholder={PROVISIONING_CONSTANTS.MESSAGES.ENTER_WIFI_PASSWORD}
-                className="flex-1 text-neutral-text"
+                className="flex-1 text-text-default dark:text-text-dark"
+                placeholderTextColor="#64748b"
               />
               <TouchableOpacity
                 onPress={togglePasswordVisibility}
                 className="ml-2"
               >
                 {showPassword ? (
-                  <Eye size={PROVISIONING_CONSTANTS.UI.ICON_SIZE} color={PROVISIONING_CONSTANTS.UI.GRAY_COLOR} />
+                  <Eye size={PROVISIONING_CONSTANTS.UI.ICON_SIZE} color="#64748b" />
                 ) : (
-                  <EyeOff size={PROVISIONING_CONSTANTS.UI.ICON_SIZE} color={PROVISIONING_CONSTANTS.UI.GRAY_COLOR} />
+                  <EyeOff size={PROVISIONING_CONSTANTS.UI.ICON_SIZE} color="#64748b" />
                 )}
               </TouchableOpacity>
             </View>
@@ -176,14 +177,14 @@ const WiFiCredentialsModal: React.FC<WiFiCredentialsModalProps> = ({
 
         {/* No device selected warning */}
         {!selectedDevice && (
-          <View className="mt-4 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
-            <Text className="text-yellow-700">Please select a device first before provisioning WiFi.</Text>
+          <View className="mt-4 p-3 bg-warning-light border border-warning-DEFAULT rounded-lg">
+            <Text className="text-warning-dark">Please select a device first before provisioning WiFi.</Text>
           </View>
         )}
 
         {/* Provisioning error */}
         {provisioningError && (
-          <Text className="text-red-500 mt-2">{provisioningError.message}</Text>
+          <Text className="text-error-DEFAULT mt-2">{provisioningError.message}</Text>
         )}
       </View>
     </CustomModal>

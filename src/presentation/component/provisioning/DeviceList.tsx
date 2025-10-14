@@ -32,10 +32,10 @@ const DeviceList = <T,>({
 }: DeviceListProps<T>) => {
   return (
     <View className="mt-4">
-      <Text className="text-sm font-semibold mb-2 text-neutral-text">
+      <Text className="text-sm font-semibold mb-2 text-text-default dark:text-text-dark">
         {title} ({devices.length})
       </Text>
-
+ 
       <BorderedList<T>
         data={devices}
         keyExtractor={d => getId(d)}
@@ -43,10 +43,10 @@ const DeviceList = <T,>({
         selectedId={selectedId} // highlight
         renderItem={(item, index, isSelected) =>
           renderItem ? (
-            renderItem(item, false)
+            renderItem(item, isSelected)
           ) : (
             <Text
-              className={`font-medium text-neutral-text`}
+              className={`font-medium ${isSelected ? 'text-primary-dark' : 'text-text-default dark:text-text-dark'}`}
             >
               {getName(item)}
             </Text>
