@@ -8,14 +8,14 @@ type CustomModalProps = {
   onClose: () => void;
   children: React.ReactNode;
   title?: string;
-  primaryAction?: {
+  primaryAction?: {  
     label: string;
     onPress: () => void;
     disabled?: boolean;
-    loading?: boolean;
+    loading?: boolean; 
   };
-  icon?: React.ReactNode; // 👈 Accepts any icon component
-  iconPosition?: 'left' | 'right'; // optional placement
+  icon?: React.ReactNode; 
+  iconPosition?: 'left' | 'right'; 
   secondaryAction?: {
     label: string;
     onPress: () => void;
@@ -40,7 +40,7 @@ const CustomModal: React.FC<CustomModalProps> = ({
       onRequestClose={onClose}
     >
       <View className="flex-1 bg-black/50 justify-center items-center">
-        <View className="bg-white p-6 rounded-2xl w-4/5 shadow-lg">
+        <View className="bg-bg-default dark:bg-bg-dark p-6 rounded-2xl w-4/5 shadow-lg">
           {title && (
             <View className="flex-row items-center mb-4">
               {/* Icon on the left */}
@@ -48,7 +48,7 @@ const CustomModal: React.FC<CustomModalProps> = ({
                 <View className="mr-2">{icon}</View>
               )}
 
-              <Text className="text-lg font-bold text-left flex-1">
+              <Text className="text-lg font-bold text-left flex-1 text-text-default dark:text-text-dark">
                 {title}
               </Text>
 

@@ -16,9 +16,9 @@ function MyTabBar({ state, descriptors, navigation }: BottomTabBarProps) {
   const { colors } = useTheme();
 
   return (
-    <View className="flex-row bg-white dark:bg-surface-dark border-t border-border-default dark:border-border-dark">
+    <View className="flex-row bg-white dark:bg-surface-dark border-border-default dark:border-border-dark">
       {state.routes.map((route, index) => {
-        const { options } = descriptors[route.key];
+        const { options } = descriptors[route.key]; 
         const label =
           options.tabBarLabel !== undefined
             ? (options.tabBarLabel as string)
@@ -71,7 +71,7 @@ function MyTabBar({ state, descriptors, navigation }: BottomTabBarProps) {
 
 const BottomTabNavigator = () => {
   return (
-    <Tab.Navigator tabBar={(props) => <MyTabBar {...props} />}>
+    <Tab.Navigator tabBar={(props) => <MyTabBar {...props} /> } screenOptions={{headerShown: false}}>
       <Tab.Screen name="Home" component={HomeScreen} />
       <Tab.Screen name="Users" component={UsersScreen} />
       <Tab.Screen name="Activity" component={ActivityScreen} />

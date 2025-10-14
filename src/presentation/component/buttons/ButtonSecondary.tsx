@@ -22,7 +22,7 @@ const ButtonSecondary: React.FC<ButtonSecondaryProps> = ({
   icon,
   iconPosition = "left",
 }) => {
-  const textColor = "#0f172a";
+  const textColor = "#2563eb";
 
   const coloredIcon =
     icon &&
@@ -35,7 +35,7 @@ const ButtonSecondary: React.FC<ButtonSecondaryProps> = ({
       onPress={!disabled && !loading ? onPress : undefined}
       activeOpacity={0.7}
       disabled={disabled || loading}
-      className={`border border-secondary rounded-xl px-4 py-3 flex-row items-center justify-center
+      className={`border border-secondary dark:border-secondary-dark rounded-xl px-4 py-3 flex-row items-center justify-center
         ${disabled ? "opacity-50" : ""}
         ${className}`}
     >
@@ -47,7 +47,7 @@ const ButtonSecondary: React.FC<ButtonSecondaryProps> = ({
             <View className="mr-2 text-neutral-text">{coloredIcon}</View>
           )}
           <Text
-            className={`text-neutral-text text-base text-center ${textClassName}`}
+            className={`text-text-default dark:text-text-dark text-base text-center ${textClassName}`}
           >
             {title}
           </Text>

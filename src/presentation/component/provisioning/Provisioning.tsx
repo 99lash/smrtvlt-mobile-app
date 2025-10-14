@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { View, Text, Alert } from 'react-native';
 import { Plus } from 'lucide-react-native';
 import { useProvisioning } from '../../hooks/provisioning/useProvisioning';
-import ButtonPrimary from '../buttons/ButtonPrimary';
+import ButtonSecondary from '../buttons/ButtonSecondary';
 import DeviceScanningModal from './DeviceScanningModal';
 import WiFiCredentialsModal from './WiFiCredentialsModal';
 import VaultConfigurationModal from './VaultConfigurationModal';
@@ -71,7 +71,7 @@ const Provisioning = () => {
 
 
   const { showSuccess, hideSuccess, resetSuccessTrigger } = useSuccessNotification(log, resetAllModals, false);
-  
+
 
   // Handle device selection from scanning modal
   const handleDeviceSelect = (device: ESPDevice) => {
@@ -196,27 +196,23 @@ const Provisioning = () => {
   ]);
 
   return (
-    <View className="flex-1 bg-white px-4 py-6">
-      <View className="flex-1 justify-center items-center">
-        {/* Main Action Button */}
-        <View className="w-full max-w-sm mb-4">
-          <ButtonPrimary
-            title={PROVISIONING_CONSTANTS.MESSAGES.PROVISION_NEW_DEVICE}
-            onPress={() => {
-              resetSuccessTrigger(); // Reset success trigger for new session
-              setScanModalVisible(true);
-              console.log('Set scanModalVisible to true');
-            }}
-            icon={
-              <Plus
-                size={PROVISIONING_CONSTANTS.UI.ICON_SIZE}
-                color="white"
-              />
-            }
-            className="w-full"
+    <>
+      <ButtonSecondary
+        title={PROVISIONING_CONSTANTS.MESSAGES.PROVISION_NEW_DEVICE}
+        onPress={() => {
+          resetSuccessTrigger(); // Reset success trigger for new session
+          setScanModalVisible(true);
+          console.log('Set scanModalVisible to true');
+        }}
+        icon={
+          <Plus
+            size={PROVISIONING_CONSTANTS.UI.ICON_SIZE}
+            color="white"
           />
-        </View>
-      </View>
+        }
+        className="w-full"
+      />
+
 
       {/* Success Banner */}
       {showSuccess && (
@@ -279,8 +275,7 @@ const Provisioning = () => {
         onVaultCreated={handleVaultCreated}
         isCreating={vaultCreation.isCreating}
       />
-
-    </View>
+    </>
   );
 };
 

@@ -46,18 +46,8 @@ export const useVaultCreation = () => {
       const alternativeEndpoints = [
         `${API_BASE_URL}/vaults/`,
         `${API_BASE_URL}/api/vaults/`,
-        `${API_BASE_URL}/api/v1/vaults/`
+        `${API_BASE_URL}/api/v1/vaults/` 
       ];
-
-      console.log('📡 API Request Details:');
-      console.log('  URL:', endpoint);
-      console.log('  Method: POST');
-      console.log('  Headers:', {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token.substring(0, 20)}...`,
-      });
-      console.log('  Body:', JSON.stringify(vaultData));
-
       // Try multiple endpoints if the first one fails
       let response: Response | null = null;
       let lastError: unknown = null;
