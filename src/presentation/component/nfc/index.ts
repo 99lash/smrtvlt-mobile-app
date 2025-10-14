@@ -1,0 +1,1 @@
+export { NFCCardDisplay } from './NFCCardDisplay';
