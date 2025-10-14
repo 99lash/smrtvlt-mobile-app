@@ -4,11 +4,12 @@ import Login from '../component/users/login/Login';
 import { useAuthContext } from '../context/AuthContext';
 
 const LoginScreen = () => {
-  const { login } = useAuthContext();
+  const { checkAuthStatus } = useAuthContext();
 
   const handleLoginSuccess = async () => {
-    console.log('LoginScreen - Login successful - user authenticated');
-    // Auth context will automatically update and AppNavigator will show BottomTabNavigator
+    console.log('LoginScreen - Login successful - refreshing auth status');
+    // Refresh the authentication status to update the app state
+    await checkAuthStatus();
   };
 
   return (
