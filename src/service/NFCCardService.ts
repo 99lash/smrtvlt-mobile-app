@@ -3,7 +3,8 @@ import {
   NFCCardCreateRequest,
   NFCCardResponse,
   NFCCardCreateResponse,
-  NFCCardServiceResponse
+  NFCCardServiceResponse,
+  NFCCardWithUserResponse
 } from '../types/NFCCardTypes';
 
 export class NFCCardService {
@@ -12,13 +13,14 @@ export class NFCCardService {
   }
 
   /**
-   * Register a new NFC card
-   */
+    * Register a new NFC card
+    */
   static async registerCard(
     uid: string,
     userId?: number,
     token?: string,
-    vaultId?: number
+    vaultId?: number,
+    name?: string
   ): Promise<NFCCardServiceResponse> {
     try {
       if (!vaultId) {
@@ -31,7 +33,8 @@ export class NFCCardService {
       const payload: NFCCardCreateRequest = {
         uid,
         ...(userId && { user_id: userId }),
-        vault_id: vaultId
+        vault_id: vaultId,
+        ...(name && { name })
       };
 
       // Add trailing slash for POST to avoid 307 redirect
@@ -105,51 +108,121 @@ export class NFCCardService {
   }
 
   /**
-   * Check if NFC card is already registered
-   */
-  static async isCardRegistered(
-    uid: string,
+    * Get all NFC cards for a specific vault with usernames
+    */
+  static async getCardsByVault(
+    vaultId: number,
     token?: string
-  ): Promise<boolean> {
+  ): Promise<{ success: boolean; data?: NFCCardWithUserResponse[]; error?: string }> {
     try {
-      console.log('🔍 NFCCardService - Checking if card is registered:', uid);
-      const result = await this.getCardByUID(uid, token);
+      const response = await ApiService.get<NFCCardWithUserResponse[]>(
+        `${this.getBaseUrl()}/vault/${vaultId}`,
+        token
+      );
 
-      if (result.success && result.data) {
-        console.log('✅ NFCCardService - Card is already registered:', uid);
-        return true;
-      } else {
-        console.log('❌ NFCCardService - Card is not registered:', uid);
-        return false;
-      }
+      return {
+        success: true,
+        data: response
+      };
     } catch (error) {
-      console.error('Error checking NFC card registration:', error);
+      console.error('Error fetching NFC cards by vault:', error);
 
-      // Handle specific API errors properly
-      if (error instanceof ApiError) {
-        if (error.status === 404) {
-          // 404 means card not found/not registered - this is expected!
-          console.log('❌ NFCCardService - Card not found (404), card is not registered:', uid);
-          return false;
-        } else if (error.status === 401 || error.status === 403) {
-          // Authentication errors - card might be registered but we can't check
-          console.log('🚫 NFCCardService - Auth error, assuming card might be registered:', uid);
-          return true; // Assume registered to be safe
-        }
-      }
-
-      // For network errors and other issues, assume not registered to maintain functionality
       if (error instanceof Error) {
-        const errorMessage = error.message.toLowerCase();
-        if (errorMessage.includes('network') || errorMessage.includes('timeout') || errorMessage.includes('fetch')) {
-          console.log('⚠️ NFCCardService - Network error, assuming card not registered:', uid);
-          return false; // Assume not registered for network issues
-        }
+        return {
+          success: false,
+          error: error.message
+        };
       }
 
-      // For any other errors, assume not registered (maintains functionality)
-      console.log('⚠️ NFCCardService - Unknown error, assuming card not registered:', uid);
-      return false;
+      return {
+        success: false,
+        error: 'Failed to fetch NFC cards'
+      };
     }
   }
+
+ /**
+   * Hard delete an NFC card (permanent deletion)
+   */
+ static async hardDeleteCard(
+   cardId: number,
+   token?: string
+ ): Promise<void> {
+   try {
+     await ApiService.delete(
+       `${this.getBaseUrl()}/${cardId}/hard`,
+       token
+     );
+   } catch (error) {
+     console.error('Error hard deleting NFC card:', error);
+     throw error;
+   }
+ }
+
+ /**
+   * Delete an NFC card (soft delete)
+   */
+ static async deleteCard(
+   cardId: number,
+   token?: string
+ ): Promise<void> {
+   try {
+     await ApiService.delete(
+       `${this.getBaseUrl()}/${cardId}`,
+       token
+     );
+   } catch (error) {
+     console.error('Error deleting NFC card:', error);
+     throw error;
+   }
+ }
+
+ /**
+   * Check if NFC card is already registered
+   */
+ static async isCardRegistered(
+   uid: string,
+   token?: string
+ ): Promise<boolean> {
+   try {
+     console.log('🔍 NFCCardService - Checking if card is registered:', uid);
+     const result = await this.getCardByUID(uid, token);
+
+     if (result.success && result.data) {
+       console.log('✅ NFCCardService - Card is already registered:', uid);
+       return true;
+     } else {
+       console.log('❌ NFCCardService - Card is not registered:', uid);
+       return false;
+     }
+   } catch (error) {
+     console.error('Error checking NFC card registration:', error);
+
+     // Handle specific API errors properly
+     if (error instanceof ApiError) {
+       if (error.status === 404) {
+         // 404 means card not found/not registered - this is expected!
+         console.log('❌ NFCCardService - Card not found (404), card is not registered:', uid);
+         return false;
+       } else if (error.status === 401 || error.status === 403) {
+         // Authentication errors - card might be registered but we can't check
+         console.log('🚫 NFCCardService - Auth error, assuming card might be registered:', uid);
+         return true; // Assume registered to be safe
+       }
+     }
+
+     // For network errors and other issues, assume not registered to maintain functionality
+     if (error instanceof Error) {
+       const errorMessage = error.message.toLowerCase();
+       if (errorMessage.includes('network') || errorMessage.includes('timeout') || errorMessage.includes('fetch')) {
+         console.log('⚠️ NFCCardService - Network error, assuming card not registered:', uid);
+         return false; // Assume not registered for network issues
+       }
+     }
+
+     // For any other errors, assume not registered (maintains functionality)
+     console.log('⚠️ NFCCardService - Unknown error, assuming card not registered:', uid);
+     return false;
+   }
+ }
 }

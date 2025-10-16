@@ -1,6 +1,20 @@
-import React, { useState } from 'react';
-import { View, Text, TouchableOpacity, Alert } from 'react-native';
-import { Plus, CreditCard } from 'lucide-react-native';
+import React, { useState, useEffect } from 'react';
+import {
+  View,
+  Text,
+  TouchableOpacity,
+  Alert,
+  TextInput,
+  ScrollView,
+} from 'react-native';
+import {
+  Plus,
+  CreditCard,
+  Settings,
+  RefreshCw,
+  Trash2,
+  User,
+} from 'lucide-react-native';
 import ButtonSecondary from '../buttons/ButtonSecondary';
 import { useAuthContext } from '../../context/AuthContext';
 import { useNFCLogs } from '../../hooks/useNFCLogs';
@@ -21,10 +35,16 @@ export const NFCManager: React.FC<NFCManagerProps> = ({
 }) => {
   const { user } = useAuthContext();
   const [nfcModalVisible, setNfcModalVisible] = useState(false);
+  const [manageNfcModalVisible, setManageNfcModalVisible] = useState(false);
   const [registrationLoading, setRegistrationLoading] = useState(false);
   const [registrationError, setRegistrationError] = useState<string | null>(
     null,
   );
+  const [nfcCardName, setNfcCardName] = useState<string>('');
+  const [nfcCards, setNfcCards] = useState<any[]>([]);
+  const [nfcCardsLoading, setNfcCardsLoading] = useState(false);
+  const [nfcCardsError, setNfcCardsError] = useState<string | null>(null);
+  const [deletingCardId, setDeletingCardId] = useState<number | null>(null);
 
   const {
     getMostRecentNFC,
@@ -63,10 +83,104 @@ export const NFCManager: React.FC<NFCManagerProps> = ({
     );
   };
 
+  const resetForm = () => {
+    setNfcCardName('');
+    setRegistrationError(null);
+  };
+
+  const handleManageNFC = () => {
+    if (!currentVaultId) {
+      Alert.alert(
+        'No Vault Selected',
+        'Please wait for vaults to load or select a vault first.',
+      );
+      return;
+    }
+
+    setManageNfcModalVisible(true);
+  };
+
+  const fetchNfcCards = async () => {
+    if (!currentVaultId) return;
+
+    try {
+      setNfcCardsLoading(true);
+      setNfcCardsError(null);
+
+      const token = await StorageService.getAccessToken();
+      const result = await NFCCardService.getCardsByVault(
+        currentVaultId,
+        token || undefined,
+      );
+
+      if (result.success && result.data) {
+        console.log(
+          '🔍 NFC Cards Response:',
+          JSON.stringify(result.data, null, 2),
+        ); // ← Add this
+        console.log('🔍 First card username:', result.data[0]?.username);
+        setNfcCards(result.data || []);
+      } else {
+        setNfcCardsError(result.error || 'Failed to fetch NFC cards');
+        setNfcCards([]);
+      }
+    } catch (error) {
+      const errorMessage =
+        error instanceof Error ? error.message : 'Failed to fetch NFC cards';
+      setNfcCardsError(errorMessage);
+    } finally {
+      setNfcCardsLoading(false);
+    }
+  };
+
+  const handleDeleteNfcCard = (card: any) => {
+    Alert.alert(
+      'Permanently Delete NFC Card',
+      `⚠️ WARNING: This will permanently delete NFC card "${card.nfc_card_name || card.nfc_card_uid}" from the database.\n\nThis action cannot be undone!`,
+      [
+        {
+          text: 'Cancel',
+          style: 'cancel',
+        },
+        {
+          text: 'Delete Permanently',
+          style: 'destructive',
+          onPress: () => confirmDeleteNfcCard(card.nfc_card_id),
+        },
+      ],
+    );
+  };
+
+  const confirmDeleteNfcCard = async (cardId: number) => {
+    try {
+      setDeletingCardId(cardId);
+      const token = await StorageService.getAccessToken();
+      await NFCCardService.hardDeleteCard(cardId, token || undefined);
+
+      Alert.alert('Success', 'NFC card permanently deleted!');
+      fetchNfcCards(); // Refresh the list after deletion
+    } catch (err) {
+      const errorMessage =
+        err instanceof Error ? err.message : 'Failed to delete NFC card';
+      Alert.alert('Error', errorMessage);
+    } finally {
+      setDeletingCardId(null);
+    }
+  };
+
+  // Load NFC cards when manage modal opens
+  useEffect(() => {
+    if (manageNfcModalVisible) {
+      fetchNfcCards();
+    }
+  }, [manageNfcModalVisible, currentVaultId]);
+
   // Helper function to validate JWT token format and basic structure
   const validateTokenFormat = (token: string): boolean => {
     if (!token || typeof token !== 'string') {
-      console.log('❌ Token validation failed: Token is not a string or is empty');
+      console.log(
+        '❌ Token validation failed: Token is not a string or is empty',
+      );
       return false;
     }
 
@@ -87,7 +201,7 @@ export const NFCManager: React.FC<NFCManagerProps> = ({
         exp: payload.exp,
         iat: payload.iat,
         currentTime: currentTime,
-        isExpired: payload.exp ? payload.exp < currentTime : 'no-exp-field'
+        isExpired: payload.exp ? payload.exp < currentTime : 'no-exp-field',
       });
 
       if (payload.exp && payload.exp < currentTime) {
@@ -182,13 +296,21 @@ export const NFCManager: React.FC<NFCManagerProps> = ({
       }
 
       console.log('🔑 NFC Registration - Token obtained successfully');
-      console.log('🔑 NFC Registration - Token preview:', `${token.substring(0, 20)}...`);
+      console.log(
+        '🔑 NFC Registration - Token preview:',
+        `${token.substring(0, 20)}...`,
+      );
       console.log('🔑 NFC Registration - Token length:', token.length);
 
       // Additional token debugging before API call
       console.log('🔍 === PRE-REGISTRATION TOKEN DEBUG ===');
       console.log('🔑 Full token (first 50 chars):', token.substring(0, 50));
-      console.log('🔑 Token structure check:', token.split('.').length === 3 ? 'Valid JWT structure' : 'Invalid JWT structure');
+      console.log(
+        '🔑 Token structure check:',
+        token.split('.').length === 3
+          ? 'Valid JWT structure'
+          : 'Invalid JWT structure',
+      );
       console.log('🔍 === END PRE-REGISTRATION DEBUG ===');
 
       const result = await NFCCardService.registerCard(
@@ -196,6 +318,7 @@ export const NFCManager: React.FC<NFCManagerProps> = ({
         user?.id,
         token,
         currentVaultId || undefined, // Add vault_id parameter, handle null case
+        nfcCardName.trim() || undefined, // Add name parameter, trim whitespace and send undefined if empty
       );
 
       if (result.success && result.data) {
@@ -203,13 +326,14 @@ export const NFCManager: React.FC<NFCManagerProps> = ({
         // Force refresh the NFC logs to update registration status and filter out registered cards
         await forceRefresh();
 
-        // The useNFCLogs hook will automatically filter out the registered card
-        // Close modal since the card should no longer be available for registration
+        // Reset form and close modal since the card should no longer be available for registration
+        resetForm();
         setNfcModalVisible(false);
 
+        const cardName = nfcCardName.trim() || 'NFC Card';
         Alert.alert(
           'Success',
-          `NFC Card "${result.data.uid}" registered successfully to your account!`,
+          `${cardName} "${result.data.uid}" registered successfully to your account!`,
           [{ text: 'OK' }],
         );
       } else {
@@ -232,7 +356,9 @@ export const NFCManager: React.FC<NFCManagerProps> = ({
 
         if (error.status === 401) {
           console.log('🚫 Authentication token expired or invalid');
-          console.log('🔍 This suggests the backend rejected the token despite it being present');
+          console.log(
+            '🔍 This suggests the backend rejected the token despite it being present',
+          );
 
           if (retryCount < 1) {
             console.log('🔄 Retrying NFC registration with fresh token...');
@@ -255,7 +381,8 @@ export const NFCManager: React.FC<NFCManagerProps> = ({
         }
       } else {
         // Handle non-API errors
-        const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
+        const errorMessage =
+          error instanceof Error ? error.message : 'Unknown error occurred';
         console.error('❌ Non-API error:', errorMessage);
         console.error('❌ Error type:', error?.constructor?.name);
         setRegistrationError(errorMessage);
@@ -326,7 +453,9 @@ export const NFCManager: React.FC<NFCManagerProps> = ({
                 onPress={retryNFCRegistration}
                 className="bg-blue-600 px-3 py-2 rounded-lg"
               >
-                <Text className="text-white text-sm text-center">Retry Registration</Text>
+                <Text className="text-white text-sm text-center">
+                  Retry Registration
+                </Text>
               </TouchableOpacity>
             </View>
           )}
@@ -334,15 +463,35 @@ export const NFCManager: React.FC<NFCManagerProps> = ({
             nfcData={getMostRecentNFC()!}
             title="Recent NFC Card Detected"
           />
+
+          {/* NFC Card Name Input */}
+          <View className="mt-4">
+            {/* <Text className="text-white text-sm mb-2">Card Name (Optional)</Text> */}
+            <TextInput
+              className="bg-surface-dark border border-gray-600 rounded-lg px-3 py-2 text-white"
+              placeholder="Enter Card Name"
+              placeholderTextColor="#9ca3af"
+              value={nfcCardName}
+              onChangeText={setNfcCardName}
+              maxLength={50}
+            />
+            <Text className="text-muted-default text-xs mt-1">
+              Give your NFC card a memorable name to easily identify it later
+            </Text>
+          </View>
         </View>
       );
     }
 
     return (
       <View className="items-center py-8">
-        <Text className="text-white text-lg mb-2">No Unregistered NFC Cards Found</Text>
+        <Text className="text-white text-lg mb-2">
+          No Unregistered NFC Cards Found
+        </Text>
         <Text className="text-muted-default text-center mb-4">
-          All recent NFC cards are already registered, or no new NFC card activity was detected. Please ensure an unregistered NFC card was recently presented to the vault.
+          All recent NFC cards are already registered, or no new NFC card
+          activity was detected. Please ensure an unregistered NFC card was
+          recently presented to the vault.
         </Text>
       </View>
     );
@@ -383,13 +532,15 @@ export const NFCManager: React.FC<NFCManagerProps> = ({
           loading: registrationLoading,
           disabled: registrationLoading,
         },
-        secondaryAction: registrationError ? {
-          label: 'Retry',
-          onPress: retryNFCRegistration,
-        } : {
-          label: 'Cancel',
-          onPress: () => setNfcModalVisible(false),
-        },
+        secondaryAction: registrationError
+          ? {
+              label: 'Retry',
+              onPress: retryNFCRegistration,
+            }
+          : {
+              label: 'Cancel',
+              onPress: () => setNfcModalVisible(false),
+            },
       };
     }
 
@@ -414,17 +565,31 @@ export const NFCManager: React.FC<NFCManagerProps> = ({
         <Text className="text-muted-default mb-4">
           Create and manage NFC-Card id for vault access
         </Text>
-        <ButtonSecondary
-          title="Register New NFC-Card"
-          onPress={handleRegisterNFC}
-          icon={<Plus size={20} />}
-          disabled={!currentVaultId || vaultsLoading}
-        />
+
+        {/* Button Container */}
+        <View className="gap-3">
+          <ButtonSecondary
+            title="Register New NFC-Card"
+            onPress={handleRegisterNFC}
+            icon={<Plus size={20} />}
+            disabled={!currentVaultId || vaultsLoading}
+          />
+
+          <ButtonSecondary
+            title="Manage NFC-Cards"
+            onPress={handleManageNFC}
+            icon={<Settings size={20} />}
+            disabled={!currentVaultId || vaultsLoading}
+          />
+        </View>
       </View>
 
       <CustomModal
         visible={nfcModalVisible}
-        onClose={() => setNfcModalVisible(false)}
+        onClose={() => {
+          setNfcModalVisible(false);
+          resetForm();
+        }}
         title="Register NFC Card"
         icon={<CreditCard size={24} color="#60a5fa" />}
         iconPosition="left"
@@ -432,6 +597,88 @@ export const NFCManager: React.FC<NFCManagerProps> = ({
         secondaryAction={getModalActions().secondaryAction}
       >
         {renderModalContent()}
+      </CustomModal>
+
+      {/* Manage NFC Cards Modal */}
+      <CustomModal
+        visible={manageNfcModalVisible}
+        onClose={() => setManageNfcModalVisible(false)}
+        title="Manage NFC Cards"
+        icon={<Settings size={20} color="#60a5fa" />}
+        primaryAction={{
+          label: 'Refresh',
+          onPress: fetchNfcCards,
+          loading: nfcCardsLoading,
+        }}
+      >
+        <View className="max-h-96">
+          {nfcCardsLoading ? (
+            <View className="py-8 items-center">
+              <Text className="text-muted-default">Loading NFC cards...</Text>
+            </View>
+          ) : nfcCardsError ? (
+            <View className="py-8 items-center">
+              <Text className="text-red-400 mb-2">Error loading NFC cards</Text>
+              <Text className="text-muted-default text-sm">
+                {nfcCardsError}
+              </Text>
+            </View>
+          ) : nfcCards.length === 0 ? (
+            <View className="py-8 items-center">
+              <Text className="text-muted-default mb-2">
+                No NFC cards found
+              </Text>
+              <Text className="text-muted-default text-sm">
+                Register your first NFC card to get started
+              </Text>
+            </View>
+          ) : (
+            <ScrollView showsVerticalScrollIndicator={false}>
+              {nfcCards.map(card => (
+                <View
+                  key={card.nfc_card_id}
+                  className="bg-surface-dark rounded-lg p-3 mb-2"
+                >
+                  <View className="flex-row justify-between items-center">
+                    <View className="flex-1">
+                      <View className="flex-row items-center mb-1">
+                        <CreditCard size={16} color="#60a5fa" />
+                        <Text className="text-white font-mono text-lg ml-2">
+                          {card.nfc_card_name || card.nfc_card_uid}
+                        </Text>
+                      </View>
+
+                      {/* Display username - always show if available */}
+                      {card.username && card.username !== 'Unassigned' && (
+                        <View className="flex-row items-center mb-1">
+                          <User size={12} color="#60a5fa" />
+                          <Text className="text-muted-default text-xs ml-1">
+                            Assigned to: {card.username}
+                          </Text>
+                        </View>
+                      )}
+
+                      <Text className="text-muted-default text-xs">
+                        UID: {card.nfc_card_uid}
+                      </Text>
+                    </View>
+                    <TouchableOpacity
+                      className="p-2"
+                      onPress={() => handleDeleteNfcCard(card)}
+                      disabled={deletingCardId === card.id}
+                    >
+                      {deletingCardId === card.id ? (
+                        <RefreshCw size={16} color="#ef4444" />
+                      ) : (
+                        <Trash2 size={16} color="#ef4444" />
+                      )}
+                    </TouchableOpacity>
+                  </View>
+                </View>
+              ))}
+            </ScrollView>
+          )}
+        </View>
       </CustomModal>
     </>
   );

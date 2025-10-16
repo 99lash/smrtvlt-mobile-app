@@ -1,6 +1,7 @@
 // NFC Card Types - Matching backend schema
 export interface NFCCardCreateRequest {
   uid: string;
+  name?: string;
   user_id?: number;
   vault_id: number;
 }
@@ -33,6 +34,18 @@ export interface NFCCardCreateResponse {
 export interface NFCCardError {
   success: boolean;
   detail: string;
+}
+
+// NFC Card with User Information
+export interface NFCCardWithUserResponse {
+  id: number;
+  uid: string;
+  name?: string;
+  user_id?: number;
+  username?: string;
+  created_at: string;
+  updated_at?: string;
+  deleted_at?: string;
 }
 
 // Service response types

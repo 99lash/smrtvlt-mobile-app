@@ -128,7 +128,7 @@ export const PinManager: React.FC<PinManagerProps> = () => {
           </View>
         ) : null}
         <ButtonSecondary
-          title="Create New PIN"
+          title="Create New PIN" 
           onPress={() => setPinModalVisible(true)}
           icon={<Plus size={20} />}
           disabled={shouldDisableButtons}
