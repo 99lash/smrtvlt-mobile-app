@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { AuthService } from '../../service/AuthService';
 import { UserDataService } from '../../service/UserDataService';
+import { StorageService } from '../../config/api';
 
 export interface AuthState {
   isAuthenticated: boolean;
@@ -24,7 +25,7 @@ export const useAuth = () => {
       setAuthState(prev => ({ ...prev, isLoading: true }));
 
       // Check if token exists
-      const token = await AuthService.getStoredToken();
+      const token = await StorageService.getAccessToken();
 
       if (token) {
         // Validate token with backend and get user info
@@ -85,7 +86,7 @@ export const useAuth = () => {
 
   const logout = async () => {
     try {
-      await AuthService.clearToken();
+      await StorageService.removeAccessToken();
       setAuthState({
         isAuthenticated: false,
         isLoading: false,

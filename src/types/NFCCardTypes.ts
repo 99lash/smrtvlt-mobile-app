@@ -2,6 +2,7 @@
 export interface NFCCardCreateRequest {
   uid: string;
   user_id?: number;
+  vault_id: number;
 }
 
 export interface NFCCardAssignRequest {

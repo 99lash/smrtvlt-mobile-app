@@ -134,7 +134,6 @@ export class ApiService {
     token?: string
   ): Promise<T> {
     const headers = await this.getAuthHeaders(token);
-
     return this.request<T>(endpoint, {
       method: 'POST',
       headers,

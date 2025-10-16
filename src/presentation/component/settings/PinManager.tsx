@@ -24,7 +24,7 @@ export const PinManager: React.FC<PinManagerProps> = () => {
   const { pins, loading, error, refreshPins } = useKeypadPins();
 
   // Use vault management hook (for disabling buttons when no vaults)
-  const { availableVaults, loading: vaultsLoading } = useVaultManagement();
+  const { availableVaults, loading: vaultsLoading, retryLoadVaults, forceRefreshVaults, error: vaultsError } = useVaultManagement();
 
   // Load pins when manage modal opens
   useEffect(() => {
@@ -94,10 +94,38 @@ export const PinManager: React.FC<PinManagerProps> = () => {
           <Text className="text-blue-400 text-sm mb-4">
             Loading vaults...
           </Text>
+        ) : vaultsError ? (
+          <View className="mb-4">
+            <Text className="text-red-400 text-sm mb-2">
+              Error loading vaults: {vaultsError}
+            </Text>
+            <TouchableOpacity
+              onPress={retryLoadVaults}
+              className="bg-blue-600 px-3 py-2 rounded-lg self-start"
+            >
+              <Text className="text-white text-sm">Retry Loading Vaults</Text>
+            </TouchableOpacity>
+          </View>
         ) : availableVaults.length === 0 ? (
-          <Text className="text-yellow-600 text-sm mb-4">
-            Please create or join a vault first before managing PINs
-          </Text>
+          <View className="mb-4">
+            <Text className="text-yellow-600 text-sm mb-2">
+              Please create or join a vault first before managing PINs
+            </Text>
+            <View className="flex-row space-x-2">
+              <TouchableOpacity
+                onPress={retryLoadVaults}
+                className="bg-blue-600 px-3 py-2 rounded-lg flex-1"
+              >
+                <Text className="text-white text-sm text-center">Retry Loading Vaults</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                onPress={forceRefreshVaults}
+                className="bg-green-600 px-3 py-2 rounded-lg flex-1"
+              >
+                <Text className="text-white text-sm text-center">Force Refresh</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
         ) : null}
         <ButtonSecondary
           title="Create New PIN"
@@ -163,7 +191,10 @@ export const PinManager: React.FC<PinManagerProps> = () => {
                           <View className="flex-row items-center ml-2">
                             <User size={12} color="#60a5fa" />
                             <Text className="text-muted-default text-xs ml-1">
-                              User {pin.user_id}
+                              {pin.username || pin.first_name
+                                ? `${pin.first_name || ''} ${pin.last_name || ''}`.trim() || pin.username || `User ${pin.user_id}`
+                                : `User ${pin.user_id}`
+                              }
                             </Text>
                           </View>
                         )}

@@ -5,6 +5,9 @@ import { VaultMembersResponse } from '../types/UserTypes';
 
 export interface VaultMembership {
   vault_id: number;
+  vault_name?: string | null;
+  vault_device_id?: string | null;
+  vault_location?: string | null;
   role: 'admin' | 'member' | 'viewer';
   created_at: string;
 }
@@ -40,21 +43,45 @@ export class VaultService {
 
   static async getUserVaults(token?: string): Promise<VaultMembership[]> {
     try {
+      console.log('🔍 VaultService: Making API call to /vault-memberships/user/vaults');
       const data = await ApiService.get<VaultMembersResponse>('/vault-memberships/user/vaults', token);
+      console.log('🔍 VaultService: Raw API response:', data);
 
       if (!data.success) {
+        console.error('❌ VaultService: API call failed:', data);
         throw new Error(data.detail || 'Failed to load accessible vaults');
       }
 
+      console.log('✅ VaultService: API call successful, processing data...');
+
       // Transform API response to match VaultMembership interface
-      return data.data.map(item => ({
+      const transformedData = data.data.map(item => ({
         vault_id: item.vault_id,
+        vault_name: item.vault_name,
+        vault_device_id: item.vault_device_id,
+        vault_location: item.vault_location,
         role: item.role as 'admin' | 'member' | 'viewer',
         created_at: item.created_at
       }));
+
+      console.log('🔍 VaultService - API Response:', data.data);
+      console.log('🔍 VaultService - Transformed Data:', transformedData);
+
+      return transformedData;
     } catch (error) {
-      console.error('Error loading user vaults:', error);
-      throw error;
+      console.error('❌ VaultService: Error loading user vaults:', error);
+      console.error('❌ Error details:', {
+        message: error instanceof Error ? error.message : 'Unknown error',
+        stack: error instanceof Error ? error.stack : undefined,
+        type: typeof error
+      });
+
+      // Re-throw with more context
+      if (error instanceof Error) {
+        throw error;
+      } else {
+        throw new Error(`Network error: ${String(error)}`);
+      }
     }
   }
 

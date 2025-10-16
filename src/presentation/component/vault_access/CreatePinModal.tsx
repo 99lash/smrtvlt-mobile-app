@@ -117,7 +117,14 @@ export const CreatePinModal: React.FC<CreatePinModalProps> = ({
           >
             <Text className="text-text-default dark:text-text-dark">
               {selectedVaultId
-                ? `Vault ${selectedVaultId} (${availableVaults.find(v => v.vault_id === selectedVaultId)?.role || 'Unknown'})`
+                ? (() => {
+                    const vault = availableVaults.find(v => v.vault_id === selectedVaultId);
+                    console.log('🔍 CreatePinModal - Selected vault data:', vault);
+                    const displayName = vault?.vault_name || `Vault ${selectedVaultId}`;
+                    const role = vault?.role || 'Unknown';
+                    console.log('🔍 CreatePinModal - Displaying:', `${displayName} (${role})`);
+                    return `${displayName} (${role})`;
+                  })()
                 : 'Select a vault'
               }
             </Text>
@@ -140,10 +147,20 @@ export const CreatePinModal: React.FC<CreatePinModalProps> = ({
                 >
                   <View>
                     <Text className="text-text-default dark:text-text-dark font-medium">
-                      Vault {vault.vault_id}
+                      {(() => {
+                        const displayName = vault.vault_name || `Vault ${vault.vault_id}`;
+                        console.log('🔍 CreatePinModal - Dropdown option:', {
+                          id: vault.vault_id,
+                          name: vault.vault_name,
+                          displayName,
+                          role: vault.role,
+                          location: vault.vault_location
+                        });
+                        return displayName;
+                      })()}
                     </Text>
                     <Text className="text-muted-default dark:text-muted-dark text-sm">
-                      Role: {vault.role}
+                      Role: {vault.role} {vault.vault_location && `• ${vault.vault_location}`}
                     </Text>
                   </View>
                   {selectedVaultId === vault.vault_id && (

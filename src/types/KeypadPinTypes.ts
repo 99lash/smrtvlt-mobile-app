@@ -5,6 +5,11 @@ export interface KeypadPin {
     created_at: string;
     updated_at?: string;
     deleted_at?: string;
+
+    // User information for UI display (populated when user_id exists)
+    username?: string | null;
+    first_name?: string | null;
+    last_name?: string | null;
   }
   
   export interface CreateKeypadPinRequest {

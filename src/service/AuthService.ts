@@ -1,6 +1,6 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { UserRegistrationRequest, UserRegistrationResponse, UserLoginRequest, UserLoginResponse } from '../types/UserTypes';
-import { API_CONFIG } from '../config/api';
+import { API_CONFIG, StorageService } from '../config/api';
 import { NetworkService } from './NetworkService';
 import { ApiService } from './ApiService';
 
@@ -79,7 +79,7 @@ export class AuthService {
 
       // Store the token after successful login
       if (responseData.access_token) {
-        await this.storeToken(responseData.access_token);
+        await StorageService.setAccessToken(responseData.access_token);
       }
 
       return responseData;
@@ -96,7 +96,7 @@ export class AuthService {
    */
   static async getStoredToken(): Promise<string | null> {
     try {
-      return await AsyncStorage.getItem(API_CONFIG.STORAGE_KEYS.ACCESS_TOKEN);
+      return await StorageService.getAccessToken();
     } catch (error) {
       if (__DEV__) {
         console.error('AuthService - Error getting stored token:', error);
@@ -130,7 +130,7 @@ export class AuthService {
    */
   static async clearToken(): Promise<void> {
     try {
-      await AsyncStorage.removeItem(API_CONFIG.STORAGE_KEYS.ACCESS_TOKEN);
+      await StorageService.removeAccessToken();
       if (__DEV__) {
         console.log('AuthService - Token cleared successfully');
       }

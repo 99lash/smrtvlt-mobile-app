@@ -51,7 +51,7 @@ export const VaultSelector: React.FC<VaultSelectorProps> = ({
     const vault = vaults[0];
     return (
       <Text className="text-muted-default mb-4">
-        Using Vault {vault.vault_id} ({vault.role})
+        Using {vault.vault_name || `Vault ${vault.vault_id}`} ({vault.role})
       </Text>
     );
   }
@@ -68,10 +68,13 @@ export const VaultSelector: React.FC<VaultSelectorProps> = ({
             }`}
             onPress={() => onVaultSelect(vault.vault_id)}
           >
-            <Text className={`text-sm ${
-              selectedVaultId === vault.vault_id ? 'text-white' : 'text-neutral-300'
-            }`}>
-              Vault {vault.vault_id} ({vault.role})
+            <Text
+              className={`text-sm ${
+                selectedVaultId === vault.vault_id ? 'text-white' : 'text-neutral-300'
+              }`}
+            >
+              {vault.vault_name || `Vault ${vault.vault_id}`} ({vault.role})
+              {vault.vault_location ? ` • ${vault.vault_location}` : ''}
             </Text>
           </TouchableOpacity>
         ))}

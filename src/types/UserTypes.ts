@@ -54,6 +54,9 @@ export interface VaultMembershipResponse {
   id: number;
   user_id: number;
   vault_id: number;
+  vault_name: string | null;
+  vault_device_id: string | null;
+  vault_location: string | null;
   role: string;
   created_at: string;
   updated_at: string | null;

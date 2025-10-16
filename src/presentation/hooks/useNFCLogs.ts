@@ -3,6 +3,7 @@ import { LogService, LogEntry } from '../../service/LogService';
 import { StorageService } from '../../config/api';
 import { extractNFCCardUID, hasNFCData } from '../../utils/nfcUtils';
 import { ApiError } from '../../service/ApiService';
+import { NFCCardService } from '../../service/NFCCardService';
 
 export interface NFCLogData {
    uid: string;
@@ -17,6 +18,7 @@ export const useNFCLogs = (vaultId?: number) => {
   const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(true);
+  const [refreshTrigger, setRefreshTrigger] = useState(0);
 
   const fetchNFCLogs = useCallback(async () => {
     if (!vaultId) return;
@@ -70,7 +72,8 @@ export const useNFCLogs = (vaultId?: number) => {
       );
       console.log('🎯 NFC failed attempt logs found:', nfcFailedLogs.length);
 
-      const nfcData: NFCLogData[] = logEntries
+      // First, get all potential NFC cards from logs
+      const potentialNFCCards: NFCLogData[] = logEntries
         .filter(log =>
           hasNFCData(log.details) &&
           log.event_type === 'failed_attempt'  // ✅ Only failed attempts
@@ -102,7 +105,34 @@ export const useNFCLogs = (vaultId?: number) => {
         })
         .filter(nfc => nfc.uid !== 'unknown');
 
-      console.log('📱 === FINAL NFC DATA RESULTS ===');
+      console.log('🎯 Found potential NFC cards:', potentialNFCCards.length);
+
+      // Filter out already-registered cards
+      const unregisteredNFCCards: NFCLogData[] = [];
+
+      for (const nfcCard of potentialNFCCards) {
+        console.log('🔍 Checking if NFC card is registered:', nfcCard.uid);
+
+        try {
+          const isRegistered = await NFCCardService.isCardRegistered(nfcCard.uid, token || undefined);
+
+          if (isRegistered) {
+            console.log('🚫 NFC card already registered, skipping:', nfcCard.uid);
+          } else {
+            console.log('✅ NFC card not registered, including:', nfcCard.uid);
+            unregisteredNFCCards.push(nfcCard);
+          }
+        } catch (error) {
+          console.error('Error checking NFC card registration:', error);
+          // If we can't verify registration status, exclude the card to be safe
+          // Better to miss a potential card than show already registered cards
+          console.log('🚫 Excluding NFC card due to verification error:', nfcCard.uid);
+        }
+      }
+
+      const nfcData = unregisteredNFCCards;
+
+      console.log(' === FINAL NFC DATA RESULTS ===');
       console.log('📱 Mobile app NFC data processed:', nfcData.length, 'NFC card(s) found');
       if (nfcData.length > 0) {
         const nfc = nfcData[0];
@@ -130,7 +160,7 @@ export const useNFCLogs = (vaultId?: number) => {
     } finally {
       setLoading(false);
     }
-  }, [vaultId]);
+  }, [vaultId, refreshTrigger]);
 
   const getMostRecentNFC = useCallback((): NFCLogData | null => {
     if (nfcLogs.length === 0) return null;
@@ -154,7 +184,7 @@ export const useNFCLogs = (vaultId?: number) => {
     if (vaultId) {
       fetchNFCLogs();
     }
-  }, [vaultId, fetchNFCLogs]);
+  }, [vaultId, fetchNFCLogs, refreshTrigger]);
 
   const handleLogout = useCallback(async () => {
     try {
@@ -167,6 +197,12 @@ export const useNFCLogs = (vaultId?: number) => {
     }
   }, []);
 
+  // Add force refresh function for manual cache updates
+  const forceRefresh = useCallback(() => {
+    console.log('🔄 Force refreshing NFC logs...');
+    setRefreshTrigger(prev => prev + 1);
+  }, []);
+
   return {
     nfcLogs,
     loading,
@@ -174,6 +210,7 @@ export const useNFCLogs = (vaultId?: number) => {
     isAuthenticated,
     getMostRecentNFC,
     refreshNFCLogs: fetchNFCLogs,
+    forceRefresh,
     handleLogout
   };
 };
