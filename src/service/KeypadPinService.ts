@@ -32,8 +32,15 @@ export class KeypadPinService extends ApiService {
   }
 
   /**
-   * Delete a keypad PIN
-   */
+    * Hard delete a keypad PIN (permanent deletion)
+    */
+  static async hardDeletePin(pinId: number, token?: string): Promise<void> {
+    return this.delete<void>(`/keypad-pins/${pinId}/hard`, token);
+  }
+
+  /**
+    * Delete a keypad PIN (soft delete)
+    */
   static async deletePin(pinId: number, token?: string): Promise<void> {
     return this.delete<void>(`/keypad-pins/${pinId}`, token);
   }

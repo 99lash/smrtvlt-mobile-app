@@ -45,15 +45,15 @@ export const PinManager: React.FC<PinManagerProps> = () => {
 
   const handleDeletePin = (pin: KeypadPin) => {
     Alert.alert(
-      'Delete PIN',
-      `Are you sure you want to delete PIN "${pin.pin_code}"? This action cannot be undone.`,
+      'Permanently Delete PIN',
+      `⚠️ WARNING: This will permanently delete PIN "${pin.pin_code}" from the database.\n\nThis action cannot be undone!`,
       [
         {
           text: 'Cancel',
           style: 'cancel',
         },
         {
-          text: 'Delete',
+          text: 'Delete Permanently',
           style: 'destructive',
           onPress: () => confirmDeletePin(pin.id),
         },
@@ -65,9 +65,9 @@ export const PinManager: React.FC<PinManagerProps> = () => {
     try {
       setDeletingPinId(pinId);
       const token = await StorageService.getAccessToken();
-      await KeypadPinService.deletePin(pinId, token || undefined);
+      await KeypadPinService.hardDeletePin(pinId, token || undefined);
 
-      Alert.alert('Success', 'PIN deleted successfully!');
+      Alert.alert('Success', 'PIN permanently deleted!');
       refreshPins(); // Refresh the list after deletion
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to delete PIN';
