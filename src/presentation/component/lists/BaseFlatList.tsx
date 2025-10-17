@@ -14,7 +14,7 @@ type BaseFlatListProps<T> = {
   keyExtractor?: (item: T, index: number) => string;
   emptyText?: string;
   loading?: boolean;
-  refreshing?: boolean;
+  refreshing?: boolean; 
   onRefresh?: () => void;
   contentClassName?: string; // Tailwind styles for content
   listHeaderComponent?: React.ReactElement | null;

@@ -14,7 +14,7 @@ type BorderedListProps<T> = {
   selectedId?: string;
   getId?: (item: T) => string;
 };
-
+ 
 function BorderedList<T>({
   data,
   keyExtractor = (_, index) => index.toString(),

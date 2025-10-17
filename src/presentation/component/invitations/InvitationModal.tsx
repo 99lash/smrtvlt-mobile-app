@@ -5,7 +5,8 @@ import {
   TouchableOpacity,
   TextInput,
   Alert,
-  ActivityIndicator
+  ActivityIndicator,
+  Clipboard
 } from 'react-native';
 import { QrCode, Clock, Users, UserCheck } from 'lucide-react-native';
 // Conditional import for QR code generation
@@ -39,6 +40,7 @@ export default function InvitationModal({
   const [inviteCode, setInviteCode] = useState<string | null>(null);
   const [isCreating, setIsCreating] = useState(false);
   const [step, setStep] = useState<'form' | 'qr'>('form');
+  const [copied, setCopied] = useState(false);
 
   const { user } = useAuthContext();
   const { createInvitation, isLoading } = useVaultInvitation();
@@ -84,7 +86,20 @@ export default function InvitationModal({
     setInviteCode(null);
     setSelectedRole('member');
     setExpiresInHours('24');
+    setCopied(false);
     onClose();
+  };
+
+  const handleCopyInvitationCode = async () => {
+    if (inviteCode) {
+      try {
+        await Clipboard.setString(inviteCode);
+        setCopied(true);
+        setTimeout(() => setCopied(false), 2000); // Reset after 2 seconds
+      } catch (error) {
+        Alert.alert('Error', 'Failed to copy invitation code');
+      }
+    }
   };
 
   const handleNext = () => {
@@ -193,9 +208,18 @@ export default function InvitationModal({
               <Text className="text-gray-800 flex-1">Share QR Code</Text>
             </TouchableOpacity>
 
-            <TouchableOpacity className="flex-row items-center p-3 bg-gray-50 rounded-lg border border-gray-300">
-              <Users color="#3B82F6" size={20} className="mr-3" />
-              <Text className="text-gray-800 flex-1">Copy Invitation Code</Text>
+            <TouchableOpacity
+              onPress={handleCopyInvitationCode}
+              className={`flex-row items-center p-3 rounded-lg border ${
+                copied
+                  ? 'bg-green-50 border-green-500'
+                  : 'bg-gray-50 border-gray-300'
+              }`}
+            >
+              <Users color={copied ? "#10B981" : "#3B82F6"} size={20} className="mr-3" />
+              <Text className={`flex-1 ${copied ? 'text-green-700' : 'text-gray-800'}`}>
+                {copied ? 'Copied!' : 'Copy Invitation Code'}
+              </Text>
             </TouchableOpacity>
           </View>
         </>

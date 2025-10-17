@@ -114,11 +114,6 @@ export const NFCManager: React.FC<NFCManagerProps> = ({
       );
 
       if (result.success && result.data) {
-        console.log(
-          '🔍 NFC Cards Response:',
-          JSON.stringify(result.data, null, 2),
-        ); // ← Add this
-        console.log('🔍 First card username:', result.data[0]?.username);
         setNfcCards(result.data || []);
       } else {
         setNfcCardsError(result.error || 'Failed to fetch NFC cards');
@@ -178,16 +173,11 @@ export const NFCManager: React.FC<NFCManagerProps> = ({
   // Helper function to validate JWT token format and basic structure
   const validateTokenFormat = (token: string): boolean => {
     if (!token || typeof token !== 'string') {
-      console.log(
-        '❌ Token validation failed: Token is not a string or is empty',
-      );
       return false;
     }
 
     const parts = token.split('.');
     if (parts.length !== 3) {
-      console.log('❌ Token validation failed: Token does not have 3 parts');
-      console.log('❌ Token parts:', parts.length, 'expected: 3');
       return false;
     }
 
@@ -197,24 +187,12 @@ export const NFCManager: React.FC<NFCManagerProps> = ({
       const payload = JSON.parse(atob(parts[1]));
       const currentTime = Math.floor(Date.now() / 1000);
 
-      console.log('🔍 Token payload preview:', {
-        exp: payload.exp,
-        iat: payload.iat,
-        currentTime: currentTime,
-        isExpired: payload.exp ? payload.exp < currentTime : 'no-exp-field',
-      });
-
       if (payload.exp && payload.exp < currentTime) {
-        console.log('❌ Token validation failed: Token is expired');
-        console.log(`❌ Expired at: ${new Date(payload.exp * 1000)}`);
-        console.log(`❌ Current time: ${new Date(currentTime * 1000)}`);
         return false;
       }
 
       return true;
     } catch (error) {
-      console.log('❌ Token validation failed: Cannot decode token payload');
-      console.error('❌ Decode error:', error);
       return false;
     }
   };
@@ -223,41 +201,29 @@ export const NFCManager: React.FC<NFCManagerProps> = ({
   const getValidToken = async (retries: number = 2): Promise<string | null> => {
     for (let i = 0; i <= retries; i++) {
       try {
-        console.log(`🔑 Token fetch attempt ${i + 1}/${retries + 1}`);
         const token = await StorageService.getAccessToken();
 
         if (!token) {
-          console.log('⚠️ No token found in storage');
           if (i < retries) {
-            console.log('⏳ Waiting before retry...');
             await new Promise(resolve => setTimeout(resolve, 1000));
           }
           continue;
         }
 
-        console.log('🔍 Validating token format and expiration...');
-        console.log('🔑 Token length:', token.length);
-        console.log('🔑 Token preview:', `${token.substring(0, 30)}...`);
-
         if (validateTokenFormat(token)) {
-          console.log('✅ Token validation passed');
           return token;
         } else {
-          console.log('❌ Token validation failed');
           if (i < retries) {
-            console.log('⏳ Waiting before retry...');
             await new Promise(resolve => setTimeout(resolve, 1000));
           }
         }
       } catch (error) {
-        console.error(`❌ Token fetch attempt ${i + 1} failed:`, error);
         if (i < retries) {
           await new Promise(resolve => setTimeout(resolve, 1000));
         }
       }
     }
 
-    console.log('❌ All token fetch attempts failed');
     return null;
   };
 
@@ -279,39 +245,16 @@ export const NFCManager: React.FC<NFCManagerProps> = ({
       setRegistrationLoading(true);
       setRegistrationError(null);
 
-      // Enhanced token debugging
-      console.log('🔍 === NFC REGISTRATION DEBUG ===');
-      console.log('🔑 Attempting to get valid token for registration...');
-
       // Use the robust token fetching helper
       const token = await getValidToken();
 
       if (!token) {
-        console.log('❌ No valid token available for NFC registration');
         Alert.alert(
           'Authentication Required',
           'Please log in again to register NFC cards.',
         );
         return;
       }
-
-      console.log('🔑 NFC Registration - Token obtained successfully');
-      console.log(
-        '🔑 NFC Registration - Token preview:',
-        `${token.substring(0, 20)}...`,
-      );
-      console.log('🔑 NFC Registration - Token length:', token.length);
-
-      // Additional token debugging before API call
-      console.log('🔍 === PRE-REGISTRATION TOKEN DEBUG ===');
-      console.log('🔑 Full token (first 50 chars):', token.substring(0, 50));
-      console.log(
-        '🔑 Token structure check:',
-        token.split('.').length === 3
-          ? 'Valid JWT structure'
-          : 'Invalid JWT structure',
-      );
-      console.log('🔍 === END PRE-REGISTRATION DEBUG ===');
 
       const result = await NFCCardService.registerCard(
         getMostRecentNFC()!.uid,
@@ -322,7 +265,6 @@ export const NFCManager: React.FC<NFCManagerProps> = ({
       );
 
       if (result.success && result.data) {
-        console.log('✅ NFC Registration successful');
         // Force refresh the NFC logs to update registration status and filter out registered cards
         await forceRefresh();
 
@@ -337,7 +279,6 @@ export const NFCManager: React.FC<NFCManagerProps> = ({
           [{ text: 'OK' }],
         );
       } else {
-        console.log('❌ NFC Registration failed:', result.error);
         setRegistrationError(result.error || 'Failed to register NFC card');
         Alert.alert(
           'Registration Failed',
@@ -449,14 +390,6 @@ export const NFCManager: React.FC<NFCManagerProps> = ({
               <Text className="text-red-400 text-sm text-center mb-2">
                 {registrationError}
               </Text>
-              <TouchableOpacity
-                onPress={retryNFCRegistration}
-                className="bg-blue-600 px-3 py-2 rounded-lg"
-              >
-                <Text className="text-white text-sm text-center">
-                  Retry Registration
-                </Text>
-              </TouchableOpacity>
             </View>
           )}
           <NFCCardDisplay
@@ -497,11 +430,11 @@ export const NFCManager: React.FC<NFCManagerProps> = ({
     );
   };
 
-  // Add retry function for NFC registration
-  const retryNFCRegistration = async () => {
-    console.log('🔄 Retrying NFC registration...');
-    await handleNFCRegistered();
-  };
+  // // Add retry function for NFC registration
+  // const retryNFCRegistration = async () => {
+  //   console.log('🔄 Retrying NFC registration...');
+  //   await handleNFCRegistered();
+  // };
 
   const getModalActions = () => {
     if (!isAuthenticated) {
@@ -532,15 +465,10 @@ export const NFCManager: React.FC<NFCManagerProps> = ({
           loading: registrationLoading,
           disabled: registrationLoading,
         },
-        secondaryAction: registrationError
-          ? {
-              label: 'Retry',
-              onPress: retryNFCRegistration,
-            }
-          : {
-              label: 'Cancel',
-              onPress: () => setNfcModalVisible(false),
-            },
+        secondaryAction: {
+          label: 'Cancel',
+          onPress: () => setNfcModalVisible(false),
+        },
       };
     }
 

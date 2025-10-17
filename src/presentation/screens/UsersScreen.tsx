@@ -1,29 +1,34 @@
-import React, { useEffect, useState, useCallback } from 'react';
-import { View, Text, FlatList, TouchableOpacity, Alert, Modal, ActivityIndicator } from 'react-native';
+import React, { useState } from 'react';
+import { View, Text, TouchableOpacity, Alert, Modal, FlatList } from 'react-native';
+import { Users, Shield } from 'lucide-react-native';
+import ButtonSecondary from '../component/buttons/ButtonSecondary';
 import type { UsersScreenProps } from '../../types/UserTypes';
 import { useAuth } from '../hooks/useAuth';
-import { UserDataService } from '../../service/UserDataService';
-import { VaultService, VaultMembership } from '../../service/VaultService';
-import { UserService } from '../../service/UserService';
-import { User } from '../../types/UserTypes';
-import { useVaultInvitation } from '../hooks/vault/useVaultInvitation';
+import { useUsersData } from '../hooks/user/useUsersData';
+import { useUserActions } from '../hooks/user/useUserActions';
 import { useInvitationFlow } from '../hooks/user/useInvitationFlow';
+import { VaultService, VaultMembership } from '../../service/VaultService';
 import InvitationModal from '../component/invitations/InvitationModal';
 import QRScannerModal from '../component/invitations/QRScannerModal';
+import { UserActions } from '../component/users/UserActions';
+import { UsersList } from '../component/users/UsersList';
+import { ErrorBanner } from '../component/common/ErrorBanner';
+import { LoadingState } from '../component/common/LoadingState';
+
+type TabType = 'users' | 'vaults';
 
 export default function UsersScreen({ navigation }: UsersScreenProps) {
   const { isAuthenticated, isLoading: authLoading } = useAuth();
-  const [users, setUsers] = useState<User[]>([]);
-  const [vaults, setVaults] = useState<VaultMembership[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [showVaultSelector, setShowVaultSelector] = useState(false);
+  const [activeTab, setActiveTab] = useState<TabType>('users');
 
-  // Invitation flow hooks
-  const { checkVaultAdmin } = useVaultInvitation();
+  // Use extracted data hook
+  const { users, vaults, loading, error, loadData } = useUsersData(isAuthenticated);
+
+  // Invitation flow - manages modal states
   const {
     showInvitationModal,
     showQRScannerModal,
+    showVaultSelector,
     selectedVaultId,
     openInvitationFlow,
     openQRScanner,
@@ -31,101 +36,23 @@ export default function UsersScreen({ navigation }: UsersScreenProps) {
     selectVault,
   } = useInvitationFlow();
 
-  // Load users and vaults on mount
-  useEffect(() => {
-    if (isAuthenticated) {
-      loadData();
-    }
-  }, [isAuthenticated]);
+  // Use extracted actions hook
+  const {
+    handleUserPress,
+    handleInviteUser,
+    handleVaultSelect,
+    handleInvitationAccepted,
+  } = useUserActions({
+    navigation,
+    vaults,
+    loadData,
+    openInvitationFlow,
+    openQRScanner,
+    closeModals,
+    selectVault,
+  });
 
-  const loadData = async () => {
-    try {
-      setLoading(true);
-      setError(null);
-
-      // Load user's vaults
-      const userVaults = await VaultService.getUserVaults();
-      setVaults(userVaults);
-
-      // Load current user to get user ID for fetching shared users
-      const currentUser = await UserDataService.getCurrentUser();
-      if (currentUser) {
-        console.log('Current user loaded:', currentUser);
-        try {
-          // Load shared vault users using current user's ID
-          console.log('Fetching shared users for user ID:', currentUser.id);
-          const sharedUsers = await UserDataService.fetchSharedVaultUsers(currentUser.id);
-          console.log('Shared users loaded:', sharedUsers.length, sharedUsers);
-          setUsers(sharedUsers);
-        } catch (userError) {
-          console.error('Error fetching shared users:', userError);
-          // Set empty array if user fetching fails, but don't fail the entire load
-          setUsers([]);
-        }
-      } else {
-        console.log('No current user found, cannot load shared users');
-        setUsers([]);
-      }
-
-    } catch (err) {
-      console.error('Error loading data:', err);
-      setError('Failed to load data');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleUserPress = useCallback((userId: string) => {
-    navigation.navigate('UserDetail', { userId });
-  }, [navigation]);
-
-  const handleInviteUser = useCallback(async () => {
-    if (vaults.length === 0) {
-      Alert.alert('No Vaults', 'You need access to at least one vault to invite users.');
-      return;
-    }
-
-    try {
-      const checkAdminWrapper = async (vaultId: number) => {
-        const token = await UserService.getStoredToken();
-        if (!token) return false;
-        return await checkVaultAdmin(vaultId, token);
-      };
-
-      await openInvitationFlow(vaults, checkAdminWrapper);
-    } catch (error) {
-      Alert.alert('Error', 'Failed to open invitation flow');
-    }
-  }, [vaults, openInvitationFlow, checkVaultAdmin]);
-
-  const handleVaultSelect = useCallback((vaultId: number) => {
-    setShowVaultSelector(false);
-    selectVault(vaultId);
-  }, [selectVault]);
-
-  const renderUserItem = useCallback(({ item }: { item: User }) => (
-    <TouchableOpacity
-      className="bg-neutral-800 p-4 mb-2 rounded-lg mx-4"
-      onPress={() => handleUserPress(item.id.toString())}
-      accessible={true}
-      accessibilityRole="button"
-      accessibilityLabel={`User ${item.firstName || item.username || `User ${item.id}`}`}
-    >
-      <Text className="text-white font-medium text-base">
-        {item.firstName && item.lastName
-          ? `${item.firstName} ${item.lastName}`
-          : item.username || `User ${item.id}`}
-      </Text>
-      <Text className="text-neutral-400 text-sm capitalize">
-        Role: {item.role}
-      </Text>
-      <Text className="text-neutral-500 text-xs">
-        Status: {item.status}
-      </Text>
-    </TouchableOpacity>
-  ), [handleUserPress]);
-
-  const renderVaultItem = useCallback(({ item }: { item: VaultMembership }) => (
+  const renderVaultItem = ({ item }: { item: VaultMembership }) => (
     <TouchableOpacity
       className="bg-neutral-800 p-4 mb-2 rounded-lg mx-4"
       onPress={() => handleVaultSelect(item.vault_id)}
@@ -143,16 +70,50 @@ export default function UsersScreen({ navigation }: UsersScreenProps) {
         Member since: {new Date(item.created_at).toLocaleDateString()}
       </Text>
     </TouchableOpacity>
-  ), [handleVaultSelect]);
+  );
+
+  const TabButton = ({
+    tab,
+    isActive,
+    onPress,
+    icon: Icon,
+    label
+  }: {
+    tab: TabType;
+    isActive: boolean;
+    onPress: () => void;
+    icon: any;
+    label: string;
+  }) => (
+    <TouchableOpacity
+      onPress={onPress}
+      className={`flex-1 flex-row items-center justify-center py-4 px-2 rounded-lg mx-1 ${
+        isActive
+          ? 'bg-blue-600'
+          : 'bg-transparent'
+      }`}
+      accessible={true}
+      accessibilityRole="tab"
+      accessibilityState={{ selected: isActive }}
+      accessibilityLabel={`${label} tab ${isActive ? 'selected' : 'unselected'}`}
+    >
+      <Icon
+        size={20}
+        color={isActive ? "#ffffff" : "#9ca3af"}
+      />
+      <Text
+        className={`ml-2 font-medium ${
+          isActive ? 'text-white' : 'text-neutral-400'
+        }`}
+      >
+        {label}
+      </Text>
+    </TouchableOpacity>
+  );
 
   // Loading state
   if (authLoading || loading) {
-    return (
-      <View className="flex-1 bg-black justify-center items-center">
-        <ActivityIndicator size="large" color="#3b82f6" />
-        <Text className="text-white mt-4">Loading...</Text>
-      </View>
-    );
+    return <LoadingState />;
   }
 
   // Not authenticated state
@@ -169,89 +130,98 @@ export default function UsersScreen({ navigation }: UsersScreenProps) {
 
   return (
     <View className="flex-1 bg-black">
-      {/* Header */}
-      <View className="flex-row justify-between items-center p-4 border-b border-neutral-800">
-        <Text className="text-white text-xl font-semibold">Users & Vaults</Text>
-        <View className="flex-row space-x-2">
-          <TouchableOpacity
-            className="bg-green-600 px-4 py-2 rounded-lg"
-            onPress={openQRScanner}
-            accessible={true}
-            accessibilityRole="button"
-            accessibilityLabel="Join vault using invitation code"
-          >
-            <Text className="text-white font-medium">Join Vault</Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            className="bg-blue-600 px-4 py-2 rounded-lg"
-            onPress={handleInviteUser}
-            accessible={true}
-            accessibilityRole="button"
-            accessibilityLabel="Invite user"
-          >
-            <Text className="text-white font-medium">Invite User</Text>
-          </TouchableOpacity>
-        </View>
+      {/* Header with Action Buttons */}
+      <View className="pt-2 pb-1">
+        <UserActions
+          onJoinVault={openQRScanner}
+          onInviteUser={handleInviteUser}
+        />
       </View>
 
       {/* Error Banner */}
-      {error && (
-        <View className="bg-red-900/50 mx-4 mt-4 p-3 rounded-lg">
-          <Text className="text-red-200 text-sm">{error}</Text>
-        </View>
-      )}
+      <ErrorBanner error={error} />
 
-      {/* Content Tabs */}
-      <View className="flex-row border-b border-neutral-800">
-        <TouchableOpacity className="flex-1 p-3 border-b-2 border-blue-600">
-          <Text className="text-blue-400 text-center font-medium">Users</Text>
-        </TouchableOpacity>
-        <TouchableOpacity className="flex-1 p-3">
-          <Text className="text-neutral-400 text-center font-medium">My Vaults</Text>
-        </TouchableOpacity>
+      {/* Modern Tab Navigation with Better Spacing */}
+      <View className="px-4 py-2">
+        <View className="bg-neutral-900 rounded-2xl p-1.5 shadow-lg">
+          <View className="flex-row">
+            <TabButton
+              tab="users"
+              isActive={activeTab === 'users'}
+              onPress={() => setActiveTab('users')}
+              icon={Users}
+              label="Users"
+            />
+            <TabButton
+              tab="vaults"
+              isActive={activeTab === 'vaults'}
+              onPress={() => setActiveTab('vaults')}
+              icon={Shield}
+              label="My Vaults"
+            />
+          </View>
+        </View>
       </View>
 
-      {/* Users List */}
-      <View className="flex-1">
-        {users.length === 0 ? (
-          <View className="flex-1 justify-center items-center px-4">
-            <Text className="text-neutral-400 text-center mb-4">
-              No users found
-            </Text>
-            <TouchableOpacity
-              className="bg-blue-600 px-6 py-3 rounded-lg"
-              onPress={loadData}
-              accessible={true}
-              accessibilityRole="button"
-              accessibilityLabel="Refresh data"
-            >
-              <Text className="text-white font-medium">Refresh</Text>
-            </TouchableOpacity>
+      {/* Tab Content with Improved Spacing */}
+      <View className="flex-1 px-4">
+        {activeTab === 'users' ? (
+          <View className="flex-1">
+            <UsersList
+              users={users}
+              onUserPress={handleUserPress}
+              onRefresh={loadData}
+            />
           </View>
         ) : (
-          <FlatList
-            data={users}
-            keyExtractor={(user) => user.id.toString()}
-            renderItem={renderUserItem}
-            contentContainerStyle={{ padding: 16 }}
-            showsVerticalScrollIndicator={false}
-          />
+          <View className="flex-1">
+            {vaults.length === 0 ? (
+              <View className="flex-1 justify-center items-center py-8">
+                <View className="bg-neutral-800 p-6 rounded-2xl items-center">
+                  <Shield size={56} color="#6b7280" />
+                  <Text className="text-neutral-300 text-center mb-2 mt-4 text-lg font-medium">
+                    No vaults found
+                  </Text>
+                  <Text className="text-neutral-500 text-center text-sm leading-5">
+                    You're not a member of any vaults yet.{'\n'}Join a vault to get started.
+                  </Text>
+                </View>
+              </View>
+            ) : (
+              <View className="flex-1">
+                <View className="mb-4">
+                  <Text className="text-white text-xl font-semibold mb-2">
+                    Your Vault Memberships
+                  </Text>
+                  <Text className="text-neutral-400 text-sm">
+                    Vaults you have access to
+                  </Text>
+                </View>
+                <FlatList
+                  data={vaults}
+                  keyExtractor={(vault) => vault.vault_id.toString()}
+                  renderItem={renderVaultItem}
+                  contentContainerStyle={{ paddingBottom: 40 }}
+                  showsVerticalScrollIndicator={false}
+                  ItemSeparatorComponent={() => <View className="h-3" />}
+                />
+              </View>
+            )}
+          </View>
         )}
       </View>
 
       {/* Vault Selector Modal */}
       <Modal visible={showVaultSelector} animationType="slide">
         <View className="flex-1 bg-black">
-          <View className="flex-row items-center justify-between p-4 border-b border-neutral-800">
-            <Text className="text-white text-lg font-semibold">Select Vault</Text>
-            <TouchableOpacity
-              onPress={() => setShowVaultSelector(false)}
-              accessible={true}
-              accessibilityRole="button"
-              accessibilityLabel="Close vault selector"
-            >
-              <Text className="text-blue-400 text-base">Cancel</Text>
-            </TouchableOpacity>
+          <View className="flex-row items-center justify-between p-6 border-b border-neutral-800">
+            <Text className="text-white text-xl font-semibold">Select Vault</Text>
+            <ButtonSecondary
+              title="Cancel"
+              onPress={closeModals}
+              className="bg-neutral-800 border-neutral-700"
+              textClassName="text-blue-400"
+            />
           </View>
 
           {vaults.length > 0 ? (
@@ -259,15 +229,16 @@ export default function UsersScreen({ navigation }: UsersScreenProps) {
               data={vaults}
               keyExtractor={(vault) => vault.vault_id.toString()}
               renderItem={renderVaultItem}
-              contentContainerStyle={{ padding: 16 }}
+              contentContainerStyle={{ padding: 20 }}
               showsVerticalScrollIndicator={false}
             />
           ) : (
-            <View className="flex-1 justify-center items-center px-4">
-              <Text className="text-neutral-400 text-center mb-4">
+            <View className="flex-1 justify-center items-center px-6">
+              <Shield size={48} color="#6b7280" />
+              <Text className="text-neutral-400 text-center mb-4 mt-4 text-lg">
                 No accessible vaults found
               </Text>
-              <Text className="text-neutral-500 text-center text-sm">
+              <Text className="text-neutral-500 text-center text-sm leading-5">
                 You need access to at least one vault to invite users
               </Text>
             </View>
@@ -280,8 +251,8 @@ export default function UsersScreen({ navigation }: UsersScreenProps) {
         visible={showInvitationModal}
         onClose={closeModals}
         vaultId={selectedVaultId || 0}
-        onInvitationCreated={(inviteCode) => {
-          console.log('Invitation created:', inviteCode);
+        onInvitationCreated={() => {
+          // Invitation created - could add logic here if needed
         }}
       />
 
@@ -289,14 +260,7 @@ export default function UsersScreen({ navigation }: UsersScreenProps) {
       <QRScannerModal
         visible={showQRScannerModal}
         onClose={closeModals}
-        onInvitationAccepted={(vaultId, role) => {
-          console.log('Invitation accepted for vault:', vaultId, 'with role:', role);
-          Alert.alert(
-            'Success!',
-            `Successfully joined vault ${vaultId} with ${role} access!`,
-            [{ text: 'OK', onPress: loadData }]
-          );
-        }}
+        onInvitationAccepted={handleInvitationAccepted}
       />
     </View>
   );

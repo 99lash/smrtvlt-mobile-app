@@ -1,18 +1,17 @@
 import React from 'react';
-import { Text } from 'react-native';
+import { View, Text, ActivityIndicator } from 'react-native';
 
 interface LoadingStateProps {
   message?: string;
-  className?: string;
 }
 
 export const LoadingState: React.FC<LoadingStateProps> = ({
-  message = "Loading...",
-  className = "text-muted-default mb-4"
+  message = "Loading..."
 }) => {
   return (
-    <Text className={className}>
-      {message}
-    </Text>
+    <View className="flex-1 bg-black justify-center items-center">
+      <ActivityIndicator size="large" color="#3b82f6" />
+      <Text className="text-white mt-4">{message}</Text>
+    </View>
   );
 };
