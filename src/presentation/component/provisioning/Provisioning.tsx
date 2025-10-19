@@ -6,8 +6,6 @@ import ButtonSecondary from '../buttons/ButtonSecondary';
 import DeviceScanningModal from './DeviceScanningModal';
 import WiFiCredentialsModal from './WiFiCredentialsModal';
 import VaultConfigurationModal from './VaultConfigurationModal';
-import SuccessBanner from '../banner/SuccessBanner';
-import FailureBanner from '../banner/FailureBanner';
 import { useDeviceScanning } from '../../hooks/provisioning/useDeviceScanning';
 import { useWiFiProvisioning } from '../../hooks/provisioning/useWiFiProvisioning';
 import { useSuccessNotification } from '../../hooks/provisioning/useSuccessNotification';
@@ -212,25 +210,6 @@ const Provisioning = () => {
         }
         className="w-full"
       />
-
-
-      {/* Success Banner */}
-      {showSuccess && (
-        <SuccessBanner
-          message={log}
-          duration={PROVISIONING_CONSTANTS.TIMING.BANNER_DURATION}
-          onHide={hideSuccess}
-        />
-      )}
-
-      {/* Failure Banner */}
-      {showFailure && (
-        <FailureBanner
-          message="Provisioning failed"
-          duration={PROVISIONING_CONSTANTS.TIMING.BANNER_DURATION}
-          onHide={hideFailure}
-        />
-      )}
 
       {/* Device Scanning Modal */}
       <DeviceScanningModal

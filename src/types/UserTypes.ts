@@ -6,6 +6,7 @@ export interface User {
   firstName?: string;
   lastName?: string;
   username?: string;
+  email?: string;
   role: UserRole;
   status: UserStatus;
   lastAccess: string;
@@ -76,7 +77,7 @@ export interface UsersScreenNavigationProp {
 }
 
 export interface UsersScreenProps {
-  navigation: UsersScreenNavigationProp;
+  navigation?: UsersScreenNavigationProp;
 }
 
 export interface BadgeVariant {

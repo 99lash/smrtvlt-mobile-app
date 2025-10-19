@@ -98,6 +98,7 @@ export const useActivityLogs = (vaultId?: number) => {
   const [currentVaultId, setCurrentVaultId] = useState<number | null>(vaultId || null);
   const [availableVaults, setAvailableVaults] = useState<VaultMembership[]>([]);
   const [vaultsLoading, setVaultsLoading] = useState<boolean>(false);
+  const [hasNoVaults, setHasNoVaults] = useState<boolean>(false);
 
   const [searchQuery, setSearchQuery] = useState<string>(DEFAULT_FILTERS.user);
   const [selectedUser, setSelectedUser] = useState<string>(DEFAULT_FILTERS.user);
@@ -117,6 +118,9 @@ export const useActivityLogs = (vaultId?: number) => {
 
       const vaults = await VaultService.getUserVaults(token);
       setAvailableVaults(vaults);
+      
+      // Check if user has no vault memberships
+      setHasNoVaults(vaults.length === 0);
 
       // Set current vault ID if not already set
       if (!currentVaultId && vaults.length > 0) {
@@ -166,8 +170,11 @@ export const useActivityLogs = (vaultId?: number) => {
   useEffect(() => {
     if (currentVaultId) {
       fetchLogs();
+    } else if (!vaultsLoading) {
+      // If no vault ID and vault loading is complete, set loading to false
+      setLoading(false);
     }
-  }, [currentVaultId, fetchLogs]);
+  }, [currentVaultId, fetchLogs, vaultsLoading]);
 
   const filterState: FilterState = {
     searchQuery,
@@ -260,6 +267,7 @@ export const useActivityLogs = (vaultId?: number) => {
     availableVaults,
     currentVault,
     vaultsLoading,
+    hasNoVaults,
 
     // Actions
     updateSearchQuery,

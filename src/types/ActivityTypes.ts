@@ -44,7 +44,7 @@ export interface ActivityLog {
 }
 
 export interface ActivityScreenProps {
-  navigation: any; // Can be improved with proper navigation types
+  navigation?: any; // Can be improved with proper navigation types
 }
 
 export interface FilterState {

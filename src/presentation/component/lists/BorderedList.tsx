@@ -1,5 +1,5 @@
-import React, { ReactElement } from "react";
-import { FlatList, View, Text, Pressable } from "react-native";
+import React, { ReactElement } from 'react';
+import { FlatList, View, Text, Pressable } from 'react-native';
 
 type BorderedListProps<T> = {
   data: T[];
@@ -13,8 +13,9 @@ type BorderedListProps<T> = {
   itemHeight?: number; // estimated row height
   selectedId?: string;
   getId?: (item: T) => string;
+  itemGap?: number; // gap between items in pixels
 };
- 
+
 function BorderedList<T>({
   data,
   keyExtractor = (_, index) => index.toString(),
@@ -22,53 +23,66 @@ function BorderedList<T>({
   onItemPress,
   iconExtractor,
   rightContentExtractor,
-  className = "",
+  className = '',
   maxVisibleItems = 5,
   itemHeight = 56,
   selectedId,
   getId,
+  itemGap = 8, // default 8px gap
 }: BorderedListProps<T>) {
   const maxHeight = maxVisibleItems * itemHeight;
 
   return (
     <View
-      className={`border border-border-default dark:border-border-dark rounded-xl overflow-hidden ${className}`}
-      style={{ maxHeight }}
+      className={`bg-bg-default overflow-hidden rounded-3xl ${className}`}
     >
       <FlatList
         data={data}
         keyExtractor={keyExtractor}
+        ItemSeparatorComponent={() => <View style={{ height: itemGap }} />}
+        contentContainerStyle={{ padding: itemGap }}
         renderItem={({ item, index }) => {
           const leftIcon = iconExtractor?.(item, index);
           const rightContent = rightContentExtractor?.(item, index);
-          const isSelected = selectedId && getId ? selectedId === getId(item) : false;
+          const isSelected =
+            selectedId && getId ? selectedId === getId(item) : false;
 
           return (
             <Pressable
               disabled={!onItemPress}
               onPress={() => onItemPress?.(item, index)}
-              className={`flex-row items-center justify-between p-3 border-b border-border-default dark:border-border-dark ${
-                index === data.length - 1 ? "border-b-0" : ""
-              } ${isSelected ? "bg-primary-light" : "bg-surface-default dark:bg-surface-dark"}`}
-              style={{ minHeight: itemHeight }}
+              className={`flex-row items-center justify-between px-5 py-4 gap-3 rounded-2xl ${
+                isSelected ? 'bg-primary-light' : 'bg-surface-default'
+              }`}
+              style={{
+                minHeight: itemHeight,
+                maxHeight,
+                shadowColor: '#000',
+                shadowOffset: { width: 0, height: 4 },
+                shadowOpacity: 0.15,
+                shadowRadius: 8,
+                elevation: 6,
+              }}
             >
               <View className="flex-row items-center flex-1">
-                {leftIcon && <View className="mr-2">{leftIcon}</View>}
+                {leftIcon && <View className="mr-3">{leftIcon}</View>}
                 {renderItem ? (
                   renderItem(item, index, isSelected)
                 ) : (
                   <Text
                     className={`flex-1 ${
-                      isSelected ? "text-primary-dark font-semibold" : "text-text-default dark:text-text-dark"
+                      isSelected
+                        ? 'text-primary-dark font-semibold'
+                        : 'text-text-default dark:text-text-dark'
                     }`}
-                    style={{ flexWrap: "wrap" }}
+                    style={{ flexWrap: 'wrap' }}
                   >
                     {String(item)}
                   </Text>
                 )}
               </View>
 
-              {rightContent && <View className="ml-2">{rightContent}</View>}
+              {rightContent && <View className="ml-3">{rightContent}</View>}
             </Pressable>
           );
         }}

@@ -28,26 +28,31 @@ export const ActivityCard: React.FC<ActivityCardProps> = React.memo(({ log }) =>
   };
 
   return (
-    <View className="bg-bg-dark  rounded-lg p-4 mb-3">
+    <View className="bg-bg-default rounded-lg p-4 mb-3"
+    style={{
+      shadowColor: "#000",
+      shadowOffset: { width: 0, height: 4 },
+      shadowOpacity: 0.15,
+      shadowRadius: 8,
+      elevation: 6,
+      borderRadius: 24,
+      paddingVertical: 12,
+      paddingHorizontal: 16,
+    }}
+    >
       <View className="flex-row items-start">
-        <View className="mr-3 mt-1">
-          <StatusIcon status={log.status} />
-        </View>
-        <View className="mr-3 mt-1">
-          <EventIcon eventType={log.eventType} />
-        </View>
-        <View className="flex-1">
+        <View className="flex-1 ml-2">
           <View className="flex-row items-center justify-between mb-1">
-            <Text className="text-bg-default text-base font-medium">
+            <Text className="text-text-default text-base font-medium">
               {log.title}
             </Text>
             <View className={`${getStatusColor()} px-2 py-1 rounded-full`}>
-              <Text className="text-white text-xs font-medium">
+              <Text className="text-text-dark text-xs font-medium">
                 {getStatusText()}
               </Text>
             </View>
           </View>
-          <Text className="text-bg-default text-sm mb-1">
+          <Text className="text-text-default text-xs mb-1">
             {log.description}
           </Text>
           <View className="flex-row items-center justify-between">

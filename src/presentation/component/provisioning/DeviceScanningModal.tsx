@@ -7,6 +7,7 @@ import ButtonPrimary from '../buttons/ButtonPrimary';
 import DeviceList from './DeviceList';
 import { PROVISIONING_CONSTANTS } from '../../../utils/provisioningConstants';
 import type { ESPDevice } from '@orbital-systems/react-native-esp-idf-provisioning';
+import {WarningMessage} from '../../component/common/WarningMessage';
 
 interface DeviceScanningModalProps {
   visible: boolean;
@@ -30,32 +31,28 @@ const DeviceScanningModal: React.FC<DeviceScanningModalProps> = ({
   isScanning,
   hasScanned,
   scanningError,
-  hasDevices,
+  hasDevices, 
   handleScan,
 }) => {
   return (
     <CustomModal
       visible={visible}
       onClose={onClose}
-      title={PROVISIONING_CONSTANTS.MESSAGES.SCAN_DEVICES_TITLE}
-      icon={<Bluetooth size={PROVISIONING_CONSTANTS.UI.ICON_SIZE} color={PROVISIONING_CONSTANTS.UI.ICON_COLOR} />}
+      title='SmartVault Devices'
+      icon={<Bluetooth size={20} color='#5e5e5e' />}
       iconPosition="left"
+      primaryAction={{
+        label: isScanning ? PROVISIONING_CONSTANTS.MESSAGES.SCANNING_DEVICES : PROVISIONING_CONSTANTS.MESSAGES.SCAN_FOR_DEVICES,
+        onPress: handleScan,
+        loading: isScanning,
+        disabled: isScanning,
+      }}
       secondaryAction={{
-        label: PROVISIONING_CONSTANTS.MESSAGES.CLOSE,
+        label: 'Close',
         onPress: onClose,
       }}
     >
-      <ProvisioningHeader message={PROVISIONING_CONSTANTS.MESSAGES.MAKE_SURE_DEVICE_POWERED_ON} />
-
-      <View className="mb-3">
-        <ButtonPrimary
-          title={isScanning ? PROVISIONING_CONSTANTS.MESSAGES.SCANNING_DEVICES : PROVISIONING_CONSTANTS.MESSAGES.SCAN_FOR_DEVICES}
-          onPress={handleScan}
-          loading={isScanning}
-          disabled={isScanning}
-          icon={<Search size={PROVISIONING_CONSTANTS.UI.ICON_SIZE} color={PROVISIONING_CONSTANTS.UI.ICON_COLOR} />}
-        />
-      </View>
+      <ProvisioningHeader message='Make sure your SmartVault device is powered on and in pairing mode (LED blinking green).' />
 
       {/* Scanning error */}
       {scanningError && (
@@ -76,9 +73,7 @@ const DeviceScanningModal: React.FC<DeviceScanningModalProps> = ({
               title="Scanned Devices"
             />
           ) : (
-            <View className="py-4 px-2 border border-gray-200 rounded-lg items-center">
-              <Text className="text-gray-500">{PROVISIONING_CONSTANTS.MESSAGES.NO_DEVICES_FOUND}</Text>
-            </View>
+            <WarningMessage message="No devices found" />
           )}
         </View>
       )}

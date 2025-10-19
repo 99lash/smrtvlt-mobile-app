@@ -3,244 +3,280 @@ import {
   View,
   Text,
   TouchableOpacity,
-  TextInput,
   Alert,
-  ActivityIndicator,
-  Clipboard
+  TextInput,
+  KeyboardAvoidingView,
+  Platform
 } from 'react-native';
-import { QrCode, Clock, Users, UserCheck } from 'lucide-react-native';
-// Conditional import for QR code generation
-let QRCode: any;
-try {
-  QRCode = require('react-native-qrcode-svg').default;
-} catch (error) {
-  console.warn('react-native-qrcode-svg not available, QR code generation disabled');
-  QRCode = null;
-}
+import { CheckCircle, UserPlus, Copy, Shield, User } from 'lucide-react-native';
 import CustomModal from '../modals/CustomModal';
-import { useAuthContext } from '../../../presentation/context/AuthContext';
+import { useAuthContext } from '../../context/AuthContext';
 import { useVaultInvitation } from '../../hooks/vault/useVaultInvitation';
 import { UserService } from '../../../service/UserService';
+import { VaultMembership } from '../../../service/VaultService';
+import { Clipboard } from 'react-native';
+import { InfoMessage } from '../common/InfoMessage';
 
 interface InvitationModalProps {
   visible: boolean;
   onClose: () => void;
-  vaultId: number;
-  onInvitationCreated?: (inviteCode: string) => void;
+  onInvitationAccepted?: (vaultId: number, role: string) => void;
+  // Generation mode props
+  mode?: 'accept' | 'generate';
+  selectedVaultId?: number | null;
+  vaults?: VaultMembership[];
+  onInvitationGenerated?: () => void;
 }
 
 export default function InvitationModal({
   visible,
   onClose,
-  vaultId,
-  onInvitationCreated
+  onInvitationAccepted,
+  mode = 'accept',
+  selectedVaultId,
+  vaults = [],
+  onInvitationGenerated
 }: InvitationModalProps) {
-  const [selectedRole, setSelectedRole] = useState<'admin' | 'member' | 'guest'>('member');
-  const [expiresInHours, setExpiresInHours] = useState('24');
-  const [inviteCode, setInviteCode] = useState<string | null>(null);
-  const [isCreating, setIsCreating] = useState(false);
-  const [step, setStep] = useState<'form' | 'qr'>('form');
+  const [invitationCode, setInvitationCode] = useState('');
+  const [isProcessing, setIsProcessing] = useState(false);
+  const [generatedCode, setGeneratedCode] = useState<string>('');
   const [copied, setCopied] = useState(false);
 
   const { user } = useAuthContext();
-  const { createInvitation, isLoading } = useVaultInvitation();
+  const { validateInvitation, acceptInvitation, createInvitation } = useVaultInvitation();
 
-  const handleCreateInvitation = async () => {
-    const token = await UserService.getStoredToken();
-    if (!token) {
-      Alert.alert('Error', 'Authentication required. Please log in again.');
+  // Get the selected vault details
+  const selectedVault = vaults.find(vault => vault.vault_id === selectedVaultId);
+
+  const handleGenerateInvitation = async () => {
+    if (!selectedVaultId) {
+      Alert.alert('Error', 'No vault selected');
       return;
     }
 
-    const hours = parseInt(expiresInHours);
-    if (isNaN(hours) || hours < 1 || hours > 168) {
-      Alert.alert('Error', 'Expiration must be between 1 and 168 hours');
-      return;
-    }
+    setIsProcessing(true);
 
-    setIsCreating(true);
     try {
-      const invitation = await createInvitation(
-        {
-          vault_id: vaultId,
-          role: selectedRole,
-          expires_in_hours: hours,
-        },
-        token
+      const token = await UserService.getStoredToken();
+      if (!token) {
+        throw new Error('Authentication required. Please log in again.');
+      }
+
+      // Create invitation with default member role
+      const invitationData = {
+        vault_id: selectedVaultId,
+        role: 'member' as const,
+        expires_in_hours: 24 // 24 hours expiry
+      };
+
+      const result = await createInvitation(invitationData, token);
+
+      if (result?.invite_code) {
+        setGeneratedCode(result.invite_code);
+        onInvitationGenerated?.();
+      } else {
+        throw new Error('Failed to generate invitation code');
+      }
+
+    } catch (error) {
+      Alert.alert(
+        'Error',
+        error instanceof Error ? error.message : 'Failed to generate invitation code'
+      );
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
+  const handleCopyCode = async () => {
+    if (generatedCode) {
+      await Clipboard.setString(generatedCode);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000); // Reset after 2 seconds
+    }
+  };
+
+  const processInvitationCode = async () => {
+    if (!invitationCode.trim()) {
+      Alert.alert('Error', 'Please enter an invitation code');
+      return;
+    }
+
+    setIsProcessing(true);
+
+    try {
+      // Validate invitation
+      const validation = await validateInvitation(invitationCode.trim());
+
+      if (!validation.valid) {
+        throw new Error(validation.reason || 'Invalid invitation');
+      }
+
+      // Get token directly from UserService instead of user object
+      const token = await UserService.getStoredToken();
+      if (!token) {
+        throw new Error('Authentication required. Please log in again.');
+      }
+
+      // Accept invitation
+      const result = await acceptInvitation(invitationCode.trim(), token);
+
+      // Show success message
+      Alert.alert(
+        'Success!',
+        `Successfully joined vault with ${result.role} access!`,
+        [
+          {
+            text: 'OK',
+            onPress: () => {
+              onInvitationAccepted?.(result.vault_id!, result.role!);
+              handleClose();
+            }
+          }
+        ]
       );
 
-      if (invitation) {
-        setInviteCode(invitation.invite_code);
-        setStep('qr');
-        onInvitationCreated?.(invitation.invite_code);
-      }
     } catch (error) {
-      Alert.alert('Error', error instanceof Error ? error.message : 'Failed to create invitation');
+      Alert.alert(
+        'Error',
+        error instanceof Error ? error.message : 'Failed to process invitation'
+      );
     } finally {
-      setIsCreating(false);
+      setIsProcessing(false);
     }
   };
 
   const handleClose = () => {
-    setStep('form');
-    setInviteCode(null);
-    setSelectedRole('member');
-    setExpiresInHours('24');
+    setInvitationCode(''); 
+    setGeneratedCode('');
     setCopied(false);
+    setIsProcessing(false);
     onClose();
   };
 
-  const handleCopyInvitationCode = async () => {
-    if (inviteCode) {
-      try {
-        await Clipboard.setString(inviteCode);
-        setCopied(true);
-        setTimeout(() => setCopied(false), 2000); // Reset after 2 seconds
-      } catch (error) {
-        Alert.alert('Error', 'Failed to copy invitation code');
-      }
-    }
-  };
-
-  const handleNext = () => {
-    if (step === 'form') {
-      handleCreateInvitation();
-    } else {
-      handleClose();
-    }
+  const getVaultDisplayName = () => {
+    if (!selectedVault) return 'Selected Vault';
+    return selectedVault.vault_name || `Vault ID: ${selectedVault.vault_id}`;
   };
 
   const getModalTitle = () => {
-    return step === 'form' ? 'Invite User' : 'Share Invitation';
+    return mode === 'generate' ? 'Generate Invitation' : 'Join Vault';
   };
 
-  const getPrimaryButtonLabel = () => {
-    if (step === 'form') {
-      return isCreating ? 'Creating...' : 'Create Invitation';
+  const getPrimaryAction = () => {
+    if (mode === 'generate') {
+      return {
+        label: generatedCode 
+          ? 'Generate New Code' 
+          : isProcessing 
+            ? 'Generating...' 
+            : 'Generate Invitation',
+        onPress: handleGenerateInvitation,
+        disabled: isProcessing,
+        loading: isProcessing
+      };
+    } else {
+      return {
+        label: isProcessing ? 'Processing...' : 'Accept Invitation',
+        onPress: processInvitationCode,
+        disabled: isProcessing || !invitationCode.trim(),
+        loading: isProcessing,
+      };
     }
-    return 'Done';
   };
-
-  const isPrimaryButtonDisabled = () => {
-    if (step === 'form') {
-      return isCreating;
-    }
-    return false;
-  };
-
-  const renderContent = () => (
-    <View className="w-full">
-      {step === 'form' ? (
-        // Form Step Content
-        <>
-          {/* Role Selection */}
-          <Text className="text-gray-700 mb-2 font-medium">Select Role:</Text>
-          <View className="mb-6">
-            {[
-              { key: 'member', label: 'Member', desc: 'Standard vault access' },
-              { key: 'admin', label: 'Admin', desc: 'Full vault management' },
-              { key: 'guest', label: 'Guest', desc: 'Limited access' },
-            ].map((role) => (
-              <TouchableOpacity
-                key={role.key}
-                onPress={() => setSelectedRole(role.key as any)}
-                className={`p-3 rounded-lg mb-2 border ${
-                  selectedRole === role.key
-                    ? 'border-blue-500 bg-blue-50'
-                    : 'border-gray-300 bg-gray-50'
-                }`}
-              >
-                <Text className={`font-medium ${
-                  selectedRole === role.key ? 'text-blue-600' : 'text-gray-800'
-                }`}>
-                  {role.label}
-                </Text>
-                <Text className={`text-sm mt-1 ${
-                  selectedRole === role.key ? 'text-blue-500' : 'text-gray-500'
-                }`}>
-                  {role.desc}
-                </Text>
-              </TouchableOpacity>
-            ))}
-          </View>
-
-          {/* Expiration */}
-          <Text className="text-gray-700 mb-2 font-medium">Expires in (hours):</Text>
-          <TextInput
-            value={expiresInHours}
-            onChangeText={setExpiresInHours}
-            placeholder="24"
-            keyboardType="numeric"
-            className="bg-gray-50 text-gray-800 p-3 rounded-lg mb-6 border border-gray-300"
-            placeholderTextColor="#9CA3AF"
-          />
-        </>
-      ) : (
-        // QR Step Content
-        <>
-          {/* QR Code Display */}
-          <View className="items-center mb-6">
-            {QRCode ? (
-              <View className="bg-white p-4 rounded-lg mb-4">
-                <QRCode
-                  value={`yourapp://invite/${inviteCode}`}
-                  size={200}
-                />
-              </View>
-            ) : (
-              <View className="w-48 h-48 bg-gray-100 rounded-lg mb-4 items-center justify-center">
-                <Text className="text-gray-500 text-center">QR Code</Text>
-                <Text className="text-gray-400 text-xs mt-2">Install QR library</Text>
-              </View>
-            )}
-            <Text className="text-gray-600 text-sm text-center mb-2">
-              {QRCode ? 'Scan this QR code or share the code below' : 'Share the invitation code below'}
-            </Text>
-            <Text className="text-blue-600 font-mono text-lg text-center bg-gray-50 p-3 rounded-lg w-full">
-              {inviteCode}
-            </Text>
-          </View>
-
-          {/* Share Options */}
-          <View className="space-y-3">
-            <TouchableOpacity className="flex-row items-center p-3 bg-gray-50 rounded-lg border border-gray-300">
-              <QrCode color="#3B82F6" size={20} className="mr-3" />
-              <Text className="text-gray-800 flex-1">Share QR Code</Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              onPress={handleCopyInvitationCode}
-              className={`flex-row items-center p-3 rounded-lg border ${
-                copied
-                  ? 'bg-green-50 border-green-500'
-                  : 'bg-gray-50 border-gray-300'
-              }`}
-            >
-              <Users color={copied ? "#10B981" : "#3B82F6"} size={20} className="mr-3" />
-              <Text className={`flex-1 ${copied ? 'text-green-700' : 'text-gray-800'}`}>
-                {copied ? 'Copied!' : 'Copy Invitation Code'}
-              </Text>
-            </TouchableOpacity>
-          </View>
-        </>
-      )}
-    </View>
-  );
 
   return (
     <CustomModal
       visible={visible}
       onClose={handleClose}
       title={getModalTitle()}
-      icon={<UserCheck size={24} color="#3B82F6" />}
-      primaryAction={{
-        label: getPrimaryButtonLabel(),
-        onPress: handleNext,
-        disabled: isPrimaryButtonDisabled(),
-        loading: isCreating,
-      }}
+      primaryAction={getPrimaryAction()}
     >
-      {renderContent()}
+      <View className="space-y-4">
+        {mode === 'generate' && (
+          <View className="space-y-4">
+            {/* Selected Vault Info */}
+            <View className="flex-col bg-surface-light rounded-2xl border border-border-dark p-2 mb-4">
+              <View className="flex-row items-center gap-2 ml-2">
+                <Shield size={20} color="#5e5e5e" className="mr-2" />
+                <Text className="text-text-default font-medium text-base">
+                  {getVaultDisplayName()}
+                </Text>
+              </View>
+              <View className="flex-row items-center gap-2 ml-2">
+                <User size={20} color="#5e5e5e" className="mr-2" />
+                <Text className="text-text-default text-base">
+                  Role: {selectedVault?.role || 'N/A'}
+                </Text>
+              </View>
+            </View>
+
+            {/* Generated Code Section */}
+            {generatedCode && (
+              <View className="space-y-3 gap-2">           
+                <View className="bg-surface-light p-4 rounded-xl border border-border-dark">
+                  <View className="flex-row items-center justify-between">
+                    <Text className="text-primary-dark font-mono text-lg flex-1 mr-3">
+                      {generatedCode}
+                    </Text>
+                    <View 
+                      className="p-2 rounded-lg bg-primary-light"
+                      onTouchEnd={handleCopyCode}
+                    >
+                      {copied ? (
+                        <CheckCircle size={20} color="#10B981" />
+                      ) : (
+                        <Copy size={20} color="#3B82F6" />
+                      )}
+                    </View>
+                  </View>
+                  
+                  {copied && (
+                    <Text className="text-text-default text-sm mt-2">
+                      Code copied to clipboard!
+                    </Text>
+                  )}
+                </View>
+                <InfoMessage message="Share this code with the person you want to invite. They can use it to join the vault." />
+              </View>
+            )}
+
+            {/* Instructions */}
+            {!generatedCode && (
+              <View className="bg-surface-light p-4 rounded-xl">
+                <Text className="text-text-default text-sm text-center">
+                  This will generate a unique invitation code that expires in 24 hours. 
+                  The invited user will receive member access to this vault.
+                </Text>
+              </View>
+            )}
+          </View>
+        )}
+
+        {mode === 'accept' && (
+          <KeyboardAvoidingView
+            behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+            className="w-full"
+          >
+            <View className="w-full">
+              <Text className="text-text-default mb-4">
+                Enter the invitation code you received.
+              </Text>
+
+              <TextInput
+                value={invitationCode}
+                onChangeText={setInvitationCode}
+                placeholder="Enter invitation code..."
+                className="bg-surface-light text-text-default p-3 rounded-2xl mb-6 border border-border-dark text-base font-mono"
+                placeholderTextColor="#64748b"
+                autoCapitalize="none"
+                autoCorrect={false}
+                editable={!isProcessing}
+              />
+            </View>
+          </KeyboardAvoidingView>
+        )}
+      </View>
     </CustomModal>
   );
 }

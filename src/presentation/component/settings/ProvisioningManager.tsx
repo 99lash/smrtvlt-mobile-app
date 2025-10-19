@@ -10,14 +10,20 @@ interface ProvisioningManagerProps {
 
 export const ProvisioningManager: React.FC<ProvisioningManagerProps> = () => {
   return (
-    <View className="bg-surface-dark rounded-lg p-4 mb-4">
+    <View 
+      className="bg-surface-default rounded-3xl p-4 mb-4"
+      style={{
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.15,
+        shadowRadius: 8,
+        elevation: 6,
+      }}
+    >
       <View className="flex-row items-center mb-3">
-        <Wifi size={20} color="#60a5fa" />
-        <Text className="text-white text-lg font-semibold ml-2">Provisioning Management</Text>
+        <Wifi size={26} color="#5e5e5e" />
+        <Text className="text-text-default text-lg font-semibold ml-2">Provisioning Management</Text>
       </View>
-      <Text className="text-muted-default mb-4">
-        Configure and manage your SmartVaults
-      </Text>
       <Provisioning />
     </View>
   );

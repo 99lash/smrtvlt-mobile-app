@@ -15,7 +15,7 @@ export const SearchBar: React.FC<SearchBarProps> = ({
   placeholder = "Search activities..."
 }) => {
   return (
-    <View className="flex-1 bg-neutral-surface rounded-lg px-3 py-3 flex-row items-center">
+    <View className="flex-1 bg-bg-default rounded-lg px-3 py-3 flex-row items-center border border-border-default">
       <Search size={ICON_SIZES.small} color={ACTIVITY_COLORS.neutral} />
       <TextInput
         className="flex-1 text-neutral-text ml-2"

@@ -8,53 +8,56 @@ module.exports = {
       // TEMPORARY: for the meantime let's use this color pallete across the  entire codebase
       colors: {
         primary: {
-          DEFAULT: '#2563eb', // blue-600 (clear CTA, strong visibility)
-          dark: '#1d4ed8', // blue-700 (pressed/hover)
-          light: '#60a5fa', // blue-400 (hover/disabled subtle)
+          default: '#ffb800', // blue-600 (clear CTA, strong visibility)
         },
         secondary: {
-          DEFAULT: '#64748b', // slate-500 (supportive, not overpowering)
-          dark: '#475569', // slate-600
-          light: '#cbd5e1', // slate-300
+          default: '#1a0f3e'
         },
         text: {
-          default: '#0f172a', // slate-900
-          dark: '#EEEEEE',
+          default: '#0c0a09', 
+          dark: '#EEEEEE'
+        },
+        icons:{
+          default: '#5e5e5e',
+          dark: '#f5f5f5'
         },
         bg:{
-          default: '#f8fafc',
-          dark: '#1b1c1b',
+          default: '#F2F0EF'
+        },
+        cards:{
+          default: '#1a0f3e',
+          dark: '#8c8c84'
         },
         border:{
           default:'#e2e8f0',
-          dark:'#595c58',
+          dark:'#989ea6',
         }, 
         muted:{
           default: '#64748b',
           dark: '#393a38',
         },
         surface:{
-          default: '#ffffff',
+          default: '#fafafa',
           active: '#eff1ed',
           dark: '#0F0E0E',
         },
         success: {
-          DEFAULT: '#22c55e', // green-500
+          default: '#22c55e', // green-500
           dark: '#15803d', // green-700
           light: '#86efac', // green-300
         },
         warning: {
-          DEFAULT: '#eab308', // amber-500
+          default: '#eab308', // amber-500
           dark: '#b45309', // amber-700
           light: '#fde68a', // amber-300
         },
         error: {
-          DEFAULT: '#f87171', // red-500
+          default: '#f87171', // red-500
           dark: '#b91c1c', // red-700
           light: '#fca5a5', // red-300
         },
         info: {
-          DEFAULT: '#0ea5e9', // sky-500
+          default: '#0ea5e9', // sky-500
           dark: '#0369a1', // sky-700
           light: '#7dd3fc', // sky-300
         },
@@ -78,6 +81,7 @@ module.exports = {
       fontFamily: {
         sans: ['Inter'],
         heading: ['Poppins'],
+        'bbh-bartle': ['BBH Sans Bartle', 'sans-serif'],
       },
       borderRadius: {
         DEFAULT: '10px',

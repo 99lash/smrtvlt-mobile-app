@@ -25,7 +25,7 @@ const ButtonPrimary: React.FC<ButtonPrimaryProps> = ({
   const styledIcon =
     icon &&
     React.cloneElement(icon, {
-      color: '#ffffff', 
+      color: '#5e5e5e', 
       size: icon.props.size ?? 20, 
     });
 
@@ -34,9 +34,13 @@ const ButtonPrimary: React.FC<ButtonPrimaryProps> = ({
       onPress={!disabled && !loading ? onPress : undefined}
       activeOpacity={0.7}
       disabled={disabled || loading}
-      className={`bg-primary rounded-xl px-4 py-3 flex-row items-center justify-center
+      className={`bg-primary-default rounded-3xl px-4 py-4 flex-row items-center justify-center w-full
         ${disabled ? "opacity-50" : ""}
         ${className}`}
+      style={{
+        borderWidth: 1,
+        borderColor: 'rgba(255, 255, 255, 0.1)',
+      }}
     >
       {loading ? (
         <ActivityIndicator color="white" />
@@ -46,7 +50,7 @@ const ButtonPrimary: React.FC<ButtonPrimaryProps> = ({
             <View className="mr-2">{styledIcon}</View>
           )}
           <Text
-            className={`text-neutral text-text-default dark:text-text-dark text-center ${textClassName}`}
+            className={`text-neutral text-text-default text-center ${textClassName}`}
           >
             {title}
           </Text>

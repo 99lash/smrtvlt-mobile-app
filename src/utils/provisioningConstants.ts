@@ -6,13 +6,11 @@
 export const PROVISIONING_CONSTANTS = {
   // UI Messages
   MESSAGES: {
-    SCAN_DEVICES_TITLE: 'SmartVault Devices',
     WIFI_CREDENTIALS_TITLE: 'Send Wi-Fi Credentials',
     PROVISION_SUCCESS: 'Provisioning successful',
     PROVISION_FAILED: 'Provisioning failed',
     AUTH_FAILED: 'Authentication failed',
     AP_NOT_FOUND: 'AP not found',
-    NO_DEVICES_FOUND: 'No devices found',
     NO_NETWORKS_FOUND: 'No networks found',
     SCANNING: 'Scanning...',
     PROVISION_NEW_DEVICE: 'Provision New Device',
@@ -20,7 +18,6 @@ export const PROVISIONING_CONSTANTS = {
     SCANNING_DEVICES: 'Scanning...',
     CONFIRM: 'Confirm',
     BACK: 'Back',
-    CLOSE: 'Close',
     ENTER_WIFI_PASSWORD: 'Enter Wi-Fi password',
     SEND_WIFI_CREDENTIALS: 'Send Wi-Fi credentials to device',
     MAKE_SURE_DEVICE_POWERED_ON:
@@ -34,7 +31,7 @@ export const PROVISIONING_CONSTANTS = {
   },
 
   // UI Configuration
-  UI: {
+  UI: { 
     ICON_SIZE: 20,
     ICON_COLOR: 'blue',
     SIGNAL_COLOR: '#3b82f6',

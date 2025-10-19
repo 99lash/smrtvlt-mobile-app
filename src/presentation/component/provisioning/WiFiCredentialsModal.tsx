@@ -5,7 +5,6 @@ import CustomModal from '../modals/CustomModal';
 import ProvisioningHeader from './ProvisioningHeader';
 import ButtonPrimary from '../buttons/ButtonPrimary';
 import DeviceList from './DeviceList';
-import SuccessBanner from '../banner/SuccessBanner';
 import { PROVISIONING_CONSTANTS } from '../../../utils/provisioningConstants';
 import type { ESPDevice } from '@orbital-systems/react-native-esp-idf-provisioning';
 import type { WiFiNetwork } from '../../hooks/provisioning/useWiFiScanning';

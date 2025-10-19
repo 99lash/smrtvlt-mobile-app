@@ -17,7 +17,7 @@
     "@react-navigation/native": "^7.1.17",
     "@react-navigation/native-stack": "^7.3.26",
     "axios": "^1.12.2",
-    "expo-barcode-scanner": "^13.0.1",
+    "expo-linear-gradient": "^15.0.7",
     "jsonwebtoken": "^9.0.2",
     "lucide-react-native": "^0.542.0",
     "nativewind": "^4.1.23",
@@ -32,8 +32,9 @@
     "react-native-safe-area-context": "^5.6.1",
     "react-native-screens": "^4.16.0",
     "react-native-svg": "^15.12.1",
+    "react-native-vision-camera": "^4.7.2",
     "react-native-wifi-reborn": "^4.13.6",
-    "react-native-worklets": "^0.5.0",
+    "react-native-worklets": "^0.5.1",
     "tailwindcss": "^3.4.17"
   },
   "devDependencies": {

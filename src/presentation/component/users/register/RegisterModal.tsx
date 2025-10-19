@@ -3,8 +3,6 @@ import { View, Text, TextInput, TouchableOpacity } from 'react-native';
 import { Eye, EyeOff, User, Lock, Mail, UserCheck } from 'lucide-react-native';
 import CustomModal from '../../modals/CustomModal';
 import ButtonPrimary from '../../buttons/ButtonPrimary';
-import SuccessBanner from '../../banner/SuccessBanner';
-import FailureBanner from '../../banner/FailureBanner';
 import { UserRole, UserRegistrationRequest } from '../../../../types/UserTypes';
 import { UserService } from '../../../../service/UserService';
 
@@ -185,7 +183,6 @@ const RegisterModal: React.FC<RegisterModalProps> = ({
         visible={visible}
         onClose={handleClose}
         title="Create New Account"
-        icon={<UserCheck size={24} color="#3B82F6" />}
         primaryAction={{
           label: 'Register',
           onPress: handleRegister,
@@ -199,7 +196,7 @@ const RegisterModal: React.FC<RegisterModalProps> = ({
             <Text className="text-sm font-medium text-gray-700 mb-2">
               Username *
             </Text>
-            <View className="flex-row items-center border border-gray-300 rounded-lg px-3 py-2">
+            <View className="flex-row items-center border border-border-dark rounded-2xl px-3 py-2">
               <User size={20} color="#6B7280" />
               <TextInput
                 className="flex-1 ml-3 text-base"
@@ -221,7 +218,7 @@ const RegisterModal: React.FC<RegisterModalProps> = ({
             <Text className="text-sm font-medium text-gray-700 mb-2">
               Email *
             </Text>
-            <View className="flex-row items-center border border-gray-300 rounded-lg px-3 py-2">
+            <View className="flex-row items-center border border-border-dark rounded-2xl px-3 py-2">
               <Mail size={20} color="#6B7280" />
               <TextInput
                 className="flex-1 ml-3 text-base"
@@ -244,7 +241,7 @@ const RegisterModal: React.FC<RegisterModalProps> = ({
             <Text className="text-sm font-medium text-gray-700 mb-2">
               Password *
             </Text>
-            <View className="flex-row items-center border border-gray-300 rounded-lg px-3 py-2">
+            <View className="flex-row items-center border border-border-dark rounded-2xl px-3 py-2">
               <Lock size={20} color="#6B7280" />
               <TextInput
                 className="flex-1 ml-3 text-base"
@@ -278,7 +275,7 @@ const RegisterModal: React.FC<RegisterModalProps> = ({
             <Text className="text-sm font-medium text-gray-700 mb-2">
               Confirm Password *
             </Text>
-            <View className="flex-row items-center border border-gray-300 rounded-lg px-3 py-2">
+            <View className="flex-row items-center border border-border-dark rounded-2xl px-3 py-2">
               <Lock size={20} color="#6B7280" />
               <TextInput
                 className="flex-1 ml-3 text-base"
@@ -309,23 +306,6 @@ const RegisterModal: React.FC<RegisterModalProps> = ({
         </View>
       </CustomModal>
 
-      {/* Success Banner */}
-      {showSuccess && (
-        <SuccessBanner
-          message="Account created successfully! Welcome to SmartVault."
-          duration={2000}
-          onHide={() => setShowSuccess(false)}
-        />
-      )}
-
-      {/* Error Banner */}
-      {showError && (
-        <FailureBanner
-          message={errorMessage}
-          duration={3000}
-          onHide={() => setShowError(false)}
-        />
-      )}
     </>
   );
 };

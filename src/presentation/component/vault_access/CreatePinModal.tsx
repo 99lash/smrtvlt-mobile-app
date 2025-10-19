@@ -62,12 +62,12 @@ export const CreatePinModal: React.FC<CreatePinModalProps> = ({
     }
   };
   
-  return (
+  return ( 
     <CustomModal
       visible={visible}
       onClose={onClose}
       title="Create New PIN"
-      icon={<Shield size={24} color="#60a5fa" />}
+      icon={<Shield size={24} color="#5e5e5e" />}
       primaryAction={{
         label: loading ? "Creating..." : "Create PIN",
         onPress: handleCreate,
@@ -80,9 +80,10 @@ export const CreatePinModal: React.FC<CreatePinModalProps> = ({
           value={pinCode}
           onChangeText={setPinCode}
           placeholder="Enter PIN code"
+          placeholderTextColor="#64748b"
           secureTextEntry={!isVisible}
           maxLength={8}
-          className="border border-border-default dark:border-border-dark rounded-lg px-3 py-3 pr-12 text-text-default dark:text-text-dark bg-surface-default dark:bg-surface-dark"
+          className="border border-border-dark rounded-2xl px-3 py-3 pr-12 text-text-default bg-surface-default "
         />
         <TouchableOpacity
           onPress={() => setIsVisible(!isVisible)}
@@ -98,31 +99,25 @@ export const CreatePinModal: React.FC<CreatePinModalProps> = ({
 
       {/* Vault Selection */}
       <View className="mb-4">
-        <Text className="text-text-default dark:text-text-dark mb-2 font-medium">
-          Select Vault
-        </Text>
-
         {vaultsLoading ? (
-          <View className="border border-border-default dark:border-border-dark rounded-lg px-3 py-3 bg-surface-default dark:bg-surface-dark">
-            <Text className="text-muted-default dark:text-muted-dark">Loading vaults...</Text>
+          <View className="border border-border-dark rounded-2xl px-3 py-3 bg-surface-default">
+            <Text className="text-muted-default">Loading vaults...</Text>
           </View>
         ) : availableVaults.length === 0 ? (
-          <View className="border border-border-default dark:border-border-dark rounded-lg px-3 py-3 bg-surface-default dark:bg-surface-dark">
-            <Text className="text-muted-default dark:text-muted-dark">No vaults available</Text>
+          <View className="border border-border-dark rounded-lg px-3 py-3 bg-surface-default">
+            <Text className="text-muted-default">No vaults available</Text>
           </View>
         ) : (
           <TouchableOpacity
             onPress={() => setShowVaultDropdown(!showVaultDropdown)}
-            className="border border-border-default dark:border-border-dark rounded-lg px-3 py-3 bg-surface-default dark:bg-surface-dark flex-row justify-between items-center"
+            className="border border-border-dark rounded-2xl px-3 py-3 bg-surface-default flex-row justify-between items-center"
           >
-            <Text className="text-text-default dark:text-text-dark">
+            <Text className="text-text-default">
               {selectedVaultId
                 ? (() => {
                     const vault = availableVaults.find(v => v.vault_id === selectedVaultId);
-                    console.log('🔍 CreatePinModal - Selected vault data:', vault);
                     const displayName = vault?.vault_name || `Vault ${selectedVaultId}`;
                     const role = vault?.role || 'Unknown';
-                    console.log('🔍 CreatePinModal - Displaying:', `${displayName} (${role})`);
                     return `${displayName} (${role})`;
                   })()
                 : 'Select a vault'
@@ -134,28 +129,27 @@ export const CreatePinModal: React.FC<CreatePinModalProps> = ({
 
         {/* Vault Dropdown */}
         {showVaultDropdown && availableVaults.length > 0 && (
-          <View className="border border-border-default dark:border-border-dark rounded-lg bg-surface-default dark:bg-surface-dark mt-1 max-h-48">
+          <View className="border border-border-dark rounded-2xl bg-surface-default mt-2 max-h-48 overflow-hidden">
             <ScrollView showsVerticalScrollIndicator={false}>
-              {availableVaults.map((vault) => (
+              {availableVaults.map((vault, index) => (
                 <TouchableOpacity
                   key={vault.vault_id}
                   onPress={() => {
                     setSelectedVaultId(vault.vault_id);
                     setShowVaultDropdown(false);
                   }}
-                  className="px-3 py-3 flex-row justify-between items-center border-b border-border-default dark:border-border-dark last:border-b-0"
+                  className={`px-4 py-3 flex-row justify-between items-center ${
+                    index !== availableVaults.length - 1 ? 'border-b border-border-dark' : ''
+                  } ${selectedVaultId === vault.vault_id ? 'bg-primary-light' : ''}`}
+                  style={{
+                    borderBottomWidth: index !== availableVaults.length - 1 ? 1 : 0,
+                    borderBottomColor: 'rgba(0, 0, 0, 0.1)',
+                  }}
                 >
-                  <View>
-                    <Text className="text-text-default dark:text-text-dark font-medium">
+                  <View className="flex-1">
+                    <Text className="text-text-default font-medium">
                       {(() => {
                         const displayName = vault.vault_name || `Vault ${vault.vault_id}`;
-                        console.log('🔍 CreatePinModal - Dropdown option:', {
-                          id: vault.vault_id,
-                          name: vault.vault_name,
-                          displayName,
-                          role: vault.role,
-                          location: vault.vault_location
-                        });
                         return displayName;
                       })()}
                     </Text>
@@ -180,5 +174,4 @@ export const CreatePinModal: React.FC<CreatePinModalProps> = ({
       )}
     </CustomModal>
   );
-  };
-  
+};

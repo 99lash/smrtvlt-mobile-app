@@ -1,14 +1,14 @@
 import React, { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, ScrollView } from 'react-native';
-import { Eye, EyeOff, User, Lock, LogIn } from 'lucide-react-native';
+import { View, Text, TextInput, TouchableOpacity, ScrollView, ImageBackground, Dimensions } from 'react-native';
+import { Eye, EyeOff, User, Lock, LogIn, Shield, Mail, AlertCircle } from 'lucide-react-native';
 import ButtonPrimary from '../../buttons/ButtonPrimary';
-import SuccessBanner from '../../banner/SuccessBanner';
-import FailureBanner from '../../banner/FailureBanner';
 import { useAuthContext } from '../../../context/AuthContext';
 import { useLogin } from '../../../hooks/useLogin';
 import { validateLoginForm, resetLoginForm, createLoginFormData } from '../../../../utils/loginUtils';
 import { LoginProps } from '../../../../types/LoginTypes';
 import RegisterModal from '../register';
+import { ErrorMessage } from '../../common/ErrorMessage';
+import { SuccessMessage } from '../../common/SuccessMessage';
 
 const Login: React.FC<LoginProps> = ({ onLoginSuccess, onLoginError }) => {
   const [username, setUsername] = useState('');
@@ -82,97 +82,127 @@ const Login: React.FC<LoginProps> = ({ onLoginSuccess, onLoginError }) => {
     }, 3000);
   };
 
+  const { width, height } = Dimensions.get('window');
+
   return (
     <>
-      <ScrollView 
-        className="flex-1 bg-bg-default dark:bg-bg-dark"
+      <ScrollView
+        className="flex-1"
         contentContainerStyle={{ flexGrow: 1 }}
         keyboardShouldPersistTaps="handled"
+        showsVerticalScrollIndicator={false}
       >
-        <View className="flex-1 justify-center px-6 py-8">
-          {/* Header */}
-          <View className="items-center mb-8">
-            <Text className="text-3xl font-bold text-text-default dark:text-text-dark mb-2">
-              Welcome Back
-            </Text>
-            <Text className="text-muted-default dark:text-muted-dark text-center px-4">
-              Sign in to access your SmartVault account and manage your devices
-            </Text>
-          </View>
+        {/* Background */}
+        <View className="flex-1 bg-bg-default" style={{ minHeight: height }}>
 
-          {/* Login Form */}
-          <View className="w-full max-w-md mx-auto mt-10">
-            {/* Username/Email Field */}
-            <View className="mb-4">
-              <View className="flex-row items-center border border-gray-300 rounded-lg px-3 py-3 bg-bg-default dark:bg-bg-dark">
-                <User size={20} color="#6B7280" />
-                <TextInput
-                  className="flex-1 ml-3 text-text-default dark:text-text-dark text-base"
-                  placeholder="Enter your username or email"
-                  value={username}
-                  onChangeText={setUsername}
-                  autoCapitalize="none"
-                  autoCorrect={false}
-                  editable={!isLoading}
-                />
+          <View className="flex-1 justify-center px-6 py-8 bg-surface-default">
+
+            {/* Header Section */}
+            <View className="items-center mb-6">
+              {/* Logo */}
+              <View className="w-24 h-24 rounded-full bg-cards-default items-center justify-center mb-3 border-4 border-primary-default">
+                <Shield size={30} color="#ffb800" />
               </View>
             </View>
 
-            {/* Password Field */}
-            <View className="mb-6">
-              <View className="flex-row items-center border border-gray-300 rounded-lg px-3 py-3 bg-gray-50 bg-bg-default dark:bg-bg-dark">
-                <Lock size={20} color="#6B7280" />
-                <TextInput
-                  className="flex-1 ml-3 text-text-default dark:text-text-dark text-base"
-                  placeholder="Enter your password"
-                  value={password}
-                  onChangeText={setPassword}
-                  secureTextEntry={!showPassword}
-                  autoCapitalize="none"
-                  autoCorrect={false}
-                  editable={!isLoading}
-                />
-                <TouchableOpacity
-                  onPress={togglePasswordVisibility}
-                  disabled={isLoading}
-                  className="ml-2"
-                >
-                  {showPassword ? (
-                    <EyeOff size={20} color="#6B7280" />
-                  ) : (
-                    <Eye size={20} color="#6B7280" />
-                  )}
-                </TouchableOpacity>
+            {/* Login Card */}
+            <View className="bg-surface-default rounded-3xl p-8 pt-8  border border-border-default shadow-lg" 
+            style={{
+              shadowColor: "#000",
+              shadowOffset: { width: 0, height: 4 },
+              shadowOpacity: 0.15,
+              shadowRadius: 8,
+              elevation: 6,
+              borderRadius: 24,
+              paddingVertical: 12,
+              paddingHorizontal: 16,
+            }}
+            >
+              {/* Error/Success Messages */}
+              {showError && (
+                <ErrorMessage message={errorMessage} />
+              )}
+
+              {showSuccess && (
+                <SuccessMessage message="Login successful! Redirecting..." />
+              )}
+
+              {/* Username/Email Field */}
+              <View className="mb-6">
+                <View className="flex-row items-center rounded-2xl px-4 py-2 bg-bg-default border border-border-default">
+                  <Mail size={20} color="#6B7280" />
+                  <TextInput
+                    className="flex-1 ml-3 text-text-default text-base"
+                    placeholder="Enter your username or email"
+                    placeholderTextColor="#6B7280"
+                    value={username}
+                    onChangeText={setUsername}
+                    autoCapitalize="none"
+                    autoCorrect={false}
+                    editable={!isLoading}
+                    keyboardType="email-address"
+                  />
+                </View>
               </View>
-            </View>
 
-            {/* Forgot Password Link */}
-            <TouchableOpacity className="mb-6">
-              <Text className="text-sm text-blue-600 text-right">
-                Forgot Password?
-              </Text>
-            </TouchableOpacity>
+              {/* Password Field */}
+              <View className="mb-8">
+                <View className="flex-row items-center rounded-2xl px-4 py-2 bg-bg-default border border-border-default">
+                  <Lock size={20} color="#6B7280" />
+                  <TextInput
+                    className="flex-1 ml-3 text-text-default text-base"
+                    placeholder="Enter your password"
+                    placeholderTextColor="#6B7280"
+                    value={password}
+                    onChangeText={setPassword}
+                    secureTextEntry={!showPassword}
+                    autoCapitalize="none"
+                    autoCorrect={false}
+                    editable={!isLoading}
+                  />
+                  <TouchableOpacity
+                    onPress={togglePasswordVisibility}
+                    disabled={isLoading}
+                    className="ml-3 p-1"
+                  >
+                    {showPassword ? (
+                      <EyeOff size={20} color="#6B7280" />
+                    ) : (
+                      <Eye size={20} color="#6B7280" />
+                    )}
+                  </TouchableOpacity>
+                </View>
+              </View>
 
-            {/* Login Button */}
-            <ButtonPrimary
-              title="Login to SmartVault"
-              onPress={handleLogin}
-              disabled={isLoading || !username.trim() || !password.trim()}
-              loading={isLoading}
-              icon={<LogIn size={20} color="white" />}
-              className="w-full"
-            />
-
-            {/* Sign Up Link */}
-            <View className="flex-row justify-center items-center mt-6">
-              <Text className="text-muted-default dark:text-muted-dark text-sm">
-                Don't have an account?{' '}
-              </Text>
-              <TouchableOpacity onPress={() => setRegisterModalVisible(true)}>
-                <Text className="text-blue-600 text-sm font-semibold">
-                  Sign Up
+              {/* Forgot Password Link */}
+              <TouchableOpacity className="mb-8 self-end">
+                <Text className="text-primary-default text-sm font-medium">
+                  Forgot Password?
                 </Text>
               </TouchableOpacity>
+
+              {/* Login Button */}
+              <ButtonPrimary
+                title="Sign In"
+                onPress={handleLogin}
+                disabled={isLoading || !username.trim() || !password.trim()}
+                loading={isLoading}
+                icon={<LogIn size={20} color="white" />}
+                iconPosition="left"
+                className="mb-6"
+              />
+
+              {/* Sign Up Link */}
+              <View className="flex-row justify-center items-center">
+                <Text className="text-text-default/70 text-sm">
+                  Don't have an account?{' '}
+                </Text>
+                <TouchableOpacity onPress={() => setRegisterModalVisible(true)}>
+                  <Text className="text-primary-default font-semibold text-sm underline">
+                    Create Account
+                  </Text>
+                </TouchableOpacity>
+              </View>
             </View>
           </View>
         </View>
@@ -184,24 +214,6 @@ const Login: React.FC<LoginProps> = ({ onLoginSuccess, onLoginError }) => {
         onClose={() => setRegisterModalVisible(false)}
         onRegisterSuccess={handleRegisterSuccess}
       />
-
-      {/* Success Banner */}
-      {showSuccess && (
-        <SuccessBanner
-          message="Login successful! Welcome back."
-          duration={2000}
-          onHide={() => setShowSuccess(false)}
-        />
-      )}
-
-      {/* Error Banner */}
-      {showError && (
-        <FailureBanner
-          message={errorMessage || hookError || 'Login failed'}
-          duration={3000}
-          onHide={() => setShowError(false)}
-        />
-      )}
     </>
   );
 };

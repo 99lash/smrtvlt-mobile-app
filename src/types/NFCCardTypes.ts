@@ -1,56 +1,55 @@
-// NFC Card Types - Matching backend schema
-export interface NFCCardCreateRequest {
-  uid: string;
-  name?: string;
+export interface NFCCard {
+  nfc_card_id: number;
+  nfc_card_uid: string;
+  nfc_card_name?: string;
   user_id?: number;
   vault_id: number;
-}
-
-export interface NFCCardAssignRequest {
-  user_id: number;
-}
-
-export interface NFCCardResponse {
-  id: number;
-  uid: string;
-  user_id?: number;
+  username?: string;
+  first_name?: string;
+  last_name?: string;
   created_at: string;
   updated_at?: string;
-  deleted_at?: string;
+}
+
+export interface NFCCardRegistrationRequest {
+  uid: string;
+  user_id: number;
+  vault_id?: number;
+  name?: string;
+}
+
+export interface NFCCardRegistrationResponse {
+  success: boolean;
+  data?: NFCCard;
+  error?: string;
 }
 
 export interface NFCCardListResponse {
   success: boolean;
-  data: NFCCardResponse[];
-  detail?: string;
+  data?: NFCCard[];
+  error?: string;
 }
 
-export interface NFCCardCreateResponse {
+export interface NFCCardDeleteResponse {
   success: boolean;
-  data: NFCCardResponse;
-  detail?: string;
+  error?: string;
 }
 
-export interface NFCCardError {
-  success: boolean;
-  detail: string;
+export interface NFCManagerState {
+  nfcCards: NFCCard[];
+  loading: boolean;
+  error: string | null;
+  deletingCardId: number | null;
 }
 
-// NFC Card with User Information
-export interface NFCCardWithUserResponse {
-  id: number;
-  uid: string;
-  name?: string;
-  user_id?: number;
-  username?: string;
-  created_at: string;
-  updated_at?: string;
-  deleted_at?: string;
+export interface NFCRegistrationState {
+  loading: boolean;
+  error: string | null;
+  cardName: string;
 }
 
-// Service response types
-export interface NFCCardServiceResponse {
-  success: boolean;
-  data?: NFCCardResponse;
+export interface TokenValidationResult {
+  isValid: boolean;
+  token?: string;
   error?: string;
 }
