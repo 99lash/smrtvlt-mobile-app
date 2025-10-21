@@ -55,9 +55,9 @@ export const WarningMessage: React.FC<WarningMessageProps> = ({
     <View className={containerClassName}>
       <View className="flex-row items-center">
         {showIcon && (
-          <AlertTriangle size={iconSize} color={iconColor} className="mr-2 flex-shrink-0" />
+          <AlertTriangle size={iconSize} color={iconColor} className="mr-2 flex-shrink-0 self-start mt-1" />
         )}
-        <Text className={`${textClassName} ${showIcon ? 'ml-2' : ''}`}>
+        <Text className={`${textClassName} ${showIcon ? 'ml-2' : ''} flex-1`} style={{ flexWrap: 'wrap' }}>
           {message}
         </Text>
       </View>

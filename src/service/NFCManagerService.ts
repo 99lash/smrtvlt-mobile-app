@@ -70,29 +70,37 @@ export class NFCManagerServiceClass {
    */
   async fetchNFCCards(vaultId: number): Promise<NFCCardListResponse> {
     try {
+      console.log('🔍 NFCManagerService: Fetching NFC cards for vault:', vaultId);
+      
       const token = await this.getValidToken();
 
       if (!token) {
+        console.error('❌ NFCManagerService: No valid token available');
         return {
           success: false,
           error: 'Authentication required. Please log in again.',
         };
       }
 
+      console.log('🔑 NFCManagerService: Token obtained, calling NFCCardService');
       const result = await NFCCardService.getCardsByVault(vaultId, token);
+      console.log('📱 NFCManagerService: NFCCardService response:', result);
 
       if (result.success && result.data) {
+        console.log('✅ NFCManagerService: Successfully fetched', result.data.length, 'NFC cards');
         return {
           success: true,
           data: result.data,
         };
       } else {
+        console.error('❌ NFCManagerService: NFCCardService returned error:', result.error);
         return {
           success: false,
           error: result.error || 'Failed to fetch NFC cards',
         };
       }
     } catch (error) {
+      console.error('❌ NFCManagerService: Exception occurred:', error);
       const errorMessage =
         error instanceof Error ? error.message : 'Failed to fetch NFC cards';
 
@@ -131,9 +139,9 @@ export class NFCManagerServiceClass {
 
       const result = await NFCCardService.registerCard(
         registrationRequest.uid,
-        registrationRequest.user_id,
+        registrationRequest.vault_id!,
         token,
-        registrationRequest.vault_id,
+        registrationRequest.user_id || undefined,
         registrationRequest.name,
       );
 

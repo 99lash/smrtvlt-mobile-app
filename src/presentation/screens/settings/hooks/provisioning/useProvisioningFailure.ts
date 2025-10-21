@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { PROVISIONING_CONSTANTS } from '../../../utils/provisioningConstants';
+import { PROVISIONING_CONSTANTS } from '../../../../../utils/provisioningConstants';
 
 /**
  * Custom hook for managing provisioning failure notifications

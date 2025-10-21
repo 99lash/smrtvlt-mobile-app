@@ -5,9 +5,10 @@ export interface LogEntry {
   id: number;
   device_id: string;
   user_id?: number;
+  username?: string;  // ✅ Added username field from backend
   event_type: string;
   details: string;
-  timestamp: string;  // ✅ CHANGED from created_at to timestamp
+  timestamp: string;
   vault_id?: number;
 }
 
@@ -53,7 +54,7 @@ export class LogService extends ApiService {
     if (__DEV__ && response.length > 0) {
       response.forEach((log, index) => {
         if (log.details && log.details.includes('NFC:')) {
-          console.log(`  ${index + 1}. ${log.event_type}: ${log.details} (timestamp: ${log.timestamp})`);
+          console.log(`  ${index + 1}. ${log.event_type}: ${log.details} (user: ${log.username || `User ${log.user_id}`}, timestamp: ${log.timestamp})`);
         }
       });
     }

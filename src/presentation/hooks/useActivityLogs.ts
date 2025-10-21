@@ -1,9 +1,47 @@
 import { useState, useMemo, useCallback, useEffect } from 'react';
+import { useIsFocused } from '@react-navigation/native';
 import { ActivityLog, FilterState } from '../../types/ActivityTypes';
 import { LogService, LogEntry } from '../../service/LogService';
 import { VaultService, VaultMembership } from '../../service/VaultService';
 import { StorageService } from '../../config/api';
 import { DEFAULT_FILTERS } from '../../utils/activityConstants';
+
+/**
+ * Generates user information for activity logs with proper fallback logic.
+ * 
+ * @param logEntry - Log entry from backend
+ * @returns User information object with initials and name
+ */
+const generateUserInfo = (logEntry: LogEntry): { initials: string; name: string } => {
+  console.log('🔍 generateUserInfo - Processing log entry:', {
+    id: logEntry.id,
+    user_id: logEntry.user_id,
+    username: logEntry.username,
+    hasUsername: !!logEntry.username
+  });
+
+  // Use username from backend if available
+  if (logEntry.username) {
+    const initials = logEntry.username.length >= 2 
+      ? logEntry.username.substring(0, 2).toUpperCase()
+      : logEntry.username.toUpperCase();
+    console.log('✅ Using username from backend:', logEntry.username, 'initials:', initials);
+    return { initials, name: logEntry.username };
+  }
+  
+  // Fallback for system events (no user_id)
+  if (!logEntry.user_id) {
+    console.log('🔧 System event - no user_id');
+    return { initials: 'S', name: 'System' };
+  }
+  
+  // Fallback for missing username but existing user_id
+  console.log('⚠️ No username from backend, using user_id fallback:', logEntry.user_id);
+  return { 
+    initials: `U${logEntry.user_id}`, 
+    name: `User ${logEntry.user_id}` 
+  };
+};
 
 // Helper function to transform backend LogEntry to frontend ActivityLog
 const transformLogEntryToActivityLog = (logEntry: LogEntry): ActivityLog => {
@@ -28,19 +66,20 @@ const transformLogEntryToActivityLog = (logEntry: LogEntry): ActivityLog => {
     'connected': 'vault_unlock'
   };
 
-  // Generate user info based on user_id
-  const userInfo = logEntry.user_id
-    ? { initials: `U${logEntry.user_id}`, name: `User ${logEntry.user_id}` }
-    : { initials: 'U', name: 'Unknown' };
+  // Generate user info with proper username handling
+  const userInfo = generateUserInfo(logEntry);
 
   // Format timestamp - handle ISO format properly
   let date: Date;
 
   try {
+    // Use timestamp field from backend (which we updated to include)
+    const timestampField = logEntry.timestamp || logEntry.created_at;
+    
     // Handle different ISO format variations
-    const dateString = logEntry.created_at.includes('T')
-      ? logEntry.created_at
-      : logEntry.created_at.replace(' ', 'T');
+    const dateString = timestampField.includes('T')
+      ? timestampField
+      : timestampField.replace(' ', 'T');
 
     date = new Date(dateString);
 
@@ -49,7 +88,7 @@ const transformLogEntryToActivityLog = (logEntry: LogEntry): ActivityLog => {
       throw new Error('Invalid date');
     }
   } catch (error) {
-    console.warn('Failed to parse date:', logEntry.created_at, 'using current time');
+    console.warn('Failed to parse date:', logEntry.timestamp || logEntry.created_at, 'using current time');
     date = new Date(); // Fallback to current time
   }
 
@@ -90,6 +129,7 @@ const getTitleFromEventType = (eventType: string): string => {
 
 
 export const useActivityLogs = (vaultId?: number) => {
+  const isFocused = useIsFocused();
   const [logs, setLogs] = useState<ActivityLog[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
@@ -120,19 +160,23 @@ export const useActivityLogs = (vaultId?: number) => {
       setAvailableVaults(vaults);
       
       // Check if user has no vault memberships
-      setHasNoVaults(vaults.length === 0);
+      const noVaults = vaults.length === 0;
+      setHasNoVaults(noVaults);
 
       // Set current vault ID if not already set
-      if (!currentVaultId && vaults.length > 0) {
-        setCurrentVaultId(vaults[0].vault_id);
-      }
+      setCurrentVaultId(prevVaultId => {
+        if (!prevVaultId && vaults.length > 0) {
+          return vaults[0].vault_id;
+        }
+        return prevVaultId;
+      });
     } catch (err) {
       console.error('Error fetching user vaults:', err);
       setError(err instanceof Error ? err.message : 'Failed to fetch user vaults');
     } finally {
       setVaultsLoading(false);
     }
-  }, [currentVaultId]);
+  }, []); // Remove currentVaultId from dependencies
 
   // Fetch logs from backend API
   const fetchLogs = useCallback(async () => {
@@ -149,6 +193,18 @@ export const useActivityLogs = (vaultId?: number) => {
         token: token || undefined,
       });
 
+      // Debug: Log the raw data from backend
+      console.log('🔍 useActivityLogs - Raw log entries from backend:', logEntries.length, 'entries');
+      if (logEntries.length > 0) {
+        console.log('📋 First log entry details:', {
+          id: logEntries[0].id,
+          user_id: logEntries[0].user_id,
+          username: logEntries[0].username,
+          event_type: logEntries[0].event_type,
+          details: logEntries[0].details
+        });
+      }
+
       // Transform backend data to frontend format
       const transformedLogs = logEntries.map(transformLogEntryToActivityLog);
       setLogs(transformedLogs);
@@ -161,20 +217,22 @@ export const useActivityLogs = (vaultId?: number) => {
     }
   }, [currentVaultId]);
 
-  // Initialize vaults on mount
+  // Initialize vaults on mount and when screen becomes focused
   useEffect(() => {
-    fetchUserVaults();
-  }, [fetchUserVaults]);
+    if (isFocused) {
+      fetchUserVaults();
+    }
+  }, [fetchUserVaults, isFocused]);
 
-  // Fetch logs when vault ID changes
+  // Fetch logs when vault ID changes and screen is focused
   useEffect(() => {
-    if (currentVaultId) {
+    if (currentVaultId && isFocused) {
       fetchLogs();
     } else if (!vaultsLoading) {
       // If no vault ID and vault loading is complete, set loading to false
       setLoading(false);
     }
-  }, [currentVaultId, fetchLogs, vaultsLoading]);
+  }, [currentVaultId, fetchLogs, vaultsLoading, isFocused]);
 
   const filterState: FilterState = {
     searchQuery,

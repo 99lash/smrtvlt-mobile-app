@@ -34,13 +34,16 @@ function BorderedList<T>({
 
   return (
     <View
-      className={`bg-bg-default overflow-hidden rounded-3xl ${className}`}
+      className={`bg-bg-default overflow-hidden  ${className}`}
     >
       <FlatList
         data={data}
         keyExtractor={keyExtractor}
         ItemSeparatorComponent={() => <View style={{ height: itemGap }} />}
         contentContainerStyle={{ padding: itemGap }}
+        style={{ maxHeight }}
+        showsVerticalScrollIndicator={true}
+        nestedScrollEnabled={true}
         renderItem={({ item, index }) => {
           const leftIcon = iconExtractor?.(item, index);
           const rightContent = rightContentExtractor?.(item, index);
@@ -52,7 +55,7 @@ function BorderedList<T>({
               disabled={!onItemPress}
               onPress={() => onItemPress?.(item, index)}
               className={`flex-row items-center justify-between px-5 py-4 gap-3 rounded-2xl ${
-                isSelected ? 'bg-primary-light' : 'bg-surface-default'
+                isSelected ? 'bg-primary-default' : 'bg-surface-default'
               }`}
               style={{
                 minHeight: itemHeight,

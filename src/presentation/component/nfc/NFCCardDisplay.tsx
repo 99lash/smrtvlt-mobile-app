@@ -57,40 +57,20 @@ export const NFCCardDisplay: React.FC<NFCCardDisplayProps> = React.memo(({ nfcDa
   };
 
   return (
-    <>
-      {/* <View className="flex-row items-center mb-2">
-        <View className="w-10 h-10 bg-blue-400 rounded-full items-center justify-center mr-3">
-          <Text className="text-white text-sm font-bold">NFC</Text>
-        </View> 
-        <View className="flex-1">
-          <Text className="text-white text-base font-medium">
-            Card ID: {formatNFCCardDisplay(nfcData.uid)}
-          </Text>
-          <Text className="text-muted-default text-sm">
-            Device: {nfcData.device_id}
-          </Text>
-        </View>
-      </View> */}
 
-      <View className="bg-gray-700 rounded-lg p-3 mt-2">
-        <Text className="text-white text-sm mb-1">
-          <Text className="font-medium">NFC UID:</Text> {nfcData.uid}
+    <View className="bg-bg-default rounded-2xl p-3 mt-2">
+      <Text className="text-text-default text-sm mb-1">
+        <Text className="font-medium">NFC UID:</Text> {nfcData.uid}
+      </Text>
+      <Text className="text-text-default text-sm mb-1">
+        <Text className="font-medium">Detected:</Text> {formatDate(nfcData.created_at)}
+      </Text>
+      {nfcData.vault_id && (
+        <Text className="text-white text-sm">
+          <Text className="font-medium">Vault:</Text> {nfcData.vault_id}
         </Text>
-        <Text className="text-white text-sm mb-1">
-          <Text className="font-medium">Detected:</Text> {formatDate(nfcData.created_at)}
-        </Text>
-        {nfcData.vault_id && (
-          <Text className="text-white text-sm">
-            <Text className="font-medium">Vault:</Text> {nfcData.vault_id}
-          </Text>
-        )}
-      </View>
+      )}
+    </View>
 
-      {/* <View className="mt-3 px-3 py-2 bg-blue-900 rounded-lg">
-        <Text className="text-blue-100 text-sm text-center">
-          Tap "Register" to add this NFC card to your vault
-        </Text>
-      </View> */}
-    </>
   );
 });

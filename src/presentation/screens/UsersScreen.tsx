@@ -162,7 +162,7 @@ export default function UsersScreen({ navigation }: UsersScreenProps) {
       <InvitationModal
         visible={showQRScannerModal}
         onClose={closeModals}
-        onInvitationAccepted={handleInvitationAccepted}
+        onInvitationAccepted={(vaultId, role) => handleInvitationAccepted(vaultId, role)}
         mode="accept"
       />
 

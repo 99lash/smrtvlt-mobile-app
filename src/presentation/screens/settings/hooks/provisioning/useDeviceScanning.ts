@@ -1,7 +1,7 @@
 import { useState, useCallback } from 'react';
 import { useProvisioning } from './useProvisioning';
-import { PROVISIONING_CONSTANTS } from '../../../utils/provisioningConstants';
-import type { ProvisioningError } from '../../../types/ProvisioningTypes';
+import { PROVISIONING_CONSTANTS } from '../../../../../utils/provisioningConstants';
+import type { ProvisioningError } from '../../../../../types/ProvisioningTypes';
 import type { ESPDevice } from '@orbital-systems/react-native-esp-idf-provisioning';
 
 /**

@@ -108,4 +108,24 @@ export class StorageService {
       console.error('[Storage] Error clearing storage:', error);
     }
   }
+
+  /**
+   * Get current user ID from JWT token
+   */
+  static async getCurrentUserId(): Promise<number | null> {
+    try {
+      const token = await AsyncStorage.getItem(API_CONFIG.STORAGE_KEYS.ACCESS_TOKEN);
+      if (!token) return null;
+      
+      // Parse JWT token to get user ID
+      const parts = token.split('.');
+      if (parts.length !== 3) return null;
+      
+      const payload = JSON.parse(atob(parts[1]));
+      return payload.user_id || payload.sub || null;
+    } catch (error) {
+      console.error('[Storage] Error getting user ID from token:', error);
+      return null;
+    }
+  }
 }

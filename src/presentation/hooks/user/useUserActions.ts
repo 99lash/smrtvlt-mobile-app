@@ -1,6 +1,6 @@
 import { useCallback } from 'react';
 import { Alert } from 'react-native';
-import { useVaultInvitation } from '../vault/useVaultInvitation';
+import { useVaultInvitation } from '../../screens/settings/hooks/useVaultInvitation';
 import { useInvitationFlow } from './useInvitationFlow';
 import { UserService } from '../../../service/UserService';
 import { VaultMembership } from '../../../service/VaultService';

@@ -1,6 +1,7 @@
 import React from 'react';
 import { View, Text, TextInput } from 'react-native';
-import { NFCCardDisplay } from '../nfc/NFCCardDisplay';
+import { NFCCardDisplay } from '../../component/nfc/NFCCardDisplay';
+import { AccessLimits } from '../../../types/AccessLimits';
 
 interface NFCCardFormProps {
   nfcData: any; // NFC data from the hook
@@ -8,6 +9,7 @@ interface NFCCardFormProps {
   error: string | null;
   loading: boolean;
   onCardNameChange: (name: string) => void;
+  limits?: AccessLimits | null;
 }
 
 export const NFCCardForm: React.FC<NFCCardFormProps> = ({
@@ -16,6 +18,7 @@ export const NFCCardForm: React.FC<NFCCardFormProps> = ({
   error,
   loading,
   onCardNameChange,
+  limits,
 }) => {
   return (
     <View className="py-4">
@@ -35,16 +38,19 @@ export const NFCCardForm: React.FC<NFCCardFormProps> = ({
       {/* NFC Card Name Input */}
       <View className="mt-4">
         <TextInput
-          className="bg-surface-dark border border-gray-600 rounded-lg px-3 py-2 text-white"
+          className="bg-surface-default border border-gray-600 rounded-2xl px-3 py-3 text-text-default"
           placeholder="Enter Card Name"
-          placeholderTextColor="#9ca3af"
+          placeholderTextColor="#64748b"
           value={cardName}
           onChangeText={onCardNameChange}
           maxLength={50}
           editable={!loading}
         />
         <Text className="text-muted-default text-xs mt-1">
-          Give your NFC card a memorable name to easily identify it later
+          {limits?.role === 'member' 
+            ? 'This card will be assigned to you automatically'
+            : 'Give your NFC card a memorable name to easily identify it later'
+          }
         </Text>
       </View>
     </View>

@@ -14,12 +14,14 @@ export class NFCCardService {
 
   /**
     * Register a new NFC card
+    * For members: userId is optional (backend auto-assigns)
+    * For admins: userId can be provided to assign to specific user
     */
   static async registerCard(
     uid: string,
-    userId?: number,
+    vaultId: number,
     token?: string,
-    vaultId?: number,
+    userId?: number,
     name?: string
   ): Promise<NFCCardServiceResponse> {
     try {
@@ -32,8 +34,9 @@ export class NFCCardService {
 
       const payload: NFCCardCreateRequest = {
         uid,
-        ...(userId && { user_id: userId }),
         vault_id: vaultId,
+        // Only include user_id if explicitly provided (for admin assignments)
+        ...(userId && { user_id: userId }),
         ...(name && { name })
       };
 
@@ -58,7 +61,14 @@ export class NFCCardService {
     } catch (error) {
       console.error('Error registering NFC card:', error);
 
+      // Handle role-based limit errors
       if (error instanceof Error) {
+        if (error.message.includes('403') || error.message.includes('Forbidden')) {
+          return {
+            success: false,
+            error: 'Members are limited to 1 NFC card per vault'
+          };
+        }
         return {
           success: false,
           error: error.message
@@ -88,10 +98,15 @@ export class NFCCardService {
 
       return {
         success: true,
-        data: response
+        data: response as any
       };
     } catch (error) {
       console.error('Error fetching NFC card:', error);
+
+      // Re-throw ApiError so isCardRegistered can handle 404 properly
+      if (error instanceof ApiError) {
+        throw error;
+      }
 
       if (error instanceof Error) {
         return {

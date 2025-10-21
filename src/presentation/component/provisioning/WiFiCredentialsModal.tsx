@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, TextInput, TouchableOpacity, ActivityIndicator } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, ActivityIndicator, ScrollView } from 'react-native';
 import { Wifi, Eye, EyeOff } from 'lucide-react-native';
 import CustomModal from '../modals/CustomModal';
 import ProvisioningHeader from './ProvisioningHeader';
@@ -7,7 +7,7 @@ import ButtonPrimary from '../buttons/ButtonPrimary';
 import DeviceList from './DeviceList';
 import { PROVISIONING_CONSTANTS } from '../../../utils/provisioningConstants';
 import type { ESPDevice } from '@orbital-systems/react-native-esp-idf-provisioning';
-import type { WiFiNetwork } from '../../hooks/provisioning/useWiFiScanning';
+import type { WiFiNetwork } from '../../screens/settings/hooks/provisioning/useWiFiScanning';
 
 interface WiFiCredentialsModalProps {
   visible: boolean;
@@ -74,20 +74,26 @@ const WiFiCredentialsModal: React.FC<WiFiCredentialsModalProps> = ({
     console.log('==============================');
   }, [visible, selectedDevice, selectedSSID, wifiPassword, isFormValid, isProvisioning]);
 
+  // Determine if we should show refresh button (no networks found and not scanning)
+  const shouldShowRefresh = !scanning && !wifiScanError && wifiNetworks.length === 0;
+  
   return (
     <CustomModal
       visible={visible}
       onClose={onClose}
-      title={PROVISIONING_CONSTANTS.MESSAGES.WIFI_CREDENTIALS_TITLE}
-      icon={<Wifi size={PROVISIONING_CONSTANTS.UI.ICON_SIZE} color={PROVISIONING_CONSTANTS.UI.ICON_COLOR} />}
-      iconPosition="left"
+      title='Send Wi-Fi Credentials'
       primaryAction={{
-        label: "Next",
+        label: shouldShowRefresh ? "Refresh" : "Next",
         onPress: () => {
-          console.log('=== WIFI PROVISION BUTTON CLICKED ===');
-          handleProvisionWiFi();
+          if (shouldShowRefresh) {
+            console.log('=== WIFI REFRESH BUTTON CLICKED ===');
+            startWiFiScan();
+          } else {
+            console.log('=== WIFI PROVISION BUTTON CLICKED ===');
+            handleProvisionWiFi();
+          }
         },
-        disabled: false, // Enable the button
+        disabled: shouldShowRefresh ? false : !isFormValid,
         loading: isProvisioning,
       }}
       secondaryAction={{
@@ -95,10 +101,14 @@ const WiFiCredentialsModal: React.FC<WiFiCredentialsModalProps> = ({
         onPress: onClose,
       }}
     >
-      <View className="mb-3">
+      <ScrollView 
+        className="mb-3 max-h-96"
+        showsVerticalScrollIndicator={true}
+        nestedScrollEnabled={true}
+      >
         <ProvisioningHeader
           message={selectedDevice
-            ? `${PROVISIONING_CONSTANTS.MESSAGES.SEND_WIFI_CREDENTIALS}: ${selectedDevice.name}`
+            ? `${'Send Wi-Fi Credentials to'}: ${selectedDevice.name}`
             : PROVISIONING_CONSTANTS.MESSAGES.MAKE_SURE_DEVICE_POWERED_ON
           }
         />
@@ -130,18 +140,14 @@ const WiFiCredentialsModal: React.FC<WiFiCredentialsModalProps> = ({
             onDevicePress={d => handleNetworkSelect(d.ssid)}
             getSignal={d => d.rssi || 0}
             selectedId={selectedSSID ?? undefined}
-            renderItem={(d, isSelected) => (
-              <View
-                className={`px-3 py-2 rounded ${isSelected ? 'bg-primary-light' : 'bg-surface-default dark:bg-surface-dark'}`}
-              >
-                <Text
-                  className={`${isSelected ? 'text-primary-dark' : 'text-text-default dark:text-text-dark'} font-medium`}
-                >
-                  {d.ssid}
-                </Text>
-              </View>
+            renderItem={(d) => (
+              <Text className='text-text-default'
+              >{d.ssid}
+              </Text>
             )}
             title="Available Wi-Fi"
+            maxVisibleItems={3}
+            itemHeight={50}
           />
         )}
 
@@ -151,13 +157,13 @@ const WiFiCredentialsModal: React.FC<WiFiCredentialsModalProps> = ({
             <Text className="text-text-default dark:text-text-dark mb-1">
               {PROVISIONING_CONSTANTS.MESSAGES.ENTER_WIFI_PASSWORD}
             </Text>
-            <View className="flex-row items-center border border-border-default dark:border-border-dark rounded px-3 py-2 bg-surface-default dark:bg-surface-dark">
+            <View className="flex-row items-center border border-border-dark rounded-3xl px-2 py-2 bg-surface-default">
               <TextInput
                 value={wifiPassword}
                 onChangeText={setWifiPassword}
                 secureTextEntry={!showPassword}
                 placeholder={PROVISIONING_CONSTANTS.MESSAGES.ENTER_WIFI_PASSWORD}
-                className="flex-1 text-text-default dark:text-text-dark"
+                className="flex-1 text-text-default"
                 placeholderTextColor="#64748b"
               />
               <TouchableOpacity
@@ -185,7 +191,7 @@ const WiFiCredentialsModal: React.FC<WiFiCredentialsModalProps> = ({
         {provisioningError && (
           <Text className="text-error-DEFAULT mt-2">{provisioningError.message}</Text>
         )}
-      </View>
+      </ScrollView>
     </CustomModal>
   );
 };

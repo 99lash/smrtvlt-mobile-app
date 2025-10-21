@@ -1,16 +1,17 @@
 import React, { useState } from 'react';
 import { View, Text, Alert } from 'react-native';
 import { Plus } from 'lucide-react-native';
-import { useProvisioning } from '../../hooks/provisioning/useProvisioning';
+import { useProvisioning } from '../../screens/settings/hooks/provisioning/useProvisioning';
 import ButtonSecondary from '../buttons/ButtonSecondary';
 import DeviceScanningModal from './DeviceScanningModal';
 import WiFiCredentialsModal from './WiFiCredentialsModal';
 import VaultConfigurationModal from './VaultConfigurationModal';
-import { useDeviceScanning } from '../../hooks/provisioning/useDeviceScanning';
-import { useWiFiProvisioning } from '../../hooks/provisioning/useWiFiProvisioning';
-import { useSuccessNotification } from '../../hooks/provisioning/useSuccessNotification';
-import { useProvisioningFailure } from '../../hooks/provisioning/useProvisioningFailure';
-import { useVaultCreation } from '../../hooks/provisioning/useVaultCreation';
+import { useDeviceScanning } from '../../screens/settings/hooks/provisioning/useDeviceScanning';
+import { useWiFiProvisioning } from '../../screens/settings/hooks/provisioning/useWiFiProvisioning';
+import { useSuccessNotification } from '../../screens/settings/hooks/provisioning/useSuccessNotification';
+import { useProvisioningFailure } from '../../screens/settings/hooks/provisioning/useProvisioningFailure';
+import { useVaultCreation } from '../../screens/settings/hooks/provisioning/useVaultCreation';
+import { useVaultManagement } from '../../hooks/VaultContext';
 import { PROVISIONING_CONSTANTS } from '../../../utils/provisioningConstants';
 import type { ESPDevice } from '@orbital-systems/react-native-esp-idf-provisioning';
 
@@ -41,11 +42,12 @@ const Provisioning = () => {
   const wifiProvisioning = useWiFiProvisioning();
   const vaultCreation = useVaultCreation();
   const { showFailure, hideFailure } = useProvisioningFailure(log);
+  
+  // Vault management for refreshing vault list after creation
+  const { forceRefreshVaults, selectVault } = useVaultManagement();
 
   // Centralized modal reset functionality
   const resetAllModals = () => {
-    console.log('=== RESETTING ALL MODALS ===');
-
     // Hide all modals
     setScanModalVisible(false);
     setWifiModalVisible(false);
@@ -63,8 +65,6 @@ const Provisioning = () => {
 
     // Reset vault creation state
     vaultCreation.resetCreation();
-
-    console.log('=== ALL MODALS RESET ===');
   };
 
 
@@ -82,8 +82,6 @@ const Provisioning = () => {
 
   // Handle WiFi provisioning completion
   const handleWiFiProvisioned = () => {
-    console.log('=== 🚀 WIFI PROVISIONING COMPLETED - OPENING VAULT CONFIG ===');
-    console.log('Closing WiFi modal and opening vault configuration modal...');
 
     setWifiModalVisible(false);
     // Don't clear device yet - we need it for vault configuration
@@ -117,7 +115,7 @@ const Provisioning = () => {
   }, [wifiModalVisible, selectedDevice]);
 
   // Handle vault creation completion
-  const handleVaultCreated = (vaultData: any) => {
+  const handleVaultCreated = async (vaultData: any) => {
     console.log('=== VAULT CREATED SUCCESSFULLY ===');
     console.log('Vault data:', vaultData);
 
@@ -127,6 +125,31 @@ const Provisioning = () => {
     // Clear device state
     setSelectedDevice(null);
     setPendingDevice(null);
+
+    // Refresh vault list to include the new vault
+    try {
+      console.log('🔄 Refreshing vault list after vault creation...');
+      console.log('📊 Vault data for selection:', {
+        id: vaultData.id,
+        name: vaultData.name,
+        device_id: vaultData.device_id
+      });
+      
+      await forceRefreshVaults();
+      console.log('✅ Vault list refreshed successfully');
+      
+      // Select the newly created vault if we have its ID
+      if (vaultData.id) {
+        console.log('🎯 Selecting newly created vault:', vaultData.id);
+        selectVault(parseInt(vaultData.id));
+        console.log('✅ Vault selection completed');
+      } else {
+        console.log('⚠️ No vault ID found in vault data, skipping auto-selection');
+      }
+    } catch (error) {
+      console.error('❌ Failed to refresh vault list:', error);
+      // Don't block the success flow if refresh fails
+    }
 
     // Show success message
     Alert.alert(

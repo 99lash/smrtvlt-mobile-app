@@ -163,7 +163,10 @@ export const useNFCLogs = (vaultId?: number) => {
   }, [vaultId, refreshTrigger]);
 
   const getMostRecentNFC = useCallback((): NFCLogData | null => {
-    if (nfcLogs.length === 0) return null;
+    
+    if (nfcLogs.length === 0) {
+      return null;
+    }
 
     // ✅ Since we're only getting 1 log with limit:1, just return it
     // No sorting needed!
@@ -203,6 +206,16 @@ export const useNFCLogs = (vaultId?: number) => {
     setRefreshTrigger(prev => prev + 1);
   }, []);
 
+  // Clear NFC logs immediately (for after registration)
+  const clearNFCLogs = useCallback(() => {
+    console.log('🧹 Clearing NFC logs after registration...');
+    console.log('🧹 Before clearing - nfcLogs.length:', nfcLogs.length);
+    setNfcLogs([]);
+    setLoading(false);
+    setError(null);
+    console.log('🧹 NFC logs cleared - should be empty now');
+  }, []);
+
   return {
     nfcLogs,
     loading,
@@ -211,6 +224,7 @@ export const useNFCLogs = (vaultId?: number) => {
     getMostRecentNFC,
     refreshNFCLogs: fetchNFCLogs,
     forceRefresh,
+    clearNFCLogs,
     handleLogout
   };
 };

@@ -46,7 +46,7 @@ const DeviceList = <T,>({
             renderItem(item, isSelected)
           ) : (
             <Text
-              className={`font-medium ${isSelected ? 'text-primary-dark' : 'text-text-default dark:text-text-dark'}`}
+              className={`font-medium ${isSelected ? 'text-primary-dark' : 'text-text-default'}`}
             >
               {getName(item)}
             </Text>

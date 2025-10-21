@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Alert } from 'react-native';
-import { VaultService, VaultMembership } from '../../../service/VaultService';
+import { VaultService, VaultMembership } from '../../../../service/VaultService';
 
 interface UseVaultAccessReturn {
   vaults: VaultMembership[];

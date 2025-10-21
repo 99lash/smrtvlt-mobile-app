@@ -6,7 +6,6 @@
 export const PROVISIONING_CONSTANTS = {
   // UI Messages
   MESSAGES: {
-    WIFI_CREDENTIALS_TITLE: 'Send Wi-Fi Credentials',
     PROVISION_SUCCESS: 'Provisioning successful',
     PROVISION_FAILED: 'Provisioning failed',
     AUTH_FAILED: 'Authentication failed',
@@ -19,7 +18,6 @@ export const PROVISIONING_CONSTANTS = {
     CONFIRM: 'Confirm',
     BACK: 'Back',
     ENTER_WIFI_PASSWORD: 'Enter Wi-Fi password',
-    SEND_WIFI_CREDENTIALS: 'Send Wi-Fi credentials to device',
     MAKE_SURE_DEVICE_POWERED_ON:
       'Make sure your SmartVault device is powered on and in pairing mode (LED blinking green).',
   },

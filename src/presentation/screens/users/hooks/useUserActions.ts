@@ -1,6 +1,7 @@
 import { useCallback } from 'react';
 import type { UsersScreenProps } from '../../../../types/UserTypes';
 import { VaultMembership } from '../../../../service/VaultService';
+import { useVaultManagement } from '../../../hooks/VaultContext';
 
 interface UseUserActionsProps {
   navigation: UsersScreenProps['navigation'];
@@ -21,6 +22,8 @@ export const useUserActions = ({
   closeModals,
   selectVault,
 }: UseUserActionsProps) => {
+  // Vault context for global vault management
+  const { forceRefreshVaults, selectVault: selectVaultInContext } = useVaultManagement();
 
   const handleUserPress = useCallback((userId: string) => {
     navigation.navigate('UserDetails', { userId });
@@ -39,10 +42,30 @@ export const useUserActions = ({
     selectVault(vaultId);
   }, [selectVault]);
 
-  const handleInvitationAccepted = useCallback(() => {
-    loadData();
-    closeModals();
-  }, [loadData, closeModals]);
+  const handleInvitationAccepted = useCallback(async (vaultId?: number, role?: string) => {
+    try {
+      console.log('🎉 Invitation accepted, refreshing vault lists...', { vaultId, role });
+      
+      // Refresh both local data and global vault context in parallel
+      await Promise.all([
+        loadData(),
+        forceRefreshVaults()
+      ]);
+      
+      // If we have the vault ID, select it in the global context
+      if (vaultId) {
+        console.log('🎯 Selecting new vault in context:', vaultId);
+        selectVaultInContext(vaultId);
+      }
+      
+      console.log('✅ Vault lists refreshed successfully');
+      closeModals();
+    } catch (error) {
+      console.error('❌ Failed to refresh vault lists after invitation acceptance:', error);
+      // Still close modals even if refresh fails
+      closeModals();
+    }
+  }, [loadData, forceRefreshVaults, selectVaultInContext, closeModals]);
 
   // Wrapper functions that close the modal after actions
   const handleInviteUserWithClose = useCallback(() => {

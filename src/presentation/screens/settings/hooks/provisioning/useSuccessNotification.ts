@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { PROVISIONING_CONSTANTS } from '../../../utils/provisioningConstants';
+import { PROVISIONING_CONSTANTS } from '../../../../../utils/provisioningConstants';
 
 /**
  * Custom hook for managing success notifications

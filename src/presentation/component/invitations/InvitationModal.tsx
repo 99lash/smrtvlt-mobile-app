@@ -8,10 +8,10 @@ import {
   KeyboardAvoidingView,
   Platform
 } from 'react-native';
-import { CheckCircle, UserPlus, Copy, Shield, User } from 'lucide-react-native';
+import { CheckCircle, UserPlus, Copy, Shield, User, ChevronDown } from 'lucide-react-native';
 import CustomModal from '../modals/CustomModal';
 import { useAuthContext } from '../../context/AuthContext';
-import { useVaultInvitation } from '../../hooks/vault/useVaultInvitation';
+import { useVaultInvitation } from '../../screens/settings/hooks/useVaultInvitation';
 import { UserService } from '../../../service/UserService';
 import { VaultMembership } from '../../../service/VaultService';
 import { Clipboard } from 'react-native';
@@ -41,12 +41,28 @@ export default function InvitationModal({
   const [isProcessing, setIsProcessing] = useState(false);
   const [generatedCode, setGeneratedCode] = useState<string>('');
   const [copied, setCopied] = useState(false);
+  const [selectedRole, setSelectedRole] = useState<'member' | 'admin'>('member');
+  const [isRoleDropdownOpen, setIsRoleDropdownOpen] = useState(false);
 
   const { user } = useAuthContext();
   const { validateInvitation, acceptInvitation, createInvitation } = useVaultInvitation();
 
   // Get the selected vault details
   const selectedVault = vaults.find(vault => vault.vault_id === selectedVaultId);
+
+  // Role options configuration
+  const roleOptions = [
+    { 
+      value: 'member' as const, 
+      label: 'Member', 
+      description: 'Can access vault and manage their own settings' 
+    },
+    { 
+      value: 'admin' as const, 
+      label: 'Admin', 
+      description: 'Full access to vault management and user controls' 
+    }
+  ];
 
   const handleGenerateInvitation = async () => {
     if (!selectedVaultId) {
@@ -62,10 +78,10 @@ export default function InvitationModal({
         throw new Error('Authentication required. Please log in again.');
       }
 
-      // Create invitation with default member role
+      // Create invitation with selected role
       const invitationData = {
         vault_id: selectedVaultId,
-        role: 'member' as const,
+        role: selectedRole,
         expires_in_hours: 24 // 24 hours expiry
       };
 
@@ -151,6 +167,8 @@ export default function InvitationModal({
     setGeneratedCode('');
     setCopied(false);
     setIsProcessing(false);
+    setSelectedRole('member');
+    setIsRoleDropdownOpen(false);
     onClose();
   };
 
@@ -185,6 +203,74 @@ export default function InvitationModal({
     }
   };
 
+  const RoleDropdown = () => {
+    const selectedOption = roleOptions.find(option => option.value === selectedRole);
+
+    return (
+      <View className="space-y-2">
+        <Text className="text-text-default font-medium text-base">Invitation Role</Text>
+        
+        <TouchableOpacity
+          className="bg-surface-light rounded-xl border border-border-dark p-4"
+          onPress={() => setIsRoleDropdownOpen(!isRoleDropdownOpen)}
+        >
+          <View className="flex-row items-center justify-between">
+            <View className="flex-1">
+              <Text className="text-text-default font-medium text-base">
+                {selectedOption?.label}
+              </Text>
+              <Text className="text-muted-default text-sm">
+                {selectedOption?.description}
+              </Text>
+            </View>
+            <ChevronDown 
+              size={20} 
+              color="#5e5e5e" 
+              style={{ transform: [{ rotate: isRoleDropdownOpen ? '180deg' : '0deg' }] }}
+            />
+          </View>
+        </TouchableOpacity>
+
+        {isRoleDropdownOpen && (
+          <View className="bg-surface-light rounded-xl border border-border-dark overflow-hidden">
+            {roleOptions.map((option) => {
+              const isSelected = option.value === selectedRole;
+              
+              return (
+                <TouchableOpacity
+                  key={option.value}
+                  className={`p-4 border-b border-border-dark ${
+                    isSelected ? 'bg-primary-light' : ''
+                  }`}
+                  onPress={() => {
+                    setSelectedRole(option.value);
+                    setIsRoleDropdownOpen(false);
+                  }}
+                >
+                  <View className="flex-row items-center justify-between">
+                    <View className="flex-1">
+                      <Text className={`font-medium text-base ${
+                        isSelected ? 'text-primary-dark' : 'text-text-default'
+                      }`}>
+                        {option.label}
+                      </Text>
+                      <Text className="text-muted-default text-sm">
+                        {option.description}
+                      </Text>
+                    </View>
+                    {isSelected && (
+                      <CheckCircle size={20} color="#3B82F6" />
+                    )}
+                  </View>
+                </TouchableOpacity>
+              );
+            })}
+          </View>
+        )}
+      </View>
+    );
+  };
+
   return (
     <CustomModal
       visible={visible}
@@ -211,6 +297,9 @@ export default function InvitationModal({
               </View>
             </View>
 
+            {/* Role Selection Dropdown */}
+            <RoleDropdown />
+
             {/* Generated Code Section */}
             {generatedCode && (
               <View className="space-y-3 gap-2">           
@@ -231,13 +320,13 @@ export default function InvitationModal({
                     </View>
                   </View>
                   
-                  {copied && (
+                  {/* {copied && (
                     <Text className="text-text-default text-sm mt-2">
                       Code copied to clipboard!
                     </Text>
-                  )}
+                  )} */}
                 </View>
-                <InfoMessage message="Share this code with the person you want to invite. They can use it to join the vault." />
+                <InfoMessage message={`Share this code with the person you want to invite. They will receive ${selectedRole} access to this vault.`} />
               </View>
             )}
 
@@ -246,7 +335,7 @@ export default function InvitationModal({
               <View className="bg-surface-light p-4 rounded-xl">
                 <Text className="text-text-default text-sm text-center">
                   This will generate a unique invitation code that expires in 24 hours. 
-                  The invited user will receive member access to this vault.
+                  The invited user will receive {selectedRole} access to this vault.
                 </Text>
               </View>
             )}

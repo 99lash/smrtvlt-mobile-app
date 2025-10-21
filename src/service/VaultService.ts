@@ -2,13 +2,14 @@ import { UserService } from './UserService';
 import { API_CONFIG } from '../config/api';
 import { ApiService } from './ApiService';
 import { VaultMembersResponse } from '../types/UserTypes';
+import { AccessLimits, AccessLimitsResponse } from '../types/AccessLimits';
 
 export interface VaultMembership {
   vault_id: number;
   vault_name?: string | null;
-  vault_device_id?: string | null;
+  vault_device_id?: string | null; 
   vault_location?: string | null;
-  role: 'admin' | 'member' | 'viewer';
+  role: 'admin' | 'member' | 'guest';
   created_at: string;
 }
 
@@ -60,7 +61,7 @@ export class VaultService {
         vault_name: item.vault_name,
         vault_device_id: item.vault_device_id,
         vault_location: item.vault_location,
-        role: item.role as 'admin' | 'member' | 'viewer',
+        role: item.role as 'admin' | 'member' | 'guest',
         created_at: item.created_at
       }));
 
@@ -100,5 +101,38 @@ export class VaultService {
    */
   static getAdminVaults(vaults: VaultMembership[]): VaultMembership[] {
     return vaults.filter(v => v.role === 'admin');
+  }
+
+  /**
+   * Get member vaults only
+   */
+  static getMemberVaults(vaults: VaultMembership[]): VaultMembership[] {
+    return vaults.filter(v => v.role === 'member');
+  }
+
+  /**
+   * Get access limits for a specific vault
+   */
+  static async getAccessLimits(
+    vaultId: number,
+    token?: string
+  ): Promise<AccessLimits> {
+    try {
+      console.log('🔍 VaultService: Fetching access limits for vault', vaultId);
+      const response = await ApiService.get<AccessLimitsResponse>(
+        `/vault-memberships/vaults/${vaultId}/access-limits`,
+        token
+      );
+      
+      if (!response.success) {
+        throw new Error(response.detail || 'Failed to fetch access limits');
+      }
+
+      console.log('✅ VaultService: Access limits fetched successfully', response.data);
+      return response.data;
+    } catch (error) {
+      console.error('❌ VaultService: Error fetching access limits:', error);
+      throw error;
+    }
   }
 }

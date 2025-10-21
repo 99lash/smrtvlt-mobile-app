@@ -2,9 +2,10 @@ import React, { useState } from 'react';
 import { View, Text, TextInput, Alert } from 'react-native';
 import { Shield, Check } from 'lucide-react-native';
 import CustomModal from '../modals/CustomModal';
-import { useVaultCreation } from '../../hooks/provisioning/useVaultCreation';
+import { useVaultCreation } from '../../screens/settings/hooks/provisioning/useVaultCreation';
 import { useAuthContext } from '../../context/AuthContext';
 import type { ESPDevice } from '@orbital-systems/react-native-esp-idf-provisioning';
+import { SuccessMessage } from '../common/SuccessMessage';
 
 interface VaultConfigurationModalProps {
   visible: boolean;
@@ -71,8 +72,6 @@ const VaultConfigurationModal: React.FC<VaultConfigurationModalProps> = ({
       visible={visible}
       onClose={handleClose}
       title="Configure Vault"
-      icon={<Shield size={24} color="#60a5fa" />}
-      iconPosition="left"
       primaryAction={{
         label: "Create Vault",
         onPress: handleCreateVault,
@@ -86,17 +85,9 @@ const VaultConfigurationModal: React.FC<VaultConfigurationModalProps> = ({
     >
       <View className="mb-4">
         {selectedDevice && (
-          <View className="mb-6 p-4 bg-success-light rounded-lg border border-success-DEFAULT">
-            <Text className="text-sm font-medium text-success-dark mb-1">
-              WiFi Configuration Successful! 🎉
-            </Text>
-            <Text className="text-lg font-semibold text-success-dark">
-              {selectedDevice.name}
-            </Text>
-            <Text className="text-sm text-success-dark mt-1">
-              Now let's configure your vault settings
-            </Text>
-          </View>
+          <SuccessMessage 
+            message={`WiFi Configuration Successful! \n${selectedDevice.name} is now connected.\nNow let's configure your vault settings.`}
+          />
         )}
 
         {/* Authentication check */}
@@ -113,14 +104,11 @@ const VaultConfigurationModal: React.FC<VaultConfigurationModalProps> = ({
 
         {/* Vault Name Input */}
         <View className="mb-4">
-          <Text className="text-sm font-medium text-text-default dark:text-text-dark mb-2">
-            Vault Name *
-          </Text>
           <TextInput
             value={vaultName}
             onChangeText={setVaultName}
             placeholder="Enter vault name (e.g., Office Safe)"
-            className="border border-border-default dark:border-border-dark rounded-lg px-3 py-3 text-text-default dark:text-text-dark bg-surface-default dark:bg-surface-dark"
+            className="border border-border-dark rounded-2xl px-3 py-3 text-text-default bg-surface-default"
             placeholderTextColor="#64748b"
             editable={!isCreating}
             maxLength={100}
@@ -128,15 +116,12 @@ const VaultConfigurationModal: React.FC<VaultConfigurationModalProps> = ({
         </View>
 
         {/* Location Input */}
-        <View className="mb-6">
-          <Text className="text-sm font-medium text-text-default dark:text-text-dark mb-2">
-            Location (Optional)
-          </Text>
+        <View className="mb-6"> 
           <TextInput
             value={location}
             onChangeText={setLocation}
             placeholder="Enter vault location (e.g., 2nd Floor Storage)"
-            className="border border-border-default dark:border-border-dark rounded-lg px-3 py-3 text-text-default dark:text-text-dark bg-surface-default dark:bg-surface-dark"
+            className="border border-border-dark rounded-2xl px-3 py-3 text-text-default  bg-surface-default"
             placeholderTextColor="#64748b"
             editable={!isCreating}
             maxLength={200}
@@ -144,8 +129,8 @@ const VaultConfigurationModal: React.FC<VaultConfigurationModalProps> = ({
         </View>
 
         {/* Info Text */}
-        <View className="p-3 bg-surface-default dark:bg-surface-dark rounded-lg">
-          <Text className="text-sm text-muted-default dark:text-muted-dark">
+        <View className="p-3 bg-surface-default rounded-lg">
+          <Text className="text-sm text-muted-default">
             💡 Your vault will be created with the device ID as its unique identifier.
             You'll automatically become the admin of this vault.
           </Text>

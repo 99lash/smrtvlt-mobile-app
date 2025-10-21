@@ -5,7 +5,7 @@ import { Activity, AlertCircle, Users } from 'lucide-react-native';
 import { ActivityScreenProps } from '../../types/ActivityTypes';
 import { ACTIVITY_COLORS, ICON_SIZES, DEFAULT_FILTERS } from '../../utils/activityConstants';
 import { useActivityLogs } from '../hooks/useActivityLogs';
-import { ActivityCard, SearchBar, FilterDropdown, DateFilter } from '../component/activity';
+import { ActivityCard, SearchBar, FilterDropdown, DateFilter } from './activity';
 import { EnhancedEmptyState } from '../component/common/EnhancedEmptyState';
 
 export default function ActivityScreen({ navigation }: ActivityScreenProps) {
@@ -30,14 +30,18 @@ export default function ActivityScreen({ navigation }: ActivityScreenProps) {
   return (
     <SafeAreaView className="flex-1 bg-bg-default">
       {/* Activity Logs */}
-      <ScrollView className="flex-1 px-3 pt-6">
+      <ScrollView 
+        className="flex-1 px-3 pt-6" 
+        contentContainerStyle={{ paddingBottom: 120 }}
+        showsVerticalScrollIndicator={false}
+      >
         {loading ? (
           <EnhancedEmptyState
             icon={AlertCircle}
             title="Loading activity logs..."
             message="Please wait while we load the activity logs..."
           />
-        ) : hasNoVaults ? (
+        ) : hasNoVaults && !vaultsLoading ? (
           <EnhancedEmptyState
             icon={Users}
             title="No Vault Access"

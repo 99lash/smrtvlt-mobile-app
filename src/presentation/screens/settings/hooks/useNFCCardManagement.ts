@@ -1,16 +1,18 @@
 import { useState, useCallback, useEffect } from 'react';
 import { Alert } from 'react-native';
-import { NFCManagerService } from '../../../service/NFCManagerService';
-import { NFCCard, NFCManagerState, NFCRegistrationState } from '../../../types/NFCCardTypes';
+import { NFCManagerService } from '../../../../service/NFCManagerService';
+import { NFCCard, NFCManagerState, NFCRegistrationState } from '../../../../types/NFCCardTypes';
 
 interface UseNFCCardManagementProps {
   currentVaultId: number | null;
   onRegistrationSuccess?: (card: NFCCard) => void;
+  onDeleteSuccess?: () => void;
 }
 
 export const useNFCCardManagement = ({
   currentVaultId,
   onRegistrationSuccess,
+  onDeleteSuccess,
 }: UseNFCCardManagementProps) => {
   // NFC Cards state
   const [nfcCards, setNfcCards] = useState<NFCCard[]>([]);
@@ -28,23 +30,29 @@ export const useNFCCardManagement = ({
    */
   const fetchNfcCards = useCallback(async () => {
     if (!currentVaultId) {
+      console.log('⚠️ fetchNfcCards: No currentVaultId provided');
       setNfcCards([]);
       return;
     }
 
     try {
+      console.log('🔍 fetchNfcCards: Starting fetch for vault:', currentVaultId);
       setNfcCardsLoading(true);
       setNfcCardsError(null);
 
       const result = await NFCManagerService.fetchNFCCards(currentVaultId);
+      console.log('📱 fetchNfcCards: API response:', result);
 
       if (result.success && result.data) {
+        console.log('✅ fetchNfcCards: Successfully fetched', result.data.length, 'NFC cards');
         setNfcCards(result.data);
       } else {
+        console.error('❌ fetchNfcCards: API error:', result.error);
         setNfcCardsError(result.error || 'Failed to fetch NFC cards');
         setNfcCards([]);
       }
     } catch (error) {
+      console.error('❌ fetchNfcCards: Exception occurred:', error);
       const errorMessage =
         error instanceof Error ? error.message : 'Failed to fetch NFC cards';
       setNfcCardsError(errorMessage);
@@ -87,6 +95,7 @@ export const useNFCCardManagement = ({
       if (result.success) {
         Alert.alert('Success', 'NFC card permanently deleted!');
         await fetchNfcCards(); // Refresh the list after deletion
+        onDeleteSuccess?.(); // Refresh access limits
       } else {
         Alert.alert('Error', result.error || 'Failed to delete NFC card');
       }
@@ -130,6 +139,7 @@ export const useNFCCardManagement = ({
           [{ text: 'OK' }],
         );
 
+        console.log('🎯 Calling onRegistrationSuccess callback with card:', result.data.nfc_card_uid);
         onRegistrationSuccess?.(result.data);
         return true;
       } else {

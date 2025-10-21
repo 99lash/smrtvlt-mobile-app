@@ -4,10 +4,26 @@ import { CreateKeypadPinRequest, KeypadPinResponse, KeypadPin } from '../types/K
 export class KeypadPinService extends ApiService {
   /**
    * Create a new keypad PIN
+   * For members: user_id is optional (backend auto-assigns)
+   * For admins: user_id can be provided to assign to specific user
    */
   static async createPin(pinData: CreateKeypadPinRequest, token?: string): Promise<KeypadPin> {
-    const response = await this.post<KeypadPinResponse>('/keypad-pins/', pinData, token);
-    return response.data;
+    try {
+      const response = await this.post<KeypadPinResponse>('/keypad-pins/', pinData, token);
+      return response.data;
+    } catch (error) {
+      console.error('Error creating keypad PIN:', error);
+      
+      // Handle role-based limit errors
+      if (error instanceof Error) {
+        if (error.message.includes('403') || error.message.includes('Forbidden')) {
+          throw new Error('Members are limited to 1 keypad pin per vault');
+        }
+        throw error;
+      }
+      
+      throw new Error('Failed to create keypad PIN');
+    }
   }
 
   /**
@@ -22,6 +38,13 @@ export class KeypadPinService extends ApiService {
    */
   static async getPinsByUser(userId: number, token?: string): Promise<KeypadPin[]> {
     return this.get<KeypadPin[]>('/keypad-pins/', token, { user_id: userId.toString() });
+  }
+
+  /**
+   * Get keypad PINs for a specific vault
+   */
+  static async getPinsByVault(vaultId: number, token?: string): Promise<KeypadPin[]> {
+    return this.get<KeypadPin[]>('/keypad-pins/', token, { vault_id: vaultId.toString() });
   }
 
   /**

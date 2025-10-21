@@ -1,10 +1,14 @@
-import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import React, { createContext, useContext, useState, useEffect, ReactNode, useMemo } from 'react';
 import { VaultService, VaultMembership } from '../../service/VaultService';
 import { StorageService } from '../../config/api';
 
 interface VaultContextType {
    availableVaults: VaultMembership[];
+   adminVaults: VaultMembership[];
+   memberVaults: VaultMembership[];
+   guestVaults: VaultMembership[];
    currentVaultId: number | null;
+   currentVault: VaultMembership | null;
    loading: boolean;
    error: string | null;
    loadVaults: () => Promise<void>;
@@ -43,16 +47,17 @@ export const VaultProvider: React.FC<{ children: ReactNode }> = ({ children }) =
       // Use token immediately - delay was causing token invalidation
       const freshToken = await StorageService.getAccessToken();
 
-      const vaults = await VaultService.getUserVaults(freshToken || token);
+      const allVaults = await VaultService.getUserVaults(freshToken || token);
+      
+      console.log('🔍 VaultContext - API returned vaults:', allVaults.length, 'vaults');
 
-      // Successfully loaded vaults
-
-      setAvailableVaults(vaults);
+      // Set all available vaults (admin, member, guest)
+      setAvailableVaults(allVaults);
 
       // Set the first available vault as current if not already set
-      if (vaults.length > 0 && !currentVaultId) {
-        setCurrentVaultId(vaults[0].vault_id);
-      } else if (vaults.length === 0) {
+      if (allVaults.length > 0 && !currentVaultId) {
+        setCurrentVaultId(allVaults[0].vault_id);
+      } else if (allVaults.length === 0) {
         setCurrentVaultId(null);
       }
 
@@ -69,16 +74,29 @@ export const VaultProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     setCurrentVaultId(vaultId);
   };
 
+  // Computed vault types for easy access
+  const adminVaults = useMemo(() => VaultService.getAdminVaults(availableVaults), [availableVaults]);
+  const memberVaults = useMemo(() => VaultService.getMemberVaults(availableVaults), [availableVaults]);
+  const guestVaults = useMemo(() => availableVaults.filter(v => v.role === 'guest'), [availableVaults]);
+  
+  // Current vault object
+  const currentVault = useMemo(() => 
+    availableVaults.find(vault => vault.vault_id === currentVaultId) || null, 
+    [availableVaults, currentVaultId]
+  );
+
   const retryLoadVaults = async () => {
     setHasLoadedOnce(false);
     await loadVaults();
   };
 
   const forceRefreshVaults = async () => {
+    console.log('🔄 VaultContext: Force refreshing vault list...');
     setHasLoadedOnce(false);
     setAvailableVaults([]);
     setCurrentVaultId(null);
     await loadVaults();
+    console.log('✅ VaultContext: Vault list refresh completed');
   };
 
   useEffect(() => {
@@ -101,7 +119,11 @@ export const VaultProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     <VaultContext.Provider
       value={{
         availableVaults,
+        adminVaults,
+        memberVaults,
+        guestVaults,
         currentVaultId,
+        currentVault,
         loading,
         error,
         loadVaults,

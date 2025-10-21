@@ -86,7 +86,16 @@ export const useErrorHandler = () => {
     if (error?.status === 401) {
       userMessage = 'Your session has expired. Please log in again.';
     } else if (error?.status === 403) {
-      userMessage = 'You do not have permission to perform this action.';
+      // Enhanced 403 error messages for role-based limits
+      if (error?.message?.includes('NFC card')) {
+        userMessage = 'Members are limited to 1 NFC card per vault';
+      } else if (error?.message?.includes('keypad pin')) {
+        userMessage = 'Members are limited to 1 keypad pin per vault';
+      } else if (error?.message?.includes('Guest')) {
+        userMessage = 'Guest users cannot create resources';
+      } else {
+        userMessage = 'You do not have permission to perform this action.';
+      }
     } else if (error?.status >= 500) {
       userMessage = 'Server error. Please try again later.';
     } else {

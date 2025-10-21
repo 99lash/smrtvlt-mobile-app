@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Alert } from 'react-native';
-import { UserService } from '../../../service/UserService';
+import { UserService } from '../../../../../service/UserService';
 
 interface VaultCreateData {
   device_id: string;

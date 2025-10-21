@@ -1,7 +1,7 @@
 import { useState, useCallback } from 'react';
-import { KeypadPinService } from '../../../service/KeypadPinService';
-import { KeypadPin } from '../../../types/KeypadPinTypes';
-import { StorageService } from '../../../config/api';
+import { KeypadPinService } from '../../../../service/KeypadPinService';
+import { KeypadPin } from '../../../../types/KeypadPinTypes';
+import { StorageService } from '../../../../config/api';
 
 export const useKeypadPins = () => {
   const [pins, setPins] = useState<KeypadPin[]>([]);
@@ -61,12 +61,34 @@ export const useKeypadPins = () => {
     }
   }, []);
 
+  const getPinsByVault = useCallback(async (vaultId: number) => {
+    try {
+      console.log('🔍 useKeypadPins - getPinsByVault called with vaultId:', vaultId);
+      setLoading(true);
+      setError(null);
+      const token = await StorageService.getAccessToken();
+      console.log('🔍 useKeypadPins - Token retrieved:', !!token);
+      const vaultPins = await KeypadPinService.getPinsByVault(vaultId, token || undefined);
+      console.log('🔍 useKeypadPins - API returned pins:', vaultPins);
+      setPins(vaultPins);
+      return vaultPins;
+    } catch (err) {
+      console.error('🔍 useKeypadPins - Error fetching vault pins:', err);
+      const errorMessage = err instanceof Error ? err.message : 'Failed to fetch vault PINs';
+      setError(errorMessage);
+      throw err;
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
   return {
     pins,
     loading,
     error,
     createPin,
     refreshPins,
-    getPinsByUser
+    getPinsByUser,
+    getPinsByVault
   };
 };

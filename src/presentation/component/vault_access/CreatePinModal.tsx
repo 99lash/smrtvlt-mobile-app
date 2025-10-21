@@ -1,48 +1,44 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, TextInput, TouchableOpacity, Alert, ScrollView } from 'react-native';
-import { Shield, Eye, EyeOff, ChevronDown, Check } from 'lucide-react-native';
+import { View, Text, TextInput, TouchableOpacity, Alert } from 'react-native';
+import { Shield, Eye, EyeOff } from 'lucide-react-native';
 import { KeypadPin } from '../../../types/KeypadPinTypes';
-import { useKeypadPins } from '../../hooks/vault/useKeypadPins';
+import { useKeypadPins } from '../../screens/settings/hooks/useKeypadPins';
 import { useAuthContext } from '../../context/AuthContext';
-import { useVaultManagement } from '../../hooks/VaultContext';
+import { VaultMembership } from '../../../service/VaultService';
 import CustomModal from '../modals/CustomModal';
+import { AccessLimits } from '../../../types/AccessLimits';
 
 interface CreatePinModalProps {
   visible: boolean;
   onClose: () => void;
   onPinCreated: (pin: KeypadPin) => void;
+  limits?: AccessLimits | null;
+  currentVault?: VaultMembership | null;
 }
 
 export const CreatePinModal: React.FC<CreatePinModalProps> = ({
   visible,
   onClose,
-  onPinCreated
+  onPinCreated,
+  limits,
+  currentVault
 }) => {
   const [pinCode, setPinCode] = useState('');
   const [isVisible, setIsVisible] = useState(false);
-  const [selectedVaultId, setSelectedVaultId] = useState<number | null>(null);
-  const [showVaultDropdown, setShowVaultDropdown] = useState(false);
 
   const { createPin, loading } = useKeypadPins();
   const { user } = useAuthContext();
-  const { availableVaults, loading: vaultsLoading, loadVaults } = useVaultManagement();
+  
+  // Use the current vault from props instead of managing vault selection internally
+  const selectedVaultId = currentVault?.vault_id || null;
 
-  // Reset selection when modal closes
+  // Reset form when modal closes
   useEffect(() => {
     if (!visible) {
-      setSelectedVaultId(null);
-      setShowVaultDropdown(false);
       setPinCode('');
       setIsVisible(false);
     }
   }, [visible]);
-
-  // Auto-select first vault when vaults are loaded
-  useEffect(() => {
-    if (availableVaults.length > 0 && selectedVaultId === null) {
-      setSelectedVaultId(availableVaults[0].vault_id);
-    }
-  }, [availableVaults, selectedVaultId]);
   
   const handleCreate = async () => {
     if (!pinCode || !user || !selectedVaultId) {
@@ -51,8 +47,10 @@ export const CreatePinModal: React.FC<CreatePinModalProps> = ({
     }
 
     try {
-      // Pass the current user's ID and selected vault ID when creating PIN
-      const newPin = await createPin(pinCode, user.id, selectedVaultId);
+      // For members, don't pass user_id (backend auto-assigns)
+      // For admins, pass user_id to assign to specific user
+      const userId = limits?.role === 'admin' ? user.id : undefined;
+      const newPin = await createPin(pinCode, userId, selectedVaultId);
       onPinCreated(newPin);
       onClose();
       setPinCode('');
@@ -99,77 +97,33 @@ export const CreatePinModal: React.FC<CreatePinModalProps> = ({
 
       {/* Vault Selection */}
       <View className="mb-4">
-        {vaultsLoading ? (
-          <View className="border border-border-dark rounded-2xl px-3 py-3 bg-surface-default">
-            <Text className="text-muted-default">Loading vaults...</Text>
-          </View>
-        ) : availableVaults.length === 0 ? (
+        {!currentVault ? (
           <View className="border border-border-dark rounded-lg px-3 py-3 bg-surface-default">
-            <Text className="text-muted-default">No vaults available</Text>
+            <Text className="text-muted-default">No vault selected</Text>
           </View>
         ) : (
-          <TouchableOpacity
-            onPress={() => setShowVaultDropdown(!showVaultDropdown)}
-            className="border border-border-dark rounded-2xl px-3 py-3 bg-surface-default flex-row justify-between items-center"
-          >
+          <View className="border border-border-dark rounded-2xl px-3 py-3 bg-surface-default">
             <Text className="text-text-default">
-              {selectedVaultId
-                ? (() => {
-                    const vault = availableVaults.find(v => v.vault_id === selectedVaultId);
-                    const displayName = vault?.vault_name || `Vault ${selectedVaultId}`;
-                    const role = vault?.role || 'Unknown';
-                    return `${displayName} (${role})`;
-                  })()
-                : 'Select a vault'
-              }
+              {currentVault.vault_name || `Vault ${currentVault.vault_id}`} ({currentVault.role})
             </Text>
-            <ChevronDown size={20} color="#6b7280" />
-          </TouchableOpacity>
-        )}
-
-        {/* Vault Dropdown */}
-        {showVaultDropdown && availableVaults.length > 0 && (
-          <View className="border border-border-dark rounded-2xl bg-surface-default mt-2 max-h-48 overflow-hidden">
-            <ScrollView showsVerticalScrollIndicator={false}>
-              {availableVaults.map((vault, index) => (
-                <TouchableOpacity
-                  key={vault.vault_id}
-                  onPress={() => {
-                    setSelectedVaultId(vault.vault_id);
-                    setShowVaultDropdown(false);
-                  }}
-                  className={`px-4 py-3 flex-row justify-between items-center ${
-                    index !== availableVaults.length - 1 ? 'border-b border-border-dark' : ''
-                  } ${selectedVaultId === vault.vault_id ? 'bg-primary-light' : ''}`}
-                  style={{
-                    borderBottomWidth: index !== availableVaults.length - 1 ? 1 : 0,
-                    borderBottomColor: 'rgba(0, 0, 0, 0.1)',
-                  }}
-                >
-                  <View className="flex-1">
-                    <Text className="text-text-default font-medium">
-                      {(() => {
-                        const displayName = vault.vault_name || `Vault ${vault.vault_id}`;
-                        return displayName;
-                      })()}
-                    </Text>
-                    <Text className="text-muted-default dark:text-muted-dark text-sm">
-                      Role: {vault.role} {vault.vault_location && `• ${vault.vault_location}`}
-                    </Text>
-                  </View>
-                  {selectedVaultId === vault.vault_id && (
-                    <Check size={20} color="#60a5fa" />
-                  )}
-                </TouchableOpacity>
-              ))}
-            </ScrollView>
           </View>
         )}
+
       </View>
 
-      {(!selectedVaultId || availableVaults.length === 0) && !vaultsLoading && (
+      {/* Information text based on role */}
+      {limits?.role === 'member' && (
+        <Text className="text-muted-default text-sm text-center mb-2">
+          This PIN will be assigned to you automatically
+        </Text>
+      )}
+      
+      {!currentVault && (
         <Text className="text-warning-DEFAULT text-sm text-center mb-2">
-          Please select a vault first before creating PINs
+          {limits?.role === 'guest' 
+            ? 'Guest users cannot create keypad PINs'
+            : 'You need appropriate access to create PINs in this vault'
+          }
         </Text>
       )}
     </CustomModal>

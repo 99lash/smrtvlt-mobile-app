@@ -1,7 +1,7 @@
 import React from 'react';
 import { View, Text } from 'react-native';
 import { Wifi } from 'lucide-react-native';
-import Provisioning from '../provisioning/Provisioning';
+import Provisioning from '../../component/provisioning/Provisioning';
 
 interface ProvisioningManagerProps {
   // Add any props that might be needed in the future
