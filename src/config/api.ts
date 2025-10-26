@@ -1,8 +1,10 @@
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import { ENV_CONFIG } from './env';
+import { APP_CONSTANTS } from './constants';
+import { log } from '../utils/logger';
 
-// --- Configuration Constants ---
+// --- API Configuration ---
 export const API_CONFIG = {
-  BASE_URL: process.env.BASE_URL || 'https://quenchlessly-headachy-enriqueta.ngrok-free.dev',
+  BASE_URL: ENV_CONFIG.BASE_URL,
   
   ENDPOINTS: {
     LOGS: {
@@ -11,121 +13,49 @@ export const API_CONFIG = {
     },
     USERS: {
       LOGIN: '/users/login',
+      REGISTER: '/users/register',
+      LIST: '/users/',
+      ME: '/users/test/me',
+      VAULT_MEMBERS: (vaultId: number) => `/vault-memberships/vault/${vaultId}`,
     },
     VAULT_MEMBERSHIPS: {
       USER_VAULTS: '/vault-memberships/user/vaults',
       ADMIN_CHECK: (vaultId: number) => `/vault-memberships/vaults/${vaultId}/admin-check`,
     },
+    VAULT_INVITATIONS: {
+      CREATE: '/vault-invitations/',
+      VALIDATE: (code: string) => `/vault-invitations/${code}`,
+      ACCEPT: (code: string) => `/vault-invitations/${code}/accept`,
+      BY_VAULT: (vaultId: number) => `/vault-invitations/vault/${vaultId}`,
+    },
+    VAULTS: {
+      CREATE: '/vaults/',
+      LIST: '/vaults/',
+      BY_ID: (id: string) => `/vaults/${id}`,
+    },
   },
   
   DEFAULTS: {
-    VAULT_ID: parseInt(process.env.DEFAULT_VAULT_ID || '2', 10),
-    PREFIXES: (process.env.DEFAULT_PREFIXES || 'Locked,Tamper,DUAL,Failure,NFC').split(','),
-    LOG_LIMIT: 50,
-    LOG_OFFSET: 0,
+    VAULT_ID: ENV_CONFIG.DEFAULT_VAULT_ID,
+    PREFIXES: ENV_CONFIG.DEFAULT_PREFIXES,
+    LOG_LIMIT: APP_CONSTANTS.DEFAULTS.LOG_LIMIT,
+    LOG_OFFSET: APP_CONSTANTS.DEFAULTS.LOG_OFFSET,
   },
   
-  STORAGE_KEYS: {
-    ACCESS_TOKEN: 'access_token',
-    USER_DATA: 'user_data',
-  },
+  STORAGE_KEYS: APP_CONSTANTS.STORAGE_KEYS,
 } as const;
 
 // WebSocket URL construction
 const wsProtocol = API_CONFIG.BASE_URL.startsWith('https') ? 'wss://' : 'ws://';
 const wsHost = API_CONFIG.BASE_URL.replace(/^https?:\/\//, '');
-export const EVENT_WS_URL = process.env.EVENT_WS_URL || `${wsProtocol}${wsHost}${API_CONFIG.ENDPOINTS.LOGS.WS}`;
+export const EVENT_WS_URL = ENV_CONFIG.EVENT_WS_URL || `${wsProtocol}${wsHost}${API_CONFIG.ENDPOINTS.LOGS.WS}`;
 
 // Development logging
 if (__DEV__) {
-  console.log('🔧 === API CONFIG DEBUG ===');
-  console.log('[API Config] BASE_URL:', API_CONFIG.BASE_URL);
-  console.log('[API Config] DEFAULT_VAULT_ID:', API_CONFIG.DEFAULTS.VAULT_ID);
-  console.log('[API Config] DEFAULT_PREFIXES:', API_CONFIG.DEFAULTS.PREFIXES);
-  console.log('[API Config] WS URL:', EVENT_WS_URL);
-  console.log('🔧 === API CONFIG DEBUG END ===');
-}
-
-// ============================================================================
-// services/StorageService.ts - Token & Storage Management
-// ============================================================================
-export class StorageService {
-  /**
-   * Get access token from storage
-   */
-  static async getAccessToken(): Promise<string | null> {
-    try {
-      const token = await AsyncStorage.getItem(API_CONFIG.STORAGE_KEYS.ACCESS_TOKEN);
-      if (__DEV__) {
-        console.log('[Storage] Token retrieved:', !!token);
-      }
-      return token;
-    } catch (error) {
-      console.error('[Storage] Error retrieving token:', error);
-      return null;
-    }
-  }
-
-  /**
-   * Store access token
-   */
-  static async setAccessToken(token: string): Promise<void> {
-    try {
-      await AsyncStorage.setItem(API_CONFIG.STORAGE_KEYS.ACCESS_TOKEN, token);
-      if (__DEV__) {
-        console.log('[Storage] Token stored successfully');
-      }
-    } catch (error) {
-      console.error('[Storage] Error storing token:', error);
-      throw new Error('Failed to store access token');
-    }
-  }
-
-  /**
-   * Remove access token
-   */
-  static async removeAccessToken(): Promise<void> {
-    try {
-      await AsyncStorage.removeItem(API_CONFIG.STORAGE_KEYS.ACCESS_TOKEN);
-      if (__DEV__) {
-        console.log('[Storage] Token removed');
-      }
-    } catch (error) {
-      console.error('[Storage] Error removing token:', error);
-    }
-  }
-
-  /**
-   * Clear all storage
-   */
-  static async clearAll(): Promise<void> {
-    try {
-      await AsyncStorage.clear();
-      if (__DEV__) {
-        console.log('[Storage] All data cleared');
-      }
-    } catch (error) {
-      console.error('[Storage] Error clearing storage:', error);
-    }
-  }
-
-  /**
-   * Get current user ID from JWT token
-   */
-  static async getCurrentUserId(): Promise<number | null> {
-    try {
-      const token = await AsyncStorage.getItem(API_CONFIG.STORAGE_KEYS.ACCESS_TOKEN);
-      if (!token) return null;
-      
-      // Parse JWT token to get user ID
-      const parts = token.split('.');
-      if (parts.length !== 3) return null;
-      
-      const payload = JSON.parse(atob(parts[1]));
-      return payload.user_id || payload.sub || null;
-    } catch (error) {
-      console.error('[Storage] Error getting user ID from token:', error);
-      return null;
-    }
-  }
+  log.debug('Config', 'API Configuration loaded', {
+    BASE_URL: API_CONFIG.BASE_URL,
+    DEFAULT_VAULT_ID: API_CONFIG.DEFAULTS.VAULT_ID,
+    DEFAULT_PREFIXES: API_CONFIG.DEFAULTS.PREFIXES,
+    WS_URL: EVENT_WS_URL,
+  });
 }

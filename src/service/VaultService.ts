@@ -13,6 +13,21 @@ export interface VaultMembership {
   created_at: string;
 }
 
+export interface VaultCreateData {
+  device_id: string;
+  name: string;
+  location?: string;
+}
+
+export interface VaultCreationResult {
+  id: string;
+  device_id: string;
+  name: string;
+  location?: string;
+  status: string;
+  created_at: string;
+}
+
 export interface ApiResponse<T> {
   success: boolean;
   data: T;
@@ -132,6 +147,34 @@ export class VaultService {
       return response.data;
     } catch (error) {
       console.error('❌ VaultService: Error fetching access limits:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Create a new vault
+   */
+  static async createVault(
+    vaultData: VaultCreateData,
+    token?: string
+  ): Promise<VaultCreationResult> {
+    try {
+      console.log('🔍 VaultService: Creating vault with data:', vaultData);
+      
+      const response = await ApiService.post<ApiResponse<VaultCreationResult>>(
+        API_CONFIG.ENDPOINTS.VAULTS.CREATE,
+        vaultData,
+        token
+      );
+
+      if (!response.success) {
+        throw new Error(response.detail || 'Failed to create vault');
+      }
+
+      console.log('✅ VaultService: Vault created successfully:', response.data);
+      return response.data;
+    } catch (error) {
+      console.error('❌ VaultService: Error creating vault:', error);
       throw error;
     }
   }

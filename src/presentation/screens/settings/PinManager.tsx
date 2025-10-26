@@ -9,7 +9,7 @@ import { useKeypadPins } from './hooks/useKeypadPins';
 import { VaultMembership } from '../../../service/VaultService';
 import CustomModal from '../../component/modals/CustomModal';
 import { KeypadPinService } from '../../../service/KeypadPinService';
-import { StorageService } from '../../../config/api';
+import { StorageService } from '../../../service/StorageService';
 import { useAccessLimits } from './hooks/useAccessLimits';
 import { RoleBadge } from '../../component/common/RoleBadge';
 import { UsageMeter } from '../../component/common/UsageMeter';

@@ -3,7 +3,7 @@ import { useIsFocused } from '@react-navigation/native';
 import { ActivityLog, FilterState } from '../../types/ActivityTypes';
 import { LogService, LogEntry } from '../../service/LogService';
 import { VaultService, VaultMembership } from '../../service/VaultService';
-import { StorageService } from '../../config/api';
+import { StorageService } from '../../service/StorageService';
 import { DEFAULT_FILTERS } from '../../utils/activityConstants';
 
 /**

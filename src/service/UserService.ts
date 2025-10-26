@@ -1,10 +1,8 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { UserRegistrationRequest, UserRegistrationResponse, UserLoginRequest, UserLoginResponse, User, ApiError, VaultMembersResponse, VaultMembershipResponse } from '../types/UserTypes';
-
-// Use environment variable for API base URL with fallback
-const BASE_URL = __DEV__
-  ? 'http://192.168.1.8:8000'
-  : 'https://quenchlessly-headachy-enriqueta.ngrok-free.dev';
+import { API_CONFIG } from '../config/api';
+import { StorageService } from './StorageService';
+import { ApiService } from './ApiService';
 
 export class UserService {
   private static readonly API_TIMEOUT = 10000; // 10 seconds
@@ -16,12 +14,12 @@ export class UserService {
    * @throws Error with specific message based on API response
    */
   static async register(registrationData: UserRegistrationRequest): Promise<UserRegistrationResponse> {
-    const url = `${BASE_URL}/users/register`;
+    const url = `${API_CONFIG.BASE_URL}${API_CONFIG.ENDPOINTS.USERS.REGISTER}`;
 
     if (__DEV__) {
       console.log('UserService - Registration attempt for:', registrationData.username);
       console.log('UserService - Target URL:', url);
-      console.log('UserService - BASE_URL:', BASE_URL);
+      console.log('UserService - BASE_URL:', API_CONFIG.BASE_URL);
     }
 
     // Test basic connectivity first
@@ -29,7 +27,7 @@ export class UserService {
       if (__DEV__) {
         console.log('UserService - Testing basic connectivity...');
       }
-      const testResponse = await fetch(`${BASE_URL}/`, {
+      const testResponse = await fetch(`${API_CONFIG.BASE_URL}/`, {
         method: 'GET'
       });
       if (__DEV__) {
@@ -109,7 +107,7 @@ export class UserService {
          }
 
          // Log additional context for debugging
-         console.error('UserService - BASE_URL being used:', BASE_URL);
+         console.error('UserService - BASE_URL being used:', API_CONFIG.BASE_URL);
          console.error('UserService - Full registration URL:', url);
          console.error('UserService - Registration data being sent:', JSON.stringify(registrationData, null, 2));
 
@@ -141,12 +139,12 @@ export class UserService {
    * @throws Error with specific message based on API response
    */
   static async login(loginData: UserLoginRequest): Promise<UserLoginResponse> {
-    const url = `${BASE_URL}/users/login`;
+    const url = `${API_CONFIG.BASE_URL}${API_CONFIG.ENDPOINTS.USERS.LOGIN}`;
 
     if (__DEV__) {
       console.log('UserService - Login attempt for:', loginData.username);
       console.log('UserService - Target URL:', url);
-      console.log('UserService - BASE_URL:', BASE_URL);
+      console.log('UserService - BASE_URL:', API_CONFIG.BASE_URL);
     }
 
     try {
@@ -234,7 +232,7 @@ export class UserService {
         }
 
         // Log additional context for debugging
-        console.error('UserService - BASE_URL being used:', BASE_URL);
+        console.error('UserService - BASE_URL being used:', API_CONFIG.BASE_URL);
         console.error('UserService - Full login URL:', url);
         console.error('UserService - Login data being sent:', { username: loginData.username, password: '***' });
 
@@ -268,7 +266,7 @@ export class UserService {
    static async fetchSharedVaultUsers(userId: number): Promise<User[]> {
      if (__DEV__) {
        console.log('UserService - Fetching shared vault users for user ID:', userId);
-       console.log('UserService - BASE_URL:', BASE_URL);
+       console.log('UserService - BASE_URL:', API_CONFIG.BASE_URL);
        console.log('UserService - Token preview:', (await this.getStoredToken())?.substring(0, 20) + '...');
      }
 
@@ -288,7 +286,7 @@ export class UserService {
        }
 
        // Get current user's vault memberships
-       const vaultsUrl = `${BASE_URL}/vault-memberships/user/vaults`;
+       const vaultsUrl = `${API_CONFIG.BASE_URL}${API_CONFIG.ENDPOINTS.VAULT_MEMBERSHIPS.USER_VAULTS}`;
 
        if (__DEV__) {
          console.log('UserService - Fetching current user vaults from:', vaultsUrl);
@@ -323,7 +321,7 @@ export class UserService {
            console.log('UserService - Fetching members for vault ID:', vaultId);
          }
 
-         const membersUrl = `${BASE_URL}/vault-memberships/vault/${vaultId}`;
+         const membersUrl = `${API_CONFIG.BASE_URL}${API_CONFIG.ENDPOINTS.USERS.VAULT_MEMBERS(vaultId)}`;
 
          const membersResponse = await fetch(membersUrl, {
            method: 'GET',
@@ -382,7 +380,7 @@ export class UserService {
          }
 
          // Log additional context for debugging
-         console.error('UserService - BASE_URL being used:', BASE_URL);
+         console.error('UserService - BASE_URL being used:', API_CONFIG.BASE_URL);
          console.error('UserService - Target user ID:', userId);
 
          // Check if it's a network error
@@ -420,11 +418,11 @@ export class UserService {
    * @throws Error with specific message based on API response
    */
   static async fetchUsers(): Promise<User[]> {
-    const url = `${BASE_URL}/users/`;
+    const url = `${API_CONFIG.BASE_URL}${API_CONFIG.ENDPOINTS.USERS.LIST}`;
 
     if (__DEV__) {
       console.log('UserService - Fetching users from:', url);
-      console.log('UserService - BASE_URL:', BASE_URL);
+      console.log('UserService - BASE_URL:', API_CONFIG.BASE_URL);
     }
 
     try {
@@ -491,7 +489,7 @@ export class UserService {
         }
 
         // Log additional context for debugging
-        console.error('UserService - BASE_URL being used:', BASE_URL);
+        console.error('UserService - BASE_URL being used:', API_CONFIG.BASE_URL);
         console.error('UserService - Full users URL:', url);
 
         // Check if it's a network error
@@ -600,7 +598,7 @@ export class UserService {
         return null;
       }
 
-      const url = `${BASE_URL}/users/test/me`;
+      const url = `${API_CONFIG.BASE_URL}${API_CONFIG.ENDPOINTS.USERS.ME}`;
 
       if (__DEV__) {
         console.log('UserService - Fetching current user from:', url);

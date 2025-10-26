@@ -28,35 +28,17 @@ export const PinList: React.FC<PinListProps> = ({
   currentUserId,
   currentVaultId,
 }) => {
-  // Filter pins based on user role and vault
+  // Backend already handles authorization, so we just use the pins as returned
   const filteredPins = React.useMemo(() => {
     console.log('🔍 PinList - Raw pins from API:', pins);
     console.log('🔍 PinList - currentVaultId:', currentVaultId);
     console.log('🔍 PinList - currentUserId:', currentUserId);
     console.log('🔍 PinList - isAdmin:', isAdmin);
     
-    let filtered = pins;
-    
-    // Filter by vault if vault_id is available in the pin data
-    if (currentVaultId) {
-      filtered = pins.filter(pin => pin.vault_id === currentVaultId);
-      console.log('🔍 PinList - After vault filtering:', filtered);
-    }
-    
-    // Filter by user role
-    if (isAdmin) {
-      // Admins see all pins for the current vault
-      console.log('🔍 PinList - Admin view - final filtered pins:', filtered);
-      return filtered;
-    } else if (currentUserId) {
-      // Members see only their own pins for the current vault
-      const userFiltered = filtered.filter(pin => pin.user_id === currentUserId);
-      console.log('🔍 PinList - Member view - final filtered pins:', userFiltered);
-      return userFiltered;
-    }
-    // If no currentUserId, show all pins for the current vault (fallback)
-    console.log('🔍 PinList - Fallback view - final filtered pins:', filtered);
-    return filtered;
+    // Backend authorization already filters pins based on user role and vault
+    // No client-side filtering needed
+    console.log('🔍 PinList - Using pins as returned by backend (authorization handled server-side)');
+    return pins;
   }, [pins, isAdmin, currentUserId, currentVaultId]);
 
   if (loading) {
@@ -77,11 +59,10 @@ export const PinList: React.FC<PinListProps> = ({
   }
 
   if (filteredPins.length === 0) {
-    console.log('🔍 PinList - No filtered pins found. Raw pins count:', pins.length);
-    console.log('🔍 PinList - Filtered pins count:', filteredPins.length);
+    console.log('🔍 PinList - No pins found. Raw pins count:', pins.length);
     const message = isAdmin 
-      ? "No pins found. Create your first PIN to get started."
-      : "No pins found. You haven't created any PINs yet.";
+      ? "No pins found in this vault. Create your first PIN to get started."
+      : "No pins found. You haven't created any PINs in this vault yet.";
     return (
       <WarningMessage
         message={message}

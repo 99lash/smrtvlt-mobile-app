@@ -8,6 +8,7 @@ import { useVaultManagement } from '../hooks/VaultContext';
 import { NFCManager } from './settings/NFCManager';
 import { PinManager } from './settings/PinManager';
 import { ProvisioningManager } from './settings/ProvisioningManager';
+import JoinVaultManager from './settings/JoinVaultManager';
 
 const SettingsScreen = () => {
   // Use the extracted vault management hook
@@ -151,6 +152,12 @@ const SettingsScreen = () => {
             />
           </CustomModal>
         </View>
+        
+        {/* Join Vault Section - For Members or Users with No Vault */}
+        <View className="px-3 mt-3">
+          <JoinVaultManager currentVault={currentVault} />
+        </View>
+        
         {/* PIN Management Section */}
         <View className="px-3 mt-3">
           <PinManager

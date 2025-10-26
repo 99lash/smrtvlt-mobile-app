@@ -45,31 +45,9 @@ export const NFCCardList: React.FC<NFCCardListProps> = ({
       });
     });
     
-    let filtered = cards;
-    
-    // Filter by vault
-    if (currentVaultId) {
-      console.log(`🏠 NFCCardList: Filtering by vault_id: ${currentVaultId}`);
-      filtered = cards.filter(card => {
-        const matches = card.vault_id === currentVaultId;
-        console.log(`  Card ${card.nfc_card_id} (vault_id: ${card.vault_id}) matches vault ${currentVaultId}: ${matches}`);
-        return matches;
-      });
-      console.log('🏠 NFCCardList: After vault filter:', filtered.length, 'cards');
-    }
-    
-    // Filter by user role
-    if (isAdmin) {
-      console.log('👑 NFCCardList: Admin view - showing all cards for vault');
-      return filtered;
-    } else if (currentUserId) {
-      const userCards = filtered.filter(card => card.user_id === currentUserId);
-      console.log('👤 NFCCardList: Member view - showing', userCards.length, 'user cards');
-      return userCards;
-    }
-    
-    console.log('⚠️ NFCCardList: No currentUserId - showing all cards as fallback');
-    return filtered;
+    // Backend already handles authorization, so we just use the cards as returned
+    console.log('🏠 NFCCardList: Using cards as returned by backend (authorization handled server-side)');
+    return cards;
   }, [cards, isAdmin, currentUserId, currentVaultId]);
 
   if (loading) {
@@ -91,8 +69,8 @@ export const NFCCardList: React.FC<NFCCardListProps> = ({
 
   if (filteredCards.length === 0) {
     const message = isAdmin 
-      ? "No NFC cards found. Tap and scan your NFC card in your smartvault device to get started."
-      : "No NFC cards found. You haven't registered any NFC cards yet.";
+      ? "No NFC cards found in this vault. Tap and scan your NFC card in your smartvault device to get started."
+      : "No NFC cards found. You haven't registered any NFC cards in this vault yet.";
     return (
       <WarningMessage
         message={message}

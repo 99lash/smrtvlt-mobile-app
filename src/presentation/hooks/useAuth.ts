@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { AuthService } from '../../service/AuthService';
 import { UserDataService } from '../../service/UserDataService';
-import { StorageService } from '../../config/api';
+import { StorageService } from '../../service/StorageService';
 
 export interface AuthState {
   isAuthenticated: boolean;
@@ -76,7 +76,7 @@ export const useAuth = () => {
   const login = async (username: string, password: string) => {
     try {
       await AuthService.login({ username, password });
-      await checkAuthStatus(); // Re-check auth status after login
+      // Don't call checkAuthStatus here - let useLogin handle the complete flow
       return true;
     } catch (error) {
       console.error('Login failed:', error);
@@ -98,10 +98,15 @@ export const useAuth = () => {
     }
   };
 
+  const updateAuthState = async () => {
+    await checkAuthStatus();
+  };
+
   return {
     ...authState,
     login,
     logout,
     checkAuthStatus,
+    updateAuthState,
   };
 };

@@ -10,6 +10,8 @@ import UsersScreen from '../screens/UsersScreen';
 import ActivityScreen from '../screens/ActivityScreen';
 import SettingsScreen from '../screens/SettingsScreen';
 import { Header } from '../component/common/Header';
+import { useScreenVisibility } from '../hooks/useScreenVisibility';
+import { useVaultManagement } from '../hooks/VaultContext';
 
 // Wrapper components with header
 const HomeScreenWithHeader = () => (
@@ -52,8 +54,49 @@ const SettingsScreenWithHeader = () => (
 
 const Tab = createBottomTabNavigator();
 
-function MyTabBar({ state, descriptors, navigation }: BottomTabBarProps) {
+interface MyTabBarProps extends BottomTabBarProps {
+  screenVisibility: ReturnType<typeof useScreenVisibility>;
+}
+
+function MyTabBar({ state, descriptors, navigation, screenVisibility }: MyTabBarProps) {
   const { colors } = useTheme();
+  
+  // Debug logging
+  if (__DEV__) {
+    console.log('🔍 MyTabBar - All routes:', state.routes.map(r => r.name));
+    console.log('🔍 MyTabBar - screenVisibility:', screenVisibility);
+  }
+  
+  // Filter routes based on screen visibility
+  const visibleRoutes = state.routes.filter(route => {
+    let shouldShow = false;
+    switch (route.name) {
+      case 'Home':
+        shouldShow = screenVisibility.canAccessHome;
+        break;
+      case 'Users':
+        shouldShow = screenVisibility.canAccessUsers;
+        break;
+      case 'Activity':
+        shouldShow = screenVisibility.canAccessActivity;
+        break;
+      case 'Settings':
+        shouldShow = screenVisibility.canAccessSettings;
+        break;
+      default:
+        shouldShow = true;
+    }
+    
+    if (__DEV__) {
+      console.log(`🔍 MyTabBar - Route ${route.name}: ${shouldShow ? 'SHOW' : 'HIDE'}`);
+    }
+    
+    return shouldShow;
+  });
+  
+  if (__DEV__) {
+    console.log('🔍 MyTabBar - Visible routes:', visibleRoutes.map(r => r.name));
+  }
   
   return (
     <View className="absolute bottom-6 left-0 right-0 items-center px-4">
@@ -62,7 +105,7 @@ function MyTabBar({ state, descriptors, navigation }: BottomTabBarProps) {
         className="bg-[#1a0f3e] rounded-full px-4 py-3"
       >
         <View className="flex-row items-center gap-2">
-          {state.routes.map((route, index) => {
+          {visibleRoutes.map((route) => {
             const { options } = descriptors[route.key]; 
             const label =
               options.tabBarLabel !== undefined
@@ -71,7 +114,7 @@ function MyTabBar({ state, descriptors, navigation }: BottomTabBarProps) {
                 ? options.title
                 : route.name;
             
-            const isFocused = state.index === index;
+            const isFocused = state.routes[state.index].key === route.key;
             
             const onPress = () => {
               const event = navigation.emit({
@@ -134,17 +177,58 @@ const styles = StyleSheet.create({
 });
 
 const BottomTabNavigator = () => {
+  const screenVisibility = useScreenVisibility();
+  const { currentVault } = useVaultManagement();
+  
+  // Create a key that changes when visibility or vault changes to force navigation re-render
+  const navigatorKey = React.useMemo(() => {
+    const vaultId = currentVault?.vault_id || 'none';
+    const role = currentVault?.role || 'none';
+    return `nav-${vaultId}-${role}-${screenVisibility.canAccessUsers}-${screenVisibility.canAccessActivity}`;
+  }, [currentVault?.vault_id, currentVault?.role, screenVisibility.canAccessUsers, screenVisibility.canAccessActivity]);
+  
+  // Debug logging
+  if (__DEV__) {
+    console.log('🔍 BottomTabNavigator - screenVisibility:', screenVisibility);
+    console.log('🔍 BottomTabNavigator - currentVault:', currentVault);
+    console.log('🔍 BottomTabNavigator - navigatorKey:', navigatorKey);
+  }
+  
   return (
     <Tab.Navigator
-      tabBar={(props) => <MyTabBar {...props} />}
+      key={navigatorKey}
+      tabBar={(props) => <MyTabBar {...props} screenVisibility={screenVisibility} />}
       screenOptions={{
         headerShown: false,
         tabBarStyle: { display: 'none' } // Hide default tab bar completely
       }}
+      screenListeners={{
+        tabPress: (e) => {
+          const routeName = e.target?.split('-')[0];
+          
+          // Prevent navigation to restricted screens
+          if (routeName === 'Users' && !screenVisibility.canAccessUsers) {
+            e.preventDefault();
+            if (__DEV__) {
+              console.log('🚫 Blocked navigation to Users screen');
+            }
+          }
+          if (routeName === 'Activity' && !screenVisibility.canAccessActivity) {
+            e.preventDefault();
+            if (__DEV__) {
+              console.log('🚫 Blocked navigation to Activity screen');
+            }
+          }
+        },
+      }}
     >
       <Tab.Screen name="Home" component={HomeScreenWithHeader} />
-      <Tab.Screen name="Users" component={UsersScreenWithHeader} />
-      <Tab.Screen name="Activity" component={ActivityScreenWithHeader} />
+      {screenVisibility.canAccessUsers && (
+        <Tab.Screen name="Users" component={UsersScreenWithHeader} />
+      )}
+      {screenVisibility.canAccessActivity && (
+        <Tab.Screen name="Activity" component={ActivityScreenWithHeader} />
+      )}
       <Tab.Screen name="Settings" component={SettingsScreenWithHeader} />
     </Tab.Navigator>
   );

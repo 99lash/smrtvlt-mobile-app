@@ -1,4 +1,4 @@
-import { StorageService } from '../config/api';
+import { StorageService } from './StorageService';
 import { NFCCardService } from './NFCCardService';
 import {
   NFCCard,

@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { LogService, LogEntry } from '../../service/LogService';
-import { StorageService } from '../../config/api';
+import { StorageService } from '../../service/StorageService';
 import { extractNFCCardUID, hasNFCData } from '../../utils/nfcUtils';
 import { ApiError } from '../../service/ApiService';
 import { NFCCardService } from '../../service/NFCCardService';

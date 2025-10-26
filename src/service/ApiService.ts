@@ -1,4 +1,5 @@
-import { API_CONFIG, StorageService } from '../config/api';
+import { API_CONFIG } from '../config/api';
+import { StorageService } from './StorageService';
 
 export class ApiError extends Error {
   constructor(

@@ -1,6 +1,7 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { UserRegistrationRequest, UserRegistrationResponse, UserLoginRequest, UserLoginResponse } from '../types/UserTypes';
-import { API_CONFIG, StorageService } from '../config/api';
+import { API_CONFIG } from '../config/api';
+import { StorageService } from './StorageService';
 import { NetworkService } from './NetworkService';
 import { ApiService } from './ApiService';
 

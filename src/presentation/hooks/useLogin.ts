@@ -1,5 +1,7 @@
 import { useState } from 'react';
 import { AuthService } from '../../service/AuthService';
+import { UserDataService } from '../../service/UserDataService';
+import { VaultService } from '../../service/VaultService';
 import { UseLoginReturn } from '../../types/LoginTypes';
 
 export const useLogin = (): UseLoginReturn => {
@@ -15,7 +17,27 @@ export const useLogin = (): UseLoginReturn => {
     setError(null);
 
     try {
+      console.log('🔐 useLogin - Starting complete authentication flow...');
+      
+      // Step 1: Login API call
+      console.log('🔐 useLogin - Step 1: Login API call');
       await AuthService.login({ username: username.trim(), password });
+      
+      // Step 2: Fetch user data
+      console.log('🔐 useLogin - Step 2: Fetching user data');
+      const user = await UserDataService.getCurrentUser();
+      if (!user) {
+        throw new Error('Failed to fetch user data after login');
+      }
+      
+      // Step 3: Load vault data
+      console.log('🔐 useLogin - Step 3: Loading vault data');
+      const token = await AuthService.getStoredToken();
+      if (token) {
+        await VaultService.getUserVaults(token);
+      }
+      
+      console.log('✅ useLogin - Complete authentication flow successful');
       return true; // Success
     } catch (error) {
       const errorMessage = mapLoginError(error);

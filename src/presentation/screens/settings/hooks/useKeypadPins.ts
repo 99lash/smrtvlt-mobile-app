@@ -1,7 +1,7 @@
 import { useState, useCallback } from 'react';
 import { KeypadPinService } from '../../../../service/KeypadPinService';
 import { KeypadPin } from '../../../../types/KeypadPinTypes';
-import { StorageService } from '../../../../config/api';
+import { StorageService } from '../../../../service/StorageService';
 
 export const useKeypadPins = () => {
   const [pins, setPins] = useState<KeypadPin[]>([]);

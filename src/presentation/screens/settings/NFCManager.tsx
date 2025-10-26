@@ -15,7 +15,7 @@ import { VaultMembership } from '../../../service/VaultService';
 import { useAccessLimits } from './hooks/useAccessLimits';
 import { RoleBadge } from '../../component/common/RoleBadge';
 import { UsageMeter } from '../../component/common/UsageMeter';
-import { StorageService } from '../../../config/api';
+import { StorageService } from '../../../service/StorageService';
 
 interface NFCManagerProps {
   currentVault: VaultMembership | null;

@@ -8,13 +8,11 @@ import { validateLoginForm, resetLoginForm, createLoginFormData } from '../../..
 import { LoginProps } from '../../../../types/LoginTypes';
 import RegisterModal from '../register';
 import { ErrorMessage } from '../../common/ErrorMessage';
-import { SuccessMessage } from '../../common/SuccessMessage';
 
 const Login: React.FC<LoginProps> = ({ onLoginSuccess, onLoginError }) => {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
-  const [showSuccess, setShowSuccess] = useState(false);
   const [showError, setShowError] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
   const [registerModalVisible, setRegisterModalVisible] = useState(false);
@@ -48,14 +46,9 @@ const Login: React.FC<LoginProps> = ({ onLoginSuccess, onLoginError }) => {
         console.log('Login - Login successful');
       }
 
-      setShowSuccess(true);
-
-      // Auto-hide success banner after 2 seconds
-      setTimeout(() => {
-        setShowSuccess(false);
-        resetLoginForm({ setUsername, setPassword, setShowPassword, setShowError, setErrorMessage });
-        onLoginSuccess?.();
-      }, 2000);
+      // Reset form and call success callback immediately
+      resetLoginForm({ setUsername, setPassword, setShowPassword, setShowError, setErrorMessage });
+      onLoginSuccess?.();
 
     } catch (error) {
       const errorMsg = error instanceof Error ? error.message : 'Login failed. Please try again.';
@@ -118,13 +111,9 @@ const Login: React.FC<LoginProps> = ({ onLoginSuccess, onLoginError }) => {
               paddingHorizontal: 16,
             }}
             >
-              {/* Error/Success Messages */}
+              {/* Error Messages */}
               {showError && (
                 <ErrorMessage message={errorMessage} />
-              )}
-
-              {showSuccess && (
-                <SuccessMessage message="Login successful! Redirecting..." />
               )}
 
               {/* Username/Email Field */}
@@ -183,7 +172,7 @@ const Login: React.FC<LoginProps> = ({ onLoginSuccess, onLoginError }) => {
 
               {/* Login Button */}
               <ButtonPrimary
-                title="Sign In"
+                title={isLoading ? "Signing In..." : "Sign In"}
                 onPress={handleLogin}
                 disabled={isLoading || !username.trim() || !password.trim()}
                 loading={isLoading}

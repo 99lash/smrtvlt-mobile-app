@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode, useMemo } from 'react';
 import { VaultService, VaultMembership } from '../../service/VaultService';
-import { StorageService } from '../../config/api';
+import { StorageService } from '../../service/StorageService';
+import { useAuthContext } from '../context/AuthContext';
 
 interface VaultContextType {
    availableVaults: VaultMembership[];
@@ -20,6 +21,7 @@ interface VaultContextType {
 const VaultContext = createContext<VaultContextType | undefined>(undefined);
 
 export const VaultProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
+  const { isAuthenticated, isLoading: authLoading } = useAuthContext();
   const [availableVaults, setAvailableVaults] = useState<VaultMembership[]>([]);
   const [currentVaultId, setCurrentVaultId] = useState<number | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
@@ -71,6 +73,7 @@ export const VaultProvider: React.FC<{ children: ReactNode }> = ({ children }) =
   };
 
   const selectVault = (vaultId: number) => {
+    console.log('🔄 VaultContext - Selecting vault:', vaultId);
     setCurrentVaultId(vaultId);
   };
 
@@ -80,10 +83,13 @@ export const VaultProvider: React.FC<{ children: ReactNode }> = ({ children }) =
   const guestVaults = useMemo(() => availableVaults.filter(v => v.role === 'guest'), [availableVaults]);
   
   // Current vault object
-  const currentVault = useMemo(() => 
-    availableVaults.find(vault => vault.vault_id === currentVaultId) || null, 
-    [availableVaults, currentVaultId]
-  );
+  const currentVault = useMemo(() => {
+    const vault = availableVaults.find(vault => vault.vault_id === currentVaultId) || null;
+    if (__DEV__) {
+      console.log('🔄 VaultContext - currentVault updated:', vault ? { id: vault.vault_id, role: vault.role } : null);
+    }
+    return vault;
+  }, [availableVaults, currentVaultId]);
 
   const retryLoadVaults = async () => {
     setHasLoadedOnce(false);
@@ -100,20 +106,35 @@ export const VaultProvider: React.FC<{ children: ReactNode }> = ({ children }) =
   };
 
   useEffect(() => {
-    // Wait for authentication before loading vaults
-    const checkAuthAndLoadVaults = async () => {
-      const token = await StorageService.getAccessToken();
-      if (token) {
-        loadVaults();
-      } else {
-        // Set a timeout to check again
-        setTimeout(checkAuthAndLoadVaults, 1000);
-      }
-    };
+    // Wait for authentication to complete before loading vaults
+    if (authLoading) {
+      // Still loading authentication, wait
+      setLoading(true);
+      setError(null);
+      return;
+    }
 
-    checkAuthAndLoadVaults();
+    if (!isAuthenticated) {
+      // Not authenticated, clear vaults and reset flags
+      console.log('🔍 VaultContext - User logged out, clearing vaults');
+      setAvailableVaults([]);
+      setCurrentVaultId(null);
+      setLoading(false);
+      setHasLoadedOnce(false); // Reset flag so vaults reload on next login
+      setError('Please log in to access vault data');
+      return;
+    }
+
+    // Authenticated, load vaults
+    if (isAuthenticated && !hasLoadedOnce) {
+      console.log('🔍 VaultContext - Authentication complete, loading vaults...');
+      loadVaults();
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []); // Only load once on mount
+  }, [isAuthenticated, authLoading, hasLoadedOnce]); // Depend on auth state
+
+  // Combine auth loading and vault loading states
+  const combinedLoading = authLoading || loading;
 
   return (
     <VaultContext.Provider
@@ -124,7 +145,7 @@ export const VaultProvider: React.FC<{ children: ReactNode }> = ({ children }) =
         guestVaults,
         currentVaultId,
         currentVault,
-        loading,
+        loading: combinedLoading,
         error,
         loadVaults,
         retryLoadVaults,
