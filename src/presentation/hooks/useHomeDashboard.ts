@@ -5,6 +5,7 @@ import { UserService } from '../../service/UserService';
 import { useVaultManagement } from './VaultContext';
 import { useAuthContext } from '../context/AuthContext';
 import { DateFilterOption, DATE_FILTER_OPTIONS } from '../components/home/DateFilterDropdown';
+import { ApiError } from '../../service/ApiService';
 
 export interface DashboardMetrics {
   totalVaults: number;
@@ -56,12 +57,23 @@ export const useHomeDashboard = (): HomeDashboardData => {
 
   const loadDashboardData = useCallback(async () => {
     try {
-      console.log('🏠 useHomeDashboard: Loading dashboard data for vault:', currentVault?.vault_id);
+      console.log('🏠 useHomeDashboard: Loading dashboard data for vault:', currentVault?.vault_id, 'date filter:', selectedDateFilter.value);
 
       if (!currentVault) {
-        setMetrics(prev => ({ ...prev, isLoading: false }));
+        setMetrics(prev => ({ 
+          ...prev, 
+          isLoading: false,
+          todayAccessCount: 0,
+          successRate: 0,
+          failedAttempts: 0,
+          lastActivity: null,
+          error: null
+        }));
         return;
       }
+
+      // Set loading state at the start
+      setMetrics(prev => ({ ...prev, isLoading: true, error: null }));
 
       // Get authentication token
       const token = await UserService.getStoredToken();
@@ -92,10 +104,25 @@ export const useHomeDashboard = (): HomeDashboardData => {
 
       setRecentActivity(activityData);
 
-      console.log('✅ useHomeDashboard: Dashboard data loaded successfully');
+      console.log('✅ useHomeDashboard: Dashboard data loaded successfully', {
+        todayAccessCount: metricsData.access_count,
+        successRate: metricsData.success_rate,
+        failedAttempts: metricsData.failed_attempts
+      });
 
     } catch (error) {
       console.error('❌ useHomeDashboard: Error loading dashboard data:', error);
+
+      // Handle authentication errors gracefully
+      if (error instanceof ApiError && error.status === 401) {
+        console.warn('⚠️ useHomeDashboard: Authentication failed (401) - token may be expired');
+        setMetrics(prev => ({
+          ...prev,
+          isLoading: false,
+          error: 'Session expired. Please log in again.'
+        }));
+        return; // Stop here to prevent repeated failed requests
+      }
 
       setMetrics(prev => ({
         ...prev,
@@ -116,9 +143,15 @@ export const useHomeDashboard = (): HomeDashboardData => {
     loadDashboardData();
   }, [loadDashboardData]);
 
-  // Auto-refresh every 30 seconds
+  // Auto-refresh every 30 seconds (only if not in error state)
   useEffect(() => {
     if (!currentVault) return;
+    
+    // Don't auto-refresh if there's an authentication error
+    if (metrics.error && metrics.error.includes('Session expired')) {
+      console.log('⏸️ useHomeDashboard: Auto-refresh disabled due to auth error');
+      return;
+    }
 
     const interval = setInterval(() => {
       console.log('🔄 useHomeDashboard: Auto-refreshing dashboard data');
@@ -126,7 +159,7 @@ export const useHomeDashboard = (): HomeDashboardData => {
     }, 30000); // 30 seconds
 
     return () => clearInterval(interval);
-  }, [currentVault, loadDashboardData]);
+  }, [currentVault, loadDashboardData, metrics.error]);
 
   return {
     metrics,

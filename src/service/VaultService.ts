@@ -11,6 +11,7 @@ export interface VaultMembership {
   vault_location?: string | null;
   role: 'admin' | 'member' | 'guest';
   created_at: string;
+  last_accessed_at?: string | null; // Timestamp of user's last successful access to this vault
 }
 
 export interface VaultCreateData {
@@ -77,7 +78,8 @@ export class VaultService {
         vault_device_id: item.vault_device_id,
         vault_location: item.vault_location,
         role: item.role as 'admin' | 'member' | 'guest',
-        created_at: item.created_at
+        created_at: item.created_at,
+        last_accessed_at: item.last_access || null
       }));
 
       console.log('🔍 VaultService - API Response:', data.data);

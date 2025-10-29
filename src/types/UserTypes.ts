@@ -64,6 +64,7 @@ export interface VaultMembershipResponse {
   username: string | null;
   first_name: string | null;
   last_name: string | null;
+  last_access: string | null; // Timestamp of user's last successful access to this vault
 }
 
 export interface VaultMembersResponse {

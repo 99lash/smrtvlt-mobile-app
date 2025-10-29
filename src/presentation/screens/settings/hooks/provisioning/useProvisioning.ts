@@ -16,17 +16,28 @@ export const ProvisioningProvider: React.FC<{ children: React.ReactNode }> = ({ 
   const [log, setLog] = useState('');
 
   const scanDevices = async () => {
+    console.log('🔍 Starting device scan...');
     setLog('Scanning for devices...');
     try {
+      console.log('📡 Calling ESPProvisionManager.searchESPDevices with:');
+      console.log('  - Prefix: "SV"');
+      console.log('  - Transport: BLE');
+      console.log('  - Security: secure2');
+      
       const found = await ESPProvisionManager.searchESPDevices(
         'SV',
         ESPTransport.ble,
         ESPSecurity.secure2
       );
+      
+      console.log(`✅ Scan completed. Found ${found.length} device(s):`, found);
       setDevices(found);
       setLog(`Found ${found.length} device(s)`);
     } catch (err) {
+      console.error('❌ Device scan failed:', err);
+      console.error('❌ Error details:', err instanceof Error ? err.message : String(err));
       setLog(`Scan failed: ${err}`);
+      throw err; // Re-throw to be caught by useDeviceScanning
     }
   };
 

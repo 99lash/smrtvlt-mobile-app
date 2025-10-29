@@ -1,6 +1,6 @@
 import React from 'react';
 import { View, Text, TouchableOpacity, FlatList } from 'react-native';
-import { Shield, Unlock, Clock, Wifi, WifiOff } from 'lucide-react-native';
+import { Shield, Unlock } from 'lucide-react-native';
 import { VaultMembership } from '../../../service/VaultService';
 
 interface VaultGridProps {
@@ -35,21 +35,10 @@ const VaultCard: React.FC<VaultCardProps> = ({ vault, onPress }) => {
       case 'member':
         return <Unlock size={16} color="#3b82f6" />;
       case 'guest':
-        return <Clock size={16} color="#64748b" />;
+        return <Shield size={16} color="#64748b" />;
       default:
-        return <Clock size={16} color="#64748b" />;
+        return <Shield size={16} color="#64748b" />;
     }
-  };
-
-  const formatLastAccess = (createdAt: string) => {
-    const date = new Date(createdAt);
-    const now = new Date();
-    const diffInHours = Math.floor((now.getTime() - date.getTime()) / (1000 * 60 * 60));
-
-    if (diffInHours < 1) return 'Just now';
-    if (diffInHours < 24) return `${diffInHours}h ago`;
-    const diffInDays = Math.floor(diffInHours / 24);
-    return `${diffInDays}d ago`;
   };
 
   return (
@@ -86,13 +75,6 @@ const VaultCard: React.FC<VaultCardProps> = ({ vault, onPress }) => {
             {vault.role.toUpperCase()}
           </Text>
         </View>
-      </View>
-
-      <View className="flex-row items-center gap-2">
-        <Clock size={14} color="#64748b" />
-        <Text className="text-muted-default dark:text-muted-dark text-sm">
-          Last: {formatLastAccess(vault.created_at)}
-        </Text>
       </View>
     </TouchableOpacity>
   );

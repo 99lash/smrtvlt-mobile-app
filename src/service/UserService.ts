@@ -62,7 +62,24 @@ export class UserService {
         console.log('UserService - Response ok:', response.ok);
       }
 
-      const responseData: UserRegistrationResponse = await response.json();
+      // Check if response is actually JSON before parsing
+      const contentType = response.headers.get('content-type');
+      if (__DEV__) {
+        console.log('UserService - Response content-type:', contentType);
+      }
+
+      let responseData: UserRegistrationResponse;
+      
+      if (contentType && contentType.includes('application/json')) {
+        responseData = await response.json();
+      } else {
+        // If not JSON, get the text to see what we got
+        const text = await response.text();
+        if (__DEV__) {
+          console.error('UserService - Non-JSON response received:', text);
+        }
+        throw new Error('Server returned non-JSON response. Please check your API connection.');
+      }
 
       if (!response.ok) {
         // Handle specific error cases based on status codes
@@ -292,13 +309,13 @@ export class UserService {
          console.log('UserService - Fetching current user vaults from:', vaultsUrl);
        }
 
-       const vaultsResponse = await fetch(vaultsUrl, {
-         method: 'GET',
-         headers: {
-           'Authorization': `Bearer ${token}`,
-           'Content-Type': 'application/json',
-         },
-       });
+      const vaultsResponse = await fetch(vaultsUrl, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+      });
 
        if (!vaultsResponse.ok) {
          throw new Error(`Failed to fetch user vaults: ${vaultsResponse.status}`);
