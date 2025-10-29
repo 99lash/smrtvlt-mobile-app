@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, Alert } from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity, Alert, RefreshControl } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import {
   Shield,
@@ -11,14 +11,30 @@ import {
   Smartphone,
   Settings,
   Activity,
+  User,
+  Bell
 } from 'lucide-react-native';
 
-interface DashboardProps {
+// Import new components
+import { VaultGrid } from '../components/home/VaultGrid';
+import { AnalyticsCards } from '../components/home/AnalyticsCards';
+import { ActivityFeed } from '../components/home/ActivityFeed';
+import { QuickActions } from '../components/home/QuickActions';
+import { DateFilterDropdown } from '../components/home/DateFilterDropdown';
+
+// Import hooks and services
+import { useHomeDashboard } from '../hooks/useHomeDashboard';
+import { useVaultManagement } from '../hooks/VaultContext';
+import { useAuthContext } from '../context/AuthContext';
+
+interface HomeScreenProps {
   isConnected: boolean;
   vaultStatus: string;
   setVaultStatus: (status: string) => void;
   hasActiveAlarm: boolean;
   setHasActiveAlarm: (status: boolean) => void;
+  onNavigateToSettings?: () => void;
+  onNavigateToActivity?: () => void;
 }
 
 export default function HomeScreen({
@@ -27,8 +43,22 @@ export default function HomeScreen({
   setVaultStatus,
   hasActiveAlarm,
   setHasActiveAlarm,
-}: DashboardProps) {
+  onNavigateToSettings,
+  onNavigateToActivity,
+}: HomeScreenProps) {
+  const { user } = useAuthContext();
+  const { currentVault, selectVault, availableVaults } = useVaultManagement();
+  const {
+    metrics,
+    recentActivity,
+    refreshData,
+    isRefreshing,
+    selectedDateFilter,
+    setSelectedDateFilter
+  } = useHomeDashboard();
+
   const [isUnlocking, setIsUnlocking] = useState(false);
+  const [isClearingAlarm, setIsClearingAlarm] = useState(false);
 
   const handleRemoteUnlock = () => {
     if (!isConnected || vaultStatus === 'unlocked') return;
@@ -58,249 +88,155 @@ export default function HomeScreen({
     );
   };
 
-  const recentActivity = [
-    { id: 1, user: 'John Doe', action: 'Vault Unlocked', time: '2 min ago', status: 'success' },
-    { id: 2, user: 'Jane Smith', action: 'Face Recognition Failed', time: '15 min ago', status: 'error' },
-    { id: 3, user: 'Admin', action: 'New User Added', time: '1 hour ago', status: 'info' },
-  ];
+  const handleClearAlarm = () => {
+    if (!hasActiveAlarm) return;
 
-  const getActivityIcon = (status: string) => {
-    const iconSize = 16;
-    switch (status) {
-      case 'success':
-        return <CheckCircle size={iconSize} color="#22c55e" />;
-      case 'error':
-        return <AlertTriangle size={iconSize} color="#f87171" />;
-      default:
-        return <Clock size={iconSize} color="#0ea5e9" />;
+    setIsClearingAlarm(true);
+    Alert.alert(
+      'Clear Alarm',
+      'Are you sure you want to clear the security alarm?',
+      [
+        {
+          text: 'Cancel',
+          style: 'cancel',
+          onPress: () => setIsClearingAlarm(false),
+        },
+        {
+          text: 'Clear',
+          onPress: () => {
+            setHasActiveAlarm(false);
+            setIsClearingAlarm(false);
+          },
+        },
+      ]
+    );
+  };
+
+  const handleVaultPress = (vault: any) => {
+    selectVault(vault.vault_id);
+    console.log('🏠 HomeScreen: Selected vault:', vault.vault_name || vault.vault_id);
+  };
+
+  const handleViewAllActivity = () => {
+    if (onNavigateToActivity) {
+      onNavigateToActivity();
+    }
+  };
+
+  const handleSettingsPress = () => {
+    if (onNavigateToSettings) {
+      onNavigateToSettings();
     }
   };
 
   return (
-    <SafeAreaView className="flex-1 bg-bg-default dark:bg-bg-dark pt-6">
-      <ScrollView className="flex-1 px-4" contentContainerStyle={{ paddingBottom: 16 }}>
-        {/* Vault Status Card */}
-        <View className="bg-surface-default dark:bg-surface-dark rounded-[10px] p-6 mb-4 shadow-sm">
-          <View className="flex-row items-center justify-between mb-4">
-            <View className="flex-row items-center gap-3">
-              <View
-                className={`w-12 h-12 rounded-full items-center justify-center ${
-                  vaultStatus === 'locked'
-                    ? 'bg-success-light/30'
-                    : 'bg-error-light/30'
-                }`}
-              >
-                {vaultStatus === 'locked' ? (
-                  <Shield size={24} color="#22c55e" />
-                ) : (
-                  <Unlock size={24} color="#f87171" />
-                )}
-              </View>
-              <View>
-                <Text className="text-text-default dark:text-text-dark text-lg font-heading font-semibold">
-                  Vault Status
-                </Text>
-                <Text className="text-muted-default dark:text-muted-dark text-sm">
-                  Main Safe
-                </Text>
-              </View>
+    <SafeAreaView className="flex-1 bg-bg-default dark:bg-bg-dark">
+      <ScrollView
+        className="flex-1"
+        contentContainerStyle={{ paddingBottom: 20 }}
+        refreshControl={
+          <RefreshControl
+            refreshing={isRefreshing}
+            onRefresh={refreshData}
+            colors={['#2563eb']}
+            tintColor="#2563eb"
+          />
+        }
+      >
+        {/* Header */}
+        <View className="px-6 pt-6 pb-4">
+          <View className="flex-row items-center justify-between">
+            <View>
+              <Text className="text-text-default dark:text-text-dark text-2xl font-bold">
+                🏠 SmartVault
+              </Text>
+              <Text className="text-muted-default dark:text-muted-dark text-base mt-1">
+                Welcome back, {user?.username || 'User'}!
+              </Text>
             </View>
-            <View
-              className={`px-3 py-1.5 rounded-full ${
-                vaultStatus === 'locked' ? 'bg-success' : 'bg-error'
-              }`}
+            <TouchableOpacity
+              className="w-10 h-10 rounded-full bg-surface-active dark:bg-border-dark items-center justify-center"
+              onPress={handleSettingsPress}
+              activeOpacity={0.7}
             >
-              <Text className="text-white text-xs font-semibold">
-                {vaultStatus === 'locked' ? 'Secured' : 'Unlocked'}
-              </Text>
-            </View>
+              <Settings size={20} color="#2563eb" />
+            </TouchableOpacity>
           </View>
+        </View>
 
-          <View className="flex-row mb-4">
-            <View className="flex-1 items-center">
-              <Text className="text-text-default dark:text-text-dark text-2xl font-medium">
-                4
-              </Text>
-              <Text className="text-muted-default dark:text-muted-dark text-sm mt-1">
-                Authorized Users
-              </Text>
-            </View>
-            <View className="flex-1 items-center">
-              <Text className="text-text-default dark:text-text-dark text-2xl font-medium">
-                12
-              </Text>
-              <Text className="text-muted-default dark:text-muted-dark text-sm mt-1">
-                Access Today
-              </Text>
-            </View>
-          </View>
+        {/* Date Filter */}
+        <View className="px-6 mb-4">
+          <DateFilterDropdown
+            selectedOption={selectedDateFilter}
+            onOptionChange={setSelectedDateFilter}
+            disabled={isRefreshing}
+          />
+        </View>
 
-          {/* Battery Status */}
-          <View className="flex-row items-center gap-3 mb-4">
-            <Battery size={16} color="#64748b" />
-            <View className="flex-1">
-              <View className="flex-row justify-between mb-1.5">
-                <Text className="text-text-default dark:text-text-dark text-sm">
-                  Battery Level
-                </Text>
-                <Text className="text-text-default dark:text-text-dark text-sm font-medium">
-                  85%
-                </Text>
-              </View>
-              <View className="h-2 bg-border-default dark:bg-border-dark rounded-full overflow-hidden">
-                <View className="h-full bg-primary rounded-full" style={{ width: '85%' }} />
-              </View>
-            </View>
-          </View>
+        {/* Dashboard Metrics */}
+        <AnalyticsCards
+          metrics={metrics}
+          onRefresh={refreshData}
+          isRefreshing={isRefreshing}
+        />
 
-          {/* Connection Status */}
-          <View className="flex-row items-center gap-2">
+        {/* Vault Grid */}
+        <VaultGrid
+          vaults={availableVaults}
+          onVaultPress={handleVaultPress}
+          isLoading={metrics.isLoading}
+        />
+
+        {/* Quick Actions */}
+        <QuickActions
+          onRemoteUnlock={handleRemoteUnlock}
+          onClearAlarm={handleClearAlarm}
+          onSettings={handleSettingsPress}
+          isConnected={isConnected}
+          vaultStatus={vaultStatus}
+          hasActiveAlarm={hasActiveAlarm}
+          isUnlocking={isUnlocking}
+          isClearingAlarm={isClearingAlarm}
+        />
+
+        {/* Recent Activity */}
+        <ActivityFeed
+          activities={recentActivity}
+          onViewAll={handleViewAllActivity}
+          onRefresh={refreshData}
+          isLoading={metrics.isLoading}
+          isRefreshing={isRefreshing}
+        />
+
+        {/* Connection Status */}
+        <View className="mx-6 mb-6 p-4 bg-surface-default dark:bg-surface-dark rounded-xl border border-border-default dark:border-border-dark">
+          <View className="flex-row items-center gap-3">
             {isConnected ? (
               <>
-                <CheckCircle size={16} color="#22c55e" />
-                <Text className="text-success text-sm">Connected to WiFi</Text>
+                <CheckCircle size={20} color="#22c55e" />
+                <View className="flex-1">
+                  <Text className="text-text-default dark:text-text-dark font-medium">
+                    Connected to Vault Network
+                  </Text>
+                  <Text className="text-muted-default dark:text-muted-dark text-sm mt-0.5">
+                    All features available
+                  </Text>
+                </View>
               </>
             ) : (
               <>
-                <AlertTriangle size={16} color="#eab308" />
-                <Text className="text-warning text-sm">Offline - Using local mode</Text>
+                <AlertTriangle size={20} color="#eab308" />
+                <View className="flex-1">
+                  <Text className="text-text-default dark:text-text-dark font-medium">
+                    Offline Mode
+                  </Text>
+                  <Text className="text-muted-default dark:text-muted-dark text-sm mt-0.5">
+                    Limited functionality available
+                  </Text>
+                </View>
               </>
             )}
           </View>
-        </View>
-
-        {/* Quick Actions */}
-        <View className="bg-surface-default dark:bg-surface-dark rounded-[10px] p-6 mb-4 shadow-sm">
-          <View className="flex-row items-center gap-2 mb-4">
-            <Smartphone size={20} color="#2563eb" />
-            <Text className="text-text-default dark:text-text-dark text-lg font-heading font-semibold">
-              Quick Actions
-            </Text>
-          </View>
-
-          <View className="gap-3">
-            <TouchableOpacity
-              className={`flex-row items-center gap-2 p-4 bg-surface-active dark:bg-border-dark rounded-[10px] border border-border-default dark:border-border-dark ${
-                (!isConnected || vaultStatus === 'unlocked' || isUnlocking) && 'opacity-50'
-              }`}
-              onPress={handleRemoteUnlock}
-              disabled={!isConnected || vaultStatus === 'unlocked' || isUnlocking}
-              activeOpacity={0.7}
-            >
-              <Unlock size={16} color={!isConnected || vaultStatus === 'unlocked' ? '#64748b' : '#0f172a'} />
-              <Text className="text-text-default dark:text-text-dark text-sm font-medium">
-                Remote Unlock
-              </Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              className={`flex-row items-center gap-2 p-4 bg-surface-active dark:bg-border-dark rounded-[10px] border border-border-default dark:border-border-dark ${
-                !hasActiveAlarm && 'opacity-50'
-              }`}
-              onPress={() => setHasActiveAlarm(false)}
-              disabled={!hasActiveAlarm}
-              activeOpacity={0.7}
-            >
-              <AlertTriangle size={16} color={hasActiveAlarm ? '#0f172a' : '#64748b'} />
-              <Text className="text-text-default dark:text-text-dark text-sm font-medium">
-                Clear Alarm
-              </Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              className="flex-row items-center gap-2 p-4 bg-surface-active dark:bg-border-dark rounded-[10px] border border-border-default dark:border-border-dark"
-              activeOpacity={0.7}
-            >
-              <Settings size={16} color="#0f172a" />
-              <Text className="text-text-default dark:text-text-dark text-sm font-medium">
-                Device Settings
-              </Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-
-        {/* Recent Activity */}
-        <View className="bg-surface-default dark:bg-surface-dark rounded-[10px] p-6 mb-4 shadow-sm">
-          <View className="flex-row items-center gap-2 mb-4">
-            <Activity size={20} color="#2563eb" />
-            <Text className="text-text-default dark:text-text-dark text-lg font-heading font-semibold">
-              Recent Activity
-            </Text>
-          </View>
-
-          <View className="gap-3 mb-3">
-            {recentActivity.map((activity) => (
-              <View
-                key={activity.id}
-                className="flex-row items-center gap-3 p-3 bg-surface-active dark:bg-border-dark rounded-[10px]"
-              >
-                <View
-                  className={`w-8 h-8 rounded-full items-center justify-center ${
-                    activity.status === 'success'
-                      ? 'bg-success-light/30'
-                      : activity.status === 'error'
-                      ? 'bg-error-light/30'
-                      : 'bg-info-light/30'
-                  }`}
-                >
-                  {getActivityIcon(activity.status)}
-                </View>
-                <View className="flex-1">
-                  <Text className="text-text-default dark:text-text-dark text-sm font-medium">
-                    {activity.action}
-                  </Text>
-                  <Text className="text-muted-default dark:text-muted-dark text-xs mt-0.5">
-                    {activity.user}
-                  </Text>
-                </View>
-                <Text className="text-muted-default dark:text-muted-dark text-xs">
-                  {activity.time}
-                </Text>
-              </View>
-            ))}
-          </View>
-
-          <TouchableOpacity
-            className="p-3 rounded-[10px] border border-border-default dark:border-border-dark items-center"
-            activeOpacity={0.7}
-          >
-            <Text className="text-text-default dark:text-text-dark text-sm font-medium">
-              View All Activity
-            </Text>
-          </TouchableOpacity>
-        </View>
-
-        {/* Notifications */}
-        <View className="bg-surface-default dark:bg-surface-dark rounded-[10px] p-6 mb-4 shadow-sm">
-          <View className="flex-row items-center gap-2 mb-4">
-            <AlertTriangle size={20} color="#2563eb" />
-            <Text className="text-text-default dark:text-text-dark text-lg font-heading font-semibold">
-              Notifications
-            </Text>
-          </View>
-
-          <View className="p-3 bg-warning-light/20 rounded-[10px] mb-3">
-            <View className="flex-row items-start gap-3">
-              <AlertTriangle size={16} color="#eab308" />
-              <View className="flex-1">
-                <Text className="text-text-default dark:text-text-dark text-sm">
-                  System check scheduled for tonight
-                </Text>
-                <Text className="text-muted-default dark:text-muted-dark text-xs mt-1">
-                  2 hours ago
-                </Text>
-              </View>
-            </View>
-          </View>
-
-          <TouchableOpacity
-            className="p-3 rounded-[10px] border border-border-default dark:border-border-dark items-center"
-            activeOpacity={0.7}
-          >
-            <Text className="text-text-default dark:text-text-dark text-sm font-medium">
-              View All Notifications
-            </Text>
-          </TouchableOpacity>
         </View>
       </ScrollView>
     </SafeAreaView>
