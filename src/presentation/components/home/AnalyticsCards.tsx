@@ -59,7 +59,7 @@ export const AnalyticsCards: React.FC<AnalyticsCardsProps> = ({
         <View className="flex-row items-center justify-between mb-4">
           <View className="flex-row items-center gap-2">
             <AlertTriangle size={20} color="#ef4444" />
-            <Text className="text-text-default dark:text-text-dark text-lg font-semibold">
+            <Text className="text-text-dark dark:text-text-dark text-lg font-semibold">
               Dashboard Error
             </Text>
           </View>
@@ -85,7 +85,7 @@ export const AnalyticsCards: React.FC<AnalyticsCardsProps> = ({
       <View className="flex-row items-center justify-between mb-4">
         <View className="flex-row items-center gap-2">
           <Activity size={20} color="#2563eb" />
-          <Text className="text-text-default dark:text-text-dark text-lg font-semibold">
+          <Text className="text-text-dark dark:text-text-dark text-lg font-semibold">
             Dashboard Summary
           </Text>
         </View>
@@ -105,7 +105,7 @@ export const AnalyticsCards: React.FC<AnalyticsCardsProps> = ({
         {/* Total Vaults */}
         <View className="flex-1 min-w-[100px] bg-surface-active dark:bg-border-dark rounded-lg p-4 items-center">
           <Shield size={24} color="#2563eb" />
-          <Text className="text-text-default dark:text-text-dark text-xl font-bold mt-2">
+          <Text className="text-text-dark dark:text-text-dark text-xl font-bold mt-2">
             {metrics.isLoading ? '...' : metrics.totalVaults}
           </Text>
           <Text className="text-muted-default dark:text-muted-dark text-xs mt-1">
@@ -116,7 +116,7 @@ export const AnalyticsCards: React.FC<AnalyticsCardsProps> = ({
         {/* Today's Access */}
         <View className="flex-1 min-w-[100px] bg-surface-active dark:bg-border-dark rounded-lg p-4 items-center">
           <Activity size={24} color="#10b981" />
-          <Text className="text-text-default dark:text-text-dark text-xl font-bold mt-2">
+          <Text className="text-text-dark dark:text-text-dark text-xl font-bold mt-2">
             {metrics.isLoading ? '...' : metrics.todayAccessCount}
           </Text>
           <Text className="text-muted-default dark:text-muted-dark text-xs mt-1">
@@ -141,7 +141,7 @@ export const AnalyticsCards: React.FC<AnalyticsCardsProps> = ({
         {/* Failed Attempts */}
         <View className="flex-1 min-w-[100px] bg-surface-active dark:bg-border-dark rounded-lg p-4 items-center">
           <AlertTriangle size={24} color="#f59e0b" />
-          <Text className="text-text-default dark:text-text-dark text-xl font-bold mt-2">
+          <Text className="text-text-dark dark:text-text-dark text-xl font-bold mt-2">
             {metrics.isLoading ? '...' : metrics.failedAttempts}
           </Text>
           <Text className="text-muted-default dark:text-muted-dark text-xs mt-1">

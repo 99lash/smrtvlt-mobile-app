@@ -48,7 +48,7 @@ export const DateFilterDropdown: React.FC<DateFilterDropdownProps> = ({
         className={`text-sm font-medium ${
           item.key === selectedOption.key
             ? 'text-primary'
-            : 'text-text-default dark:text-text-dark'
+            : 'text-text-dark dark:text-text-default'
         }`}
       >
         {item.label}
@@ -67,9 +67,9 @@ export const DateFilterDropdown: React.FC<DateFilterDropdownProps> = ({
       >
         <View className="flex-row items-center gap-2">
           <Calendar size={16} color="#64748b" />
-          <Text className="text-text-default dark:text-text-dark text-sm font-medium">
+          <Text className="text-text-dark dark:text-text-default text-sm font-medium">
             {selectedOption.label}
-          </Text>
+          </Text> 
         </View>
         <ChevronDown size={16} color="#64748b" />
       </TouchableOpacity>

@@ -36,7 +36,7 @@ export const QuickActions: React.FC<QuickActionsProps> = ({
     <View className="bg-surface-default dark:bg-surface-dark rounded-xl p-6 mb-4">
       <View className="flex-row items-center gap-2 mb-4">
         <Smartphone size={20} color="#2563eb" />
-        <Text className="text-text-default dark:text-text-dark text-lg font-semibold">
+        <Text className="text-text-dark dark:text-text-dark text-lg font-semibold">
           Quick Actions
         </Text>
       </View>
@@ -60,7 +60,7 @@ export const QuickActions: React.FC<QuickActionsProps> = ({
             />
           </View>
           <View className="flex-1">
-            <Text className={`text-sm font-medium ${isUnlockDisabled ? 'text-muted-default dark:text-muted-dark' : 'text-text-default dark:text-text-dark'}`}>
+            <Text className={`text-sm font-medium ${isUnlockDisabled ? 'text-muted-default dark:text-muted-dark' : 'text-text-dark dark:text-text-dark'}`}>
               Remote Unlock
             </Text>
             <Text className="text-xs text-muted-default dark:text-muted-dark mt-0.5">
@@ -95,7 +95,7 @@ export const QuickActions: React.FC<QuickActionsProps> = ({
             />
           </View>
           <View className="flex-1">
-            <Text className={`text-sm font-medium ${isAlarmDisabled ? 'text-muted-default dark:text-muted-dark' : 'text-text-default dark:text-text-dark'}`}>
+            <Text className={`text-sm font-medium ${isAlarmDisabled ? 'text-muted-default dark:text-muted-dark' : 'text-text-dark dark:text-text-dark'}`}>
               Clear Alarm
             </Text>
             <Text className="text-xs text-muted-default dark:text-muted-dark mt-0.5">
@@ -120,7 +120,7 @@ export const QuickActions: React.FC<QuickActionsProps> = ({
             <Settings size={16} color="#2563eb" />
           </View>
           <View className="flex-1">
-            <Text className="text-text-default dark:text-text-dark text-sm font-medium">
+            <Text className="text-text-dark dark:text-text-dark text-sm font-medium">
               Device Settings
             </Text>
             <Text className="text-xs text-muted-default dark:text-muted-dark mt-0.5">

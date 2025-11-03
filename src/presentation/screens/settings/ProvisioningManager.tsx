@@ -22,7 +22,7 @@ export const ProvisioningManager: React.FC<ProvisioningManagerProps> = () => {
     >
       <View className="flex-row items-center mb-3">
         <Wifi size={26} color="#5e5e5e" />
-        <Text className="text-text-default text-lg font-semibold ml-2">Provisioning Management</Text>
+        <Text className="text-text-dark text-lg font-semibold ml-2">Provisioning Management</Text>
       </View>
       <Provisioning />
     </View>

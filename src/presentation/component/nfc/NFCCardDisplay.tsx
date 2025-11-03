@@ -59,10 +59,10 @@ export const NFCCardDisplay: React.FC<NFCCardDisplayProps> = React.memo(({ nfcDa
   return (
 
     <View className="bg-bg-default rounded-2xl p-3 mt-2">
-      <Text className="text-text-default text-sm mb-1">
+      <Text className="text-text-dark text-sm mb-1">
         <Text className="font-medium">NFC UID:</Text> {nfcData.uid}
       </Text>
-      <Text className="text-text-default text-sm mb-1">
+      <Text className="text-text-dark text-sm mb-1">
         <Text className="font-medium">Detected:</Text> {formatDate(nfcData.created_at)}
       </Text>
       {nfcData.vault_id && (

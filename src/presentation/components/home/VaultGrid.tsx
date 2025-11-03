@@ -56,7 +56,7 @@ const VaultCard: React.FC<VaultCardProps> = ({ vault, onPress }) => {
             {getStatusIcon(vault.role)}
           </View>
           <View>
-            <Text className="text-text-default dark:text-text-dark font-semibold text-base">
+            <Text className="text-text-dark dark:text-text-dark font-semibold text-base">
               {vault.vault_name || `Vault ${vault.vault_id}`}
             </Text>
             <Text className="text-muted-default dark:text-muted-dark text-sm">
@@ -88,7 +88,7 @@ export const VaultGrid: React.FC<VaultGridProps> = ({
   if (isLoading) {
     return (
       <View className="bg-surface-default dark:bg-surface-dark rounded-xl p-6 mb-4">
-        <Text className="text-text-default dark:text-text-dark text-lg font-semibold mb-4">
+        <Text className="text-text-dark dark:text-text-dark text-lg font-semibold mb-4">
           My Vaults
         </Text>
         <View className="flex-row gap-3">
@@ -109,7 +109,7 @@ export const VaultGrid: React.FC<VaultGridProps> = ({
   if (vaults.length === 0) {
     return (
       <View className="bg-surface-default dark:bg-surface-dark rounded-xl p-6 mb-4">
-        <Text className="text-text-default dark:text-text-dark text-lg font-semibold mb-4">
+        <Text className="text-text-dark dark:text-text-dark text-lg font-semibold mb-4">
           My Vaults
         </Text>
         <View className="items-center py-8">
@@ -127,7 +127,7 @@ export const VaultGrid: React.FC<VaultGridProps> = ({
 
   return (
     <View className="bg-surface-default dark:bg-surface-dark rounded-xl p-6 mb-4">
-      <Text className="text-text-default dark:text-text-dark text-lg font-semibold mb-4">
+      <Text className="text-text-dark dark:text-text-dark text-lg font-semibold mb-4">
         My Vaults ({vaults.length})
       </Text>
 

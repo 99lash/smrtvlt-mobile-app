@@ -25,7 +25,7 @@ const ButtonPrimary: React.FC<ButtonPrimaryProps> = ({
   const styledIcon =
     icon &&
     React.cloneElement(icon, {
-      color: '#5e5e5e', 
+      color: '#EEEEEE', 
       size: icon.props.size ?? 20, 
     });
 

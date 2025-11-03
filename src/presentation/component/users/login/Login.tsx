@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, ScrollView, ImageBackground, Dimensions } from 'react-native';
-import { Eye, EyeOff, User, Lock, LogIn, Shield, Mail, AlertCircle } from 'lucide-react-native';
+import { View, Text, TextInput, TouchableOpacity, ScrollView, ImageBackground, Dimensions, Image } from 'react-native';
+import { Eye, EyeOff, User, Lock, LogIn, Mail, AlertCircle, Shield } from 'lucide-react-native';
 import ButtonPrimary from '../../buttons/ButtonPrimary';
 import { useAuthContext } from '../../../context/AuthContext';
 import { useLogin } from '../../../hooks/useLogin';
@@ -8,6 +8,15 @@ import { validateLoginForm, resetLoginForm, createLoginFormData } from '../../..
 import { LoginProps } from '../../../../types/LoginTypes';
 import RegisterModal from '../register';
 import { ErrorMessage } from '../../common/ErrorMessage';
+
+// Conditional import for logo image - falls back to Shield icon if image doesn't exist
+let logoImage: any = null;
+try {
+  logoImage = require('../../../../assets/images/Logo.png');
+} catch (error) {
+  // Logo image not found, will use Shield icon instead
+  console.warn('Logo image not found. Please add logo.png to src/assets/images/');
+}
 
 const Login: React.FC<LoginProps> = ({ onLoginSuccess, onLoginError }) => {
   const [username, setUsername] = useState('');
@@ -92,10 +101,13 @@ const Login: React.FC<LoginProps> = ({ onLoginSuccess, onLoginError }) => {
 
             {/* Header Section */}
             <View className="items-center mb-6">
-              {/* Logo */}
-              <View className="w-24 h-24 rounded-full bg-cards-default items-center justify-center mb-3 border-4 border-primary-default">
-                <Shield size={30} color="#ffb800" />
-              </View>
+              <Image
+                    source={logoImage}
+                    style={{ width: 100, height: 100, resizeMode: 'contain' }}
+                    onError={() => {
+                      console.warn('Logo image failed to load. Using Shield icon instead.');
+                    }}
+                  />
             </View>
 
             {/* Login Card */}
@@ -121,7 +133,7 @@ const Login: React.FC<LoginProps> = ({ onLoginSuccess, onLoginError }) => {
                 <View className="flex-row items-center rounded-2xl px-4 py-2 bg-bg-default border border-border-default">
                   <Mail size={20} color="#6B7280" />
                   <TextInput
-                    className="flex-1 ml-3 text-text-default text-base"
+                    className="flex-1 ml-3 text-text-dark text-base"
                     placeholder="Enter your username or email"
                     placeholderTextColor="#6B7280"
                     value={username}
@@ -139,7 +151,7 @@ const Login: React.FC<LoginProps> = ({ onLoginSuccess, onLoginError }) => {
                 <View className="flex-row items-center rounded-2xl px-4 py-2 bg-bg-default border border-border-default">
                   <Lock size={20} color="#6B7280" />
                   <TextInput
-                    className="flex-1 ml-3 text-text-default text-base"
+                    className="flex-1 ml-3 text-text-dark text-base"
                     placeholder="Enter your password"
                     placeholderTextColor="#6B7280"
                     value={password}

@@ -76,7 +76,7 @@ function BorderedList<T>({
                     className={`flex-1 ${
                       isSelected
                         ? 'text-primary-dark font-semibold'
-                        : 'text-text-default dark:text-text-dark'
+                        : 'text-text-dark dark:text-text-default'
                     }`}
                     style={{ flexWrap: 'wrap' }}
                   >

@@ -8,18 +8,19 @@ module.exports = {
       // TEMPORARY: for the meantime let's use this color pallete across the  entire codebase
       colors: {
         primary: {
-          default: '#ffb800', // blue-600 (clear CTA, strong visibility)
+          default: '#1055C9', 
         },
         secondary: {
           default: '#1a0f3e'
         },
         text: {
-          default: '#0c0a09', 
-          dark: '#EEEEEE'
+          default: '#EEEEEE', 
+          dark: '#2A3335'
         },
         icons:{
-          default: '#5e5e5e',
-          dark: '#f5f5f5'
+          default: '#D4EBF8',
+          dark: '#D4EBF8',
+          light: '#80C4E9'
         },
         bg:{
           default: '#F2F0EF'
@@ -33,7 +34,7 @@ module.exports = {
           dark:'#989ea6',
         }, 
         muted:{
-          default: '#64748b',
+          default: '#393a38',
           dark: '#393a38',
         },
         surface:{

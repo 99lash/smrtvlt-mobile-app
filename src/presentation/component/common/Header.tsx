@@ -40,7 +40,7 @@ export const Header: React.FC<HeaderProps> = ({
     <>
       <View className={`flex-row items-center justify-between ${containerClassName}`}>
         {/* Title on the left */}
-        <Text className='text-text-dark text-l font-semibold'>
+        <Text className='text-text-default text-l font-semibold'>
           SMARTVAULT
         </Text>
         

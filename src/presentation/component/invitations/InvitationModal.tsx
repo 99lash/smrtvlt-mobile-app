@@ -208,7 +208,7 @@ export default function InvitationModal({
 
     return (
       <View className="space-y-2">
-        <Text className="text-text-default font-medium text-base">Invitation Role</Text>
+        <Text className="text-text-dark font-medium text-base">Invitation Role</Text>
         
         <TouchableOpacity
           className="bg-surface-light rounded-xl border border-border-dark p-4"
@@ -216,7 +216,7 @@ export default function InvitationModal({
         >
           <View className="flex-row items-center justify-between">
             <View className="flex-1">
-              <Text className="text-text-default font-medium text-base">
+              <Text className="text-text-dark font-medium text-base">
                 {selectedOption?.label}
               </Text>
               <Text className="text-muted-default text-sm">
@@ -250,7 +250,7 @@ export default function InvitationModal({
                   <View className="flex-row items-center justify-between">
                     <View className="flex-1">
                       <Text className={`font-medium text-base ${
-                        isSelected ? 'text-primary-dark' : 'text-text-default'
+                        isSelected ? 'text-primary-dark' : 'text-text-dark'
                       }`}>
                         {option.label}
                       </Text>
@@ -285,13 +285,13 @@ export default function InvitationModal({
             <View className="flex-col bg-surface-light rounded-2xl border border-border-dark p-2 mb-4">
               <View className="flex-row items-center gap-2 ml-2">
                 <Shield size={20} color="#5e5e5e" className="mr-2" />
-                <Text className="text-text-default font-medium text-base">
+                <Text className="text-text-dark font-medium text-base">
                   {getVaultDisplayName()}
                 </Text>
               </View>
               <View className="flex-row items-center gap-2 ml-2">
                 <User size={20} color="#5e5e5e" className="mr-2" />
-                <Text className="text-text-default text-base">
+                <Text className="text-text-dark text-base">
                   Role: {selectedVault?.role || 'N/A'}
                 </Text>
               </View>
@@ -321,7 +321,7 @@ export default function InvitationModal({
                   </View>
                   
                   {/* {copied && (
-                    <Text className="text-text-default text-sm mt-2">
+                    <Text className="text-text-dark text-sm mt-2">
                       Code copied to clipboard!
                     </Text>
                   )} */}
@@ -333,7 +333,7 @@ export default function InvitationModal({
             {/* Instructions */}
             {!generatedCode && (
               <View className="bg-surface-light p-4 rounded-xl">
-                <Text className="text-text-default text-sm text-center">
+                <Text className="text-muted-default text-sm text-center">
                   This will generate a unique invitation code that expires in 24 hours. 
                   The invited user will receive {selectedRole} access to this vault.
                 </Text>
@@ -348,7 +348,7 @@ export default function InvitationModal({
             className="w-full"
           >
             <View className="w-full">
-              <Text className="text-text-default mb-4">
+              <Text className="text-text-dark mb-4">
                 Enter the invitation code you received.
               </Text>
 
@@ -356,7 +356,7 @@ export default function InvitationModal({
                 value={invitationCode}
                 onChangeText={setInvitationCode}
                 placeholder="Enter invitation code..."
-                className="bg-surface-light text-text-default p-3 rounded-2xl mb-6 border border-border-dark text-base font-mono"
+                className="bg-surface-light text-text-dark p-3 rounded-2xl mb-6 border border-border-dark text-base font-mono"
                 placeholderTextColor="#64748b"
                 autoCapitalize="none"
                 autoCorrect={false}

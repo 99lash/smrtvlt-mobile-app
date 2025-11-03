@@ -336,7 +336,7 @@ export const NFCManager: React.FC<NFCManagerProps> = ({
         <View className="flex-row items-center justify-between mb-3">
           <View className="flex-row items-center">
             <CreditCard size={26} color="#5e5e5e" />
-            <Text className="text-text-default text-lg font-semibold ml-2">
+            <Text className="text-text-dark text-lg font-semibold ml-2">
               NFC-Card Management
             </Text>
           </View>

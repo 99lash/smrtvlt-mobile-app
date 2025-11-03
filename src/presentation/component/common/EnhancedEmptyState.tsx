@@ -35,7 +35,7 @@ export const EnhancedEmptyState: React.FC<EnhancedEmptyStateProps> = ({
               <Icon size={iconSize} color={'#f5f5f5'} />
             </View>
           )}
-          <Text className="text-text-default text-center text-xl font-semibold mb-2">
+          <Text className="text-text-dark text-center text-xl font-semibold mb-2">
             {title}
           </Text>
           {message && (

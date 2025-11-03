@@ -143,7 +143,7 @@ export const PinManager: React.FC<PinManagerProps> = ({
         <View className="flex-row items-center justify-between mb-3">
           <View className="flex-row items-center">
             <Keyboard size={26} color="#5e5e5e" />
-            <Text className="text-text-default text-lg font-semibold ml-2">PIN Management</Text>
+            <Text className="text-text-dark text-lg font-semibold ml-2">PIN Management</Text>
           </View>
           {limits && <RoleBadge role={limits.role} size="sm" />}
         </View>

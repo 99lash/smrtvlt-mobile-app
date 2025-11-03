@@ -77,7 +77,7 @@ const ActivityItem: React.FC<ActivityItemProps> = ({ activity }) => {
 
       <View className="flex-1">
         <View className="flex-row items-center justify-between mb-1">
-          <Text className="text-text-default dark:text-text-dark font-medium text-sm">
+          <Text className="text-text-dark dark:text-text-dark font-medium text-sm">
             {activity.title}
           </Text>
           <Text className="text-muted-default dark:text-muted-dark text-xs">
@@ -112,7 +112,7 @@ export const ActivityFeed: React.FC<ActivityFeedProps> = ({
         <View className="flex-row items-center justify-between mb-4">
           <View className="flex-row items-center gap-2">
             <Activity size={20} color="#2563eb" />
-            <Text className="text-text-default dark:text-text-dark text-lg font-semibold">
+            <Text className="text-text-dark dark:text-text-dark text-lg font-semibold">
               Recent Activity
             </Text>
           </View>
@@ -144,7 +144,7 @@ export const ActivityFeed: React.FC<ActivityFeedProps> = ({
         <View className="flex-row items-center justify-between mb-4">
           <View className="flex-row items-center gap-2">
             <Activity size={20} color="#2563eb" />
-            <Text className="text-text-default dark:text-text-dark text-lg font-semibold">
+            <Text className="text-text-dark dark:text-text-dark text-lg font-semibold">
               Recent Activity
             </Text>
           </View>
@@ -173,7 +173,7 @@ export const ActivityFeed: React.FC<ActivityFeedProps> = ({
       <View className="flex-row items-center justify-between mb-4">
         <View className="flex-row items-center gap-2">
           <Activity size={20} color="#2563eb" />
-          <Text className="text-text-default dark:text-text-dark text-lg font-semibold">
+          <Text className="text-text-dark dark:text-text-dark text-lg font-semibold">
             Recent Activity ({activities.length})
           </Text>
         </View>
@@ -196,7 +196,7 @@ export const ActivityFeed: React.FC<ActivityFeedProps> = ({
           onPress={onViewAll}
           activeOpacity={0.7}
         >
-          <Text className="text-text-default dark:text-text-dark text-sm font-medium">
+          <Text className="text-text-dark dark:text-text-dark text-sm font-medium">
             View All Activity
           </Text>
         </TouchableOpacity>

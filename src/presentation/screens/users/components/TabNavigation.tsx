@@ -33,7 +33,7 @@ const TabButton: React.FC<TabButtonProps> = ({ tab, isActive, onPress, icon: Ico
     <Icon size={20} color={isActive ? '#EEEEEE' : '#0c0a09'} />
     <Text
       className={`ml-2 font-medium ${
-        isActive ? 'text-text-dark' : 'text-text-default'
+        isActive ? 'text-text-default' : 'text-text-dark'
       }`}
     >
       {label}

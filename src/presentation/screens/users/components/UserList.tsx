@@ -63,7 +63,7 @@ export const UserList: React.FC<UsersListProps> = ({
       <View className="flex-row items-center gap-3" >
         
         {/* Avatar - Always show initials */}
-        <View className="w-12 h-12 rounded-full bg-icons-default items-center justify-center">
+        <View className="w-12 h-12 rounded-full bg-icons-dark items-center justify-center">
           <Text className="text-text-dark font-semibold text-sm">
             {initials}
           </Text>
@@ -74,7 +74,7 @@ export const UserList: React.FC<UsersListProps> = ({
           {/* Name and Badges Row */}
           <View className="flex-row items-center justify-between mb-1">
             <Text 
-              className={`font-semibold text-base text-text-default flex-1`}
+              className={`font-semibold text-base text-text-dark flex-1`}
               numberOfLines={1}
             >
               {displayName}

@@ -56,7 +56,7 @@ const CustomModal: React.FC<CustomModalProps> = ({
                     <View className="mr-2">{icon}</View>
                   )}
                   
-                  <Text className="text-2xl font-bold text-center text-text-default">
+                  <Text className="text-2xl font-bold text-center text-text-dark">
                     {title}
                   </Text>
                   

@@ -30,7 +30,7 @@ export const VaultList: React.FC<VaultListProps> = ({ vaults, onVaultSelect }) =
           <View className="flex-row items-center justify-between mb-1">
             <Text 
               className={`font-semibold text-base flex-1 ${
-                isSelected ? "text-blue-400" : "text-text-default"
+                isSelected ? "text-blue-400" : "text-text-dark"
               }`}
               numberOfLines={1}
             >
@@ -40,10 +40,10 @@ export const VaultList: React.FC<VaultListProps> = ({ vaults, onVaultSelect }) =
             {/* Role Badge */}
             <View 
               className={`px-2 py-0.5 rounded ${
-                item.role.toLowerCase() === 'admin' ? 'bg-primary-default' : 'bg-icons-default'
+                item.role.toLowerCase() === 'admin' ? 'bg-icons-light' : 'bg-icons-default'
               }`}
             >
-              <Text className="text-white text-xs capitalize">
+              <Text className="text-text-dark text-xs capitalize">
                 {item.role}
               </Text>
             </View>

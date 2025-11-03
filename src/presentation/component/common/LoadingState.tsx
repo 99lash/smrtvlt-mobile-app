@@ -11,7 +11,7 @@ export const LoadingState: React.FC<LoadingStateProps> = ({
   return (
     <View className="flex-1 bg-black justify-center items-center">
       <ActivityIndicator size="large" color="#3b82f6" />
-      <Text className="text-white mt-4">{message}</Text>
+      <Text className="text-text-dark mt-4">{message}</Text>
     </View>
   );
 };
