@@ -1,5 +1,5 @@
 import React, { memo } from 'react';
-import { View, Text, TouchableOpacity, Switch } from 'react-native';
+import { View, Text, Pressable } from 'react-native';
 import { Shield, Settings2, Trash2 } from 'lucide-react-native';
 import type { UserItemProps } from '../../../types/UserTypes';
 import { USER_CONSTANTS } from '../../../utils/userConstants';
@@ -42,22 +42,14 @@ const UserItemComponent: React.FC<UserItemProps> = ({
   };
 
   return (
-    <TouchableOpacity
-      onPress={handlePress}
-      className="mb-3 rounded-xl bg-neutral-900 border border-neutral-800 px-4 py-3"
-      activeOpacity={0.7}
-      accessible={true}
-      accessibilityRole="button"
-      accessibilityLabel={`User ${displayName}, ${user.role}, ${user.status}`}
-      accessibilityHint="Double tap to view user details"
-    >
+    <View className="flex-1">
       <View className="flex-row items-center justify-between">
-        <View className="flex-row items-center">
-          <View className="w-10 h-10 rounded-full bg-neutral-800 items-center justify-center mr-3">
+        <View className="flex-row items-center flex-1">
+          <View className="w-10 h-10 rounded-full bg-primary-default items-center justify-center mr-3">
             <Text className="text-white font-semibold">{initials}</Text>
           </View>
-          <View>
-            <Text className="text-white text-base font-semibold">
+          <View className="flex-1">
+            <Text className="text-text-dark text-base font-semibold">
               {displayName}
             </Text>
             <View className="flex-row mt-1">
@@ -66,51 +58,22 @@ const UserItemComponent: React.FC<UserItemProps> = ({
                 <Badge label={USER_CONSTANTS.MESSAGES.INACTIVE} variant="secondary" />
               )}
             </View>
-            <Text className="text-neutral-400 text-[12px] mt-1">
+            <Text className="text-muted-default text-[12px] mt-1">
               {USER_CONSTANTS.MESSAGES.LAST_ACCESS}: {user.lastAccess}
             </Text>
           </View>
         </View>
-        <View className="flex-row items-center">
-          <Switch
-            value={user.enabled}
-            onValueChange={handleToggleEnabled}
-            accessible={true}
-            accessibilityRole="switch"
-            accessibilityLabel={`${user.enabled ? 'Disable' : 'Enable'} user ${displayName}`}
-            accessibilityHint={`Double tap to ${user.enabled ? 'disable' : 'enable'} this user`}
-          />
-          <TouchableOpacity
-            onPress={handlePress}
-            className="ml-3"
-            accessible={true}
-            accessibilityRole="button"
-            accessibilityLabel={`View security settings for ${displayName}`}
-          >
-            <Shield color={USER_CONSTANTS.COLORS.ICON_SHIELD} size={USER_CONSTANTS.UI.ICON_SIZE} />
-          </TouchableOpacity>
-          <TouchableOpacity
-            onPress={handlePress}
-            className="ml-3"
-            accessible={true}
-            accessibilityRole="button"
-            accessibilityLabel={`View settings for ${displayName}`}
-          >
-            <Settings2 color={USER_CONSTANTS.COLORS.ICON_SETTINGS} size={USER_CONSTANTS.UI.ICON_SIZE} />
-          </TouchableOpacity>
-          <TouchableOpacity
-            onPress={handleRemoveUser}
-            className="ml-3"
-            accessible={true}
-            accessibilityRole="button"
-            accessibilityLabel={`Remove user ${displayName}`}
-            accessibilityHint="Double tap to remove this user"
-          >
-            <Trash2 color={USER_CONSTANTS.COLORS.ICON_DELETE} size={USER_CONSTANTS.UI.ICON_SIZE} />
-          </TouchableOpacity>
-        </View>
+        <Pressable
+          onPress={handleRemoveUser}
+          accessible={true}
+          accessibilityRole="button"
+          accessibilityLabel={`Remove user ${displayName}`}
+          accessibilityHint="Double tap to remove this user from the vault"
+        >
+          <Trash2 color={USER_CONSTANTS.COLORS.ICON_DELETE} size={USER_CONSTANTS.UI.ICON_SIZE} />
+        </Pressable>
       </View>
-    </TouchableOpacity>
+    </View>
   );
 };
 

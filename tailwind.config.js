@@ -26,7 +26,7 @@ module.exports = {
           default: '#F2F0EF'
         },
         cards:{
-          default: '#1a0f3e',
+          default: '#1055C9',
           dark: '#8c8c84'
         },
         border:{

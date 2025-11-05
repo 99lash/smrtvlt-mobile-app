@@ -8,6 +8,7 @@ import { useVaultManagement } from '../hooks/VaultContext';
 import { NFCManager } from './settings/NFCManager';
 import { PinManager } from './settings/PinManager';
 import { ProvisioningManager } from './settings/ProvisioningManager';
+import { UserManager } from './settings/UserManager';
 import JoinVaultManager from './settings/JoinVaultManager';
 
 const SettingsScreen = () => {
@@ -81,6 +82,7 @@ const SettingsScreen = () => {
   
   // State for dropdown
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+
   return (
     <View className="flex-1 bg-bg-default">
       <ScrollView
@@ -173,6 +175,16 @@ const SettingsScreen = () => {
             vaultsLoading={vaultsLoading}
           />
         </View>
+
+        {/* User Management Section - Admin Only */}
+        {currentVault?.role === 'admin' && (
+          <View className="px-3 mt-3">
+            <UserManager
+              currentVault={currentVault}
+              vaultsLoading={vaultsLoading}
+            />
+          </View>
+        )}
 
         {/* Provisioning Management Section */}
         <View className="px-3 pb-12">

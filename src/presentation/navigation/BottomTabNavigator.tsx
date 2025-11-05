@@ -100,9 +100,9 @@ function MyTabBar({ state, descriptors, navigation, screenVisibility }: MyTabBar
   
   return (
     <View className="absolute bottom-6 left-0 right-0 items-center px-4">
-      <View 
+      <View
         style={styles.container}
-        className="bg-[#1a0f3e] rounded-full px-4 py-3"
+        className="bg-[#1055C9] rounded-full px-4 py-3"
       >
         <View className="flex-row items-center gap-2">
           {visibleRoutes.map((route) => {

@@ -8,6 +8,8 @@ import { validateLoginForm, resetLoginForm, createLoginFormData } from '../../..
 import { LoginProps } from '../../../../types/LoginTypes';
 import RegisterModal from '../register';
 import { ErrorMessage } from '../../common/ErrorMessage';
+import PasswordResetRequestModal from '../../modals/PasswordResetRequestModal';
+import PasswordResetFormModal from '../../modals/PasswordResetFormModal';
 
 // Conditional import for logo image - falls back to Shield icon if image doesn't exist
 let logoImage: any = null;
@@ -25,6 +27,8 @@ const Login: React.FC<LoginProps> = ({ onLoginSuccess, onLoginError }) => {
   const [showError, setShowError] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
   const [registerModalVisible, setRegisterModalVisible] = useState(false);
+  const [passwordResetModalVisible, setPasswordResetModalVisible] = useState(false);
+  const [passwordResetFormVisible, setPasswordResetFormVisible] = useState(false);
 
   // Use the new login hook instead of auth context
   const { login, isLoading, error: hookError, clearError } = useLogin();
@@ -176,7 +180,10 @@ const Login: React.FC<LoginProps> = ({ onLoginSuccess, onLoginError }) => {
               </View>
 
               {/* Forgot Password Link */}
-              <TouchableOpacity className="mb-8 self-end">
+              <TouchableOpacity
+                className="mb-8 self-end"
+                onPress={() => setPasswordResetModalVisible(true)}
+              >
                 <Text className="text-primary-default text-sm font-medium">
                   Forgot Password?
                 </Text>
@@ -214,6 +221,28 @@ const Login: React.FC<LoginProps> = ({ onLoginSuccess, onLoginError }) => {
         visible={registerModalVisible}
         onClose={() => setRegisterModalVisible(false)}
         onRegisterSuccess={handleRegisterSuccess}
+      />
+
+      {/* Password Reset Request Modal */}
+      <PasswordResetRequestModal
+        visible={passwordResetModalVisible}
+        onClose={() => setPasswordResetModalVisible(false)}
+        onSuccess={() => {
+          // Password reset request was successful
+          setPasswordResetModalVisible(false);
+        }}
+      />
+
+      {/* Password Reset Form Modal */}
+      <PasswordResetFormModal
+        visible={passwordResetFormVisible}
+        onClose={() => setPasswordResetFormVisible(false)}
+        onSuccess={() => {
+          // Password reset was successful
+          setPasswordResetFormVisible(false);
+          setErrorMessage('Password reset successful! Please log in with your new password.');
+          setShowError(false);
+        }}
       />
     </>
   );

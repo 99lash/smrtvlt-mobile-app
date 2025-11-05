@@ -2,7 +2,7 @@ export const USER_CONSTANTS = {
   MESSAGES: {
     USER_MANAGEMENT_TITLE: 'User Management',
     ADD_USER: 'Add User',
-    LAST_ACCESS: 'Last access',
+    LAST_ACCESS: 'Joined',
     INACTIVE: 'Inactive',
     ADMIN: 'Admin',
     USER: 'User',

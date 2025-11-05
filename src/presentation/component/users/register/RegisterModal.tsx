@@ -1,15 +1,19 @@
 import React, { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, Alert } from 'react-native';
 import { Eye, EyeOff, User, Lock, Mail, UserCheck } from 'lucide-react-native';
 import CustomModal from '../../modals/CustomModal';
 import ButtonPrimary from '../../buttons/ButtonPrimary';
+import EmailVerificationModal from '../../modals/EmailVerificationModal';
 import { UserRole, UserRegistrationRequest } from '../../../../types/UserTypes';
 import { UserService } from '../../../../service/UserService';
+import { useAuthContext } from '../../../context/AuthContext';
 
 type RegisterModalProps = {
   visible: boolean;
   onClose: () => void;
   onRegisterSuccess?: () => void;
+  onShowVerification?: (username: string) => void;
+  onVerificationSuccess?: () => void;
 };
 
 type FormData = {
@@ -28,6 +32,7 @@ const RegisterModal: React.FC<RegisterModalProps> = ({
   visible,
   onClose,
   onRegisterSuccess,
+  onVerificationSuccess,
 }) => {
   const [formData, setFormData] = useState<FormData>({
     username: '',
@@ -41,6 +46,9 @@ const RegisterModal: React.FC<RegisterModalProps> = ({
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
+  const [showEmailVerificationModal, setShowEmailVerificationModal] = useState(false);
+  const [registeredUsername, setRegisteredUsername] = useState('');
+  const [registeredEmail, setRegisteredEmail] = useState('');
   const [showError, setShowError] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
   const [errors, setErrors] = useState<FormErrors>({});
@@ -57,6 +65,9 @@ const RegisterModal: React.FC<RegisterModalProps> = ({
     setShowConfirmPassword(false);
     setIsLoading(false);
     setShowSuccess(false);
+    setShowEmailVerificationModal(false);
+    setRegisteredUsername('');
+    setRegisteredEmail('');
     setShowError(false);
     setErrorMessage('');
     setErrors({});
@@ -131,15 +142,14 @@ const RegisterModal: React.FC<RegisterModalProps> = ({
       }
 
       setIsLoading(false);
+      
+      // Store the username and email for verification
+      setRegisteredUsername(formData.username.trim());
+      setRegisteredEmail(formData.email.trim());
+      
+      // Show email verification modal
+      setShowEmailVerificationModal(true);
       setShowSuccess(true);
-
-      // Auto-hide success banner and close modal after 2 seconds
-      setTimeout(() => {
-        setShowSuccess(false);
-        resetForm();
-        onRegisterSuccess?.();
-        onClose();
-      }, 2000);
 
     } catch (error) {
       setIsLoading(false);
@@ -166,6 +176,19 @@ const RegisterModal: React.FC<RegisterModalProps> = ({
     setShowConfirmPassword(!showConfirmPassword);
   };
 
+  const handleVerificationSuccess = () => {
+    setShowEmailVerificationModal(false);
+    resetForm();
+    onVerificationSuccess?.();
+    onClose();
+  };
+
+  const handleEmailVerificationClose = () => {
+    setShowEmailVerificationModal(false);
+    setRegisteredUsername('');
+    setRegisteredEmail('');
+  };
+
   const isFormValid = () => {
     return (
       formData.username.trim() &&
@@ -176,6 +199,7 @@ const RegisterModal: React.FC<RegisterModalProps> = ({
       Object.keys(errors).length === 0
     );
   };
+
 
   return (
     <>
@@ -306,6 +330,14 @@ const RegisterModal: React.FC<RegisterModalProps> = ({
         </View>
       </CustomModal>
 
+      {/* Email Verification Modal */}
+      <EmailVerificationModal
+        visible={showEmailVerificationModal}
+        onClose={handleEmailVerificationClose}
+        username={registeredUsername}
+        email={registeredEmail}
+        onVerificationSuccess={handleVerificationSuccess}
+      />
     </>
   );
 };

@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { View, Text, ScrollView, TouchableOpacity, Alert, RefreshControl } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useNavigation } from '@react-navigation/native';
 import {
   Shield,
   Unlock,
@@ -9,7 +10,6 @@ import {
   CheckCircle,
   Clock,
   Smartphone,
-  Settings,
   Activity,
   User,
   Bell
@@ -46,6 +46,7 @@ export default function HomeScreen({
   onNavigateToSettings,
   onNavigateToActivity,
 }: HomeScreenProps) {
+  const navigation = useNavigation();
   const { user } = useAuthContext();
   const { currentVault, selectVault, availableVaults } = useVaultManagement();
   const {
@@ -118,9 +119,8 @@ export default function HomeScreen({
   };
 
   const handleViewAllActivity = () => {
-    if (onNavigateToActivity) {
-      onNavigateToActivity();
-    }
+    // Navigate to Activity tab
+    navigation.navigate('Activity' as never);
   };
 
   const handleSettingsPress = () => {
@@ -133,7 +133,7 @@ export default function HomeScreen({
     <SafeAreaView className="flex-1 bg-bg-default dark:bg-bg-dark">
       <ScrollView
         className="flex-1"
-        contentContainerStyle={{ paddingBottom: 20 }}
+        contentContainerStyle={{ paddingBottom: 120 }}
         refreshControl={
           <RefreshControl
             refreshing={isRefreshing}
@@ -147,20 +147,14 @@ export default function HomeScreen({
         <View className="px-6 pt-6 pb-4">
           <View className="flex-row items-center justify-between">
             <View>
-              <Text className="text-text-default dark:text-text-dark text-2xl font-bold">
+              <Text className="text-text-dark text-2xl font-bold">
                 🏠 SmartVault
               </Text>
-              <Text className="text-muted-default dark:text-muted-dark text-base mt-1">
+              <Text className="text-text-dark text-base mt-1 opacity-70">
                 Welcome back, {user?.username || 'User'}!
               </Text>
             </View>
-            <TouchableOpacity
-              className="w-10 h-10 rounded-full bg-surface-active dark:bg-border-dark items-center justify-center"
-              onPress={handleSettingsPress}
-              activeOpacity={0.7}
-            >
-              <Settings size={20} color="#2563eb" />
-            </TouchableOpacity>
+            
           </View>
         </View>
 
@@ -209,16 +203,25 @@ export default function HomeScreen({
         />
 
         {/* Connection Status */}
-        <View className="mx-6 mb-6 p-4 bg-surface-default dark:bg-surface-dark rounded-xl border border-border-default dark:border-border-dark">
+        <View
+          className="mx-6 mb-6 p-4 bg-surface-default dark:bg-surface-dark rounded-xl border border-border-default dark:border-border-dark"
+          style={{
+            shadowColor: "#000",
+            shadowOffset: { width: 0, height: 4 },
+            shadowOpacity: 0.15,
+            shadowRadius: 8,
+            elevation: 6,
+          }}
+        >
           <View className="flex-row items-center gap-3">
             {isConnected ? (
               <>
                 <CheckCircle size={20} color="#22c55e" />
                 <View className="flex-1">
-                  <Text className="text-text-default dark:text-text-dark font-medium">
+                  <Text className="text-text-dark font-medium">
                     Connected to Vault Network
                   </Text>
-                  <Text className="text-muted-default dark:text-muted-dark text-sm mt-0.5">
+                  <Text className="text-text-dark text-sm mt-0.5 opacity-70">
                     All features available
                   </Text>
                 </View>
@@ -227,10 +230,10 @@ export default function HomeScreen({
               <>
                 <AlertTriangle size={20} color="#eab308" />
                 <View className="flex-1">
-                  <Text className="text-text-default dark:text-text-dark font-medium">
+                  <Text className="text-text-dark font-medium">
                     Offline Mode
                   </Text>
-                  <Text className="text-muted-default dark:text-muted-dark text-sm mt-0.5">
+                  <Text className="text-text-dark text-sm mt-0.5 opacity-70">
                     Limited functionality available
                   </Text>
                 </View>

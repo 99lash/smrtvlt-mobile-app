@@ -83,12 +83,14 @@ const UserMenuModal: React.FC<UserMenuModalProps> = ({
           >
             <UserCircle size={40} color="#ffffff" />
           </View>
-          <View className="flex-col items-start justify-center">
+          <View className="flex-col items-start justify-center flex-1">
             {displayEmail && (
-              <View className="flex-row items-center">
+              <View className="flex-row items-center max-w-full">
                 <Mail size={14} color="#9ca3af" />
-                <Text 
-                  className="text-text-light ml-1 text-sm"
+                <Text
+                  className="text-text-light ml-1 text-sm flex-1"
+                  numberOfLines={1}
+                  ellipsizeMode="tail"
                   accessibilityRole="text"
                   accessibilityLabel={`User email: ${displayEmail}`}
                 >
@@ -97,10 +99,12 @@ const UserMenuModal: React.FC<UserMenuModalProps> = ({
               </View>
             )}
             {displayUsername && (
-              <View className="flex-row items-center">
+              <View className="flex-row items-center max-w-full">
                 <User size={14} color="#9ca3af" />
-                <Text 
-                  className="text-text-light ml-1 text-sm"
+                <Text
+                  className="text-text-light ml-1 text-sm flex-1"
+                  numberOfLines={1}
+                  ellipsizeMode="tail"
                   accessibilityRole="text"
                   accessibilityLabel={`Username: ${displayUsername}`}
                 >

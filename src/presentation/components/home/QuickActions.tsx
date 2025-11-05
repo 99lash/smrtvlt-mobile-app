@@ -33,7 +33,16 @@ export const QuickActions: React.FC<QuickActionsProps> = ({
   const isAlarmDisabled = !hasActiveAlarm || isClearingAlarm;
 
   return (
-    <View className="bg-surface-default dark:bg-surface-dark rounded-xl p-6 mb-4">
+    <View
+      className="bg-surface-default dark:bg-surface-dark rounded-xl p-6 mb-4"
+      style={{
+        shadowColor: "#000",
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.15,
+        shadowRadius: 8,
+        elevation: 6,
+      }}
+    >
       <View className="flex-row items-center gap-2 mb-4">
         <Smartphone size={20} color="#2563eb" />
         <Text className="text-text-dark dark:text-text-dark text-lg font-semibold">

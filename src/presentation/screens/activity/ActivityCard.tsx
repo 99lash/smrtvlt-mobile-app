@@ -43,16 +43,16 @@ export const ActivityCard: React.FC<ActivityCardProps> = React.memo(({ log }) =>
       <View className="flex-row items-start">
         <View className="flex-1 ml-2">
           <View className="flex-row items-center justify-between mb-1">
-            <Text className="text-text-default text-base font-medium">
+            <Text className="text-text-dark text-base font-medium">
               {log.title}
             </Text>
             <View className={`${getStatusColor()} px-2 py-1 rounded-full`}>
-              <Text className="text-text-dark text-xs font-medium">
+              <Text className="text-white text-xs font-medium">
                 {getStatusText()}
               </Text>
             </View>
           </View>
-          <Text className="text-text-default text-xs mb-1">
+          <Text className="text-text-dark text-xs mb-1">
             {log.description}
           </Text>
           <View className="flex-row items-center justify-between">
@@ -62,11 +62,11 @@ export const ActivityCard: React.FC<ActivityCardProps> = React.memo(({ log }) =>
                   {log.user.initials}
                 </Text>
               </View>
-              <Text className="text-muted-default text-sm">
+              <Text className="text-text-dark text-sm">
                 {log.user.name}
               </Text>
             </View>
-            <Text className="text-muted-default text-sm">
+            <Text className="text-text-dark text-sm opacity-70">
               {log.timestamp}
             </Text>
           </View>

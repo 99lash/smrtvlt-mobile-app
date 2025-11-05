@@ -14,8 +14,16 @@ export const API_CONFIG = {
     USERS: {
       LOGIN: '/users/login',
       REGISTER: '/users/register',
+      VERIFY_EMAIL: '/users/verify-email',
+      RESEND_VERIFICATION: '/users/resend-verification',
+      SEND_VERIFICATION: '/users/send-verification',
+      VERIFICATION_STATUS: '/users/verification-status',
+      REQUEST_PASSWORD_RESET: '/users/request-password-reset',
+      VALIDATE_RESET_TOKEN: '/users/validate-reset-token',
+      RESET_PASSWORD: '/users/reset-password',
       LIST: '/users/',
       ME: '/users/test/me',
+      REMOVE_FROM_VAULT: (vaultId: number, userId: number) => `/vault-memberships/${userId}/vault/${vaultId}`,
       VAULT_MEMBERS: (vaultId: number) => `/vault-memberships/vault/${vaultId}`,
     },
     VAULT_MEMBERSHIPS: {
