@@ -81,7 +81,7 @@ export const CreatePinModal: React.FC<CreatePinModalProps> = ({
           placeholderTextColor="#64748b"
           secureTextEntry={!isVisible}
           maxLength={8}
-          className="border border-border-dark rounded-2xl px-3 py-3 pr-12 text-text-default bg-surface-default "
+          className="border border-border-dark rounded-2xl px-3 py-3 pr-12 text-text-dark bg-surface-default "
         />
         <TouchableOpacity
           onPress={() => setIsVisible(!isVisible)}
@@ -103,7 +103,7 @@ export const CreatePinModal: React.FC<CreatePinModalProps> = ({
           </View>
         ) : (
           <View className="border border-border-dark rounded-2xl px-3 py-3 bg-surface-default">
-            <Text className="text-text-default">
+            <Text className="text-text-dark">
               {currentVault.vault_name || `Vault ${currentVault.vault_id}`} ({currentVault.role})
             </Text>
           </View>

@@ -1,6 +1,6 @@
 import { useCallback } from 'react';
 import type { UsersScreenProps } from '../../../../types/UserTypes';
-import { VaultMembership } from '../../../../service/VaultService';
+import { VaultMembership, VaultService, TransferType } from '../../../../service/VaultService';
 import { useVaultManagement } from '../../../hooks/VaultContext';
 
 interface UseUserActionsProps {
@@ -26,7 +26,7 @@ export const useUserActions = ({
   const { forceRefreshVaults, selectVault: selectVaultInContext } = useVaultManagement();
 
   const handleUserPress = useCallback((userId: string) => {
-    navigation.navigate('UserDetails', { userId });
+    navigation?.navigate('UserDetails', { userId });
   }, [navigation]);
 
   const handleInviteUser = useCallback(() => {
@@ -67,6 +67,36 @@ export const useUserActions = ({
     }
   }, [loadData, forceRefreshVaults, selectVaultInContext, closeModals]);
 
+  const handleInitiateOwnershipTransfer = useCallback(async (
+    vaultId: number,
+    newOwnerId: number,
+    transferType: TransferType
+  ) => {
+    try {
+      console.log('🔄 Initiating ownership transfer:', { vaultId, newOwnerId, transferType });
+      const response = await VaultService.initiateOwnershipTransfer(vaultId, newOwnerId, transferType);
+      console.log('✅ Ownership transfer initiated successfully:', response);
+      console.log('🔍 Response data:', response.data);
+      console.log('🔍 Invitation code:', response.data?.invitation_code);
+
+      // DON'T refresh data here - it causes the modal to unmount before showing the code
+      // The refresh will happen when the user closes the modal
+
+      // Return only the fields the modal needs
+      const result = {
+        invitation_code: response.data?.invitation_code,
+        expires_at: response.data?.expires_at,
+        transfer_type: response.data?.transfer_type,
+      };
+      
+      console.log('🔍 Returning result:', result);
+      return result;
+    } catch (error) {
+      console.error('❌ Failed to initiate ownership transfer:', error);
+      throw error;
+    }
+  }, []);
+
   // Wrapper functions that close the modal after actions
   const handleInviteUserWithClose = useCallback(() => {
     handleInviteUser();
@@ -82,5 +112,6 @@ export const useUserActions = ({
     handleVaultSelect,
     handleInvitationAccepted,
     handleJoinVault: handleJoinVaultWithClose,
+    handleInitiateOwnershipTransfer,
   };
 };

@@ -7,7 +7,7 @@ import { AccessLimits, AccessLimitsResponse } from '../types/AccessLimits';
 export interface VaultMembership {
   vault_id: number;
   vault_name?: string | null;
-  vault_device_id?: string | null; 
+  vault_device_id?: string | null;
   vault_location?: string | null;
   role: 'admin' | 'member' | 'guest';
   created_at: string;
@@ -40,6 +40,25 @@ export interface AdminCheckResponse {
   data: {
     is_admin: boolean;
   };
+}
+
+export type TransferType = 'full_transfer' | 'shared_access';
+
+export interface TransferInitiateRequest {
+  new_owner_user_id: number;
+  transfer_type: TransferType;
+}
+
+export interface TransferInitiateResponse {
+  success: boolean;
+  data?: {
+    invitation_code: string;
+    expires_at: string;
+    vault_id: number;
+    new_owner_user_id: number;
+    transfer_type: string;
+  };
+  detail: string;
 }
 
 export class VaultService {
@@ -140,7 +159,7 @@ export class VaultService {
         `/vault-memberships/vaults/${vaultId}/access-limits`,
         token
       );
-      
+
       if (!response.success) {
         throw new Error(response.detail || 'Failed to fetch access limits');
       }
@@ -162,7 +181,7 @@ export class VaultService {
   ): Promise<VaultCreationResult> {
     try {
       console.log('🔍 VaultService: Creating vault with data:', vaultData);
-      
+
       const response = await ApiService.post<ApiResponse<VaultCreationResult>>(
         API_CONFIG.ENDPOINTS.VAULTS.CREATE,
         vaultData,
@@ -178,6 +197,182 @@ export class VaultService {
     } catch (error) {
       console.error('❌ VaultService: Error creating vault:', error);
       throw error;
+    }
+  }
+
+  /**
+   * Initiate vault ownership transfer
+   */
+  static async initiateOwnershipTransfer(
+    vaultId: number,
+    newOwnerUserId: number,
+    transferType: TransferType,
+    token?: string
+  ): Promise<TransferInitiateResponse> {
+    try {
+      console.log('🔍 VaultService: Initiating ownership transfer', {
+        vaultId,
+        newOwnerUserId,
+        transferType
+      });
+
+      const requestData: TransferInitiateRequest = {
+        new_owner_user_id: newOwnerUserId,
+        transfer_type: transferType,
+      };
+
+      const response = await ApiService.post<TransferInitiateResponse>(
+        API_CONFIG.ENDPOINTS.VAULTS.TRANSFER_INITIATE(vaultId),
+        requestData,
+        token
+      );
+
+      console.log('✅ VaultService: Ownership transfer initiated successfully');
+      return response;
+    } catch (error) {
+      console.error('❌ VaultService: Error initiating ownership transfer:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Accept vault ownership transfer
+   */
+  static async acceptOwnershipTransfer(
+    vaultId: number,
+    invitationCode: string,
+    token?: string
+  ): Promise<ApiResponse<{
+    vault_id: number;
+    new_owner_user_id: number;
+    transfer_type: string;
+    accepted_at: string;
+  }>> {
+    try {
+      console.log('🔍 VaultService: Accepting ownership transfer', {
+        vaultId,
+        invitationCode
+      });
+
+      const requestData = {
+        invite_code: invitationCode,
+      };
+
+      const response = await ApiService.post<ApiResponse<{
+        vault_id: number;
+        new_owner_user_id: number;
+        transfer_type: string;
+        accepted_at: string;
+      }>>(
+        API_CONFIG.ENDPOINTS.VAULTS.TRANSFER_ACCEPT(vaultId),
+        requestData,
+        token
+      );
+
+      if (!response.success) {
+        throw new Error(response.detail || 'Failed to accept ownership transfer');
+      }
+
+      console.log('✅ VaultService: Ownership transfer accepted successfully');
+      return response;
+    } catch (error) {
+      console.error('❌ VaultService: Error accepting ownership transfer:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Accept vault ownership transfer with optional vault property updates
+   */
+  static async acceptOwnershipTransferWithProperties(
+    vaultId: number,
+    transferData: {
+      invite_code: string;
+      device_id?: string;
+      name?: string;
+      location?: string;
+      status?: 'locked' | 'unlocked' | 'tampered';
+    },
+    token?: string
+  ): Promise<ApiResponse<{
+    vault_id: number;
+    new_owner_user_id: number;
+    vault_properties_updated: string[];
+    accepted_at: string;
+  }>> {
+    try {
+      console.log('🔍 VaultService: Accepting ownership transfer with properties', {
+        vaultId,
+        transferData
+      });
+
+      const response = await ApiService.post<ApiResponse<{
+        vault_id: number;
+        new_owner_user_id: number;
+        vault_properties_updated: string[];
+        accepted_at: string;
+      }>>(
+        API_CONFIG.ENDPOINTS.VAULTS.TRANSFER_ACCEPT(vaultId),
+        transferData,
+        token
+      );
+
+      if (!response.success) {
+        throw new Error(response.detail || 'Failed to accept ownership transfer');
+      }
+
+      console.log('✅ VaultService: Ownership transfer accepted with properties successfully');
+      return response;
+    } catch (error) {
+      console.error('❌ VaultService: Error accepting ownership transfer with properties:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Validate ownership transfer invitation code
+   */
+  static async validateOwnershipTransfer(
+    invitationCode: string
+  ): Promise<{
+    valid: boolean;
+    reason?: string;
+    vault_id?: number;
+    transfer_type?: string;
+    expires_at?: string;
+  }> {
+    try {
+      console.log('🔍 VaultService: Validating ownership transfer code');
+
+      const response = await ApiService.getPublic<ApiResponse<{
+        valid: boolean;
+        vault_id?: number;
+        transfer_type?: string;
+        expires_at?: string;
+        vault_name?: string;
+      }>>(
+        `/vaults/transfer/validate/${invitationCode}`
+      );
+
+      if (response.success && response.data.valid) {
+        return {
+          valid: true,
+          vault_id: response.data.vault_id,
+          transfer_type: response.data.transfer_type,
+          expires_at: response.data.expires_at,
+        };
+      } else {
+        return {
+          valid: false,
+          reason: response.detail || 'Invalid transfer code',
+        };
+      }
+    } catch (error) {
+      console.error('❌ VaultService: Error validating transfer code:', error);
+      return {
+        valid: false,
+        reason: 'Network error occurred',
+      };
     }
   }
 }

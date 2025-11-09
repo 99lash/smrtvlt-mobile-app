@@ -88,7 +88,7 @@ export const NFCCardList: React.FC<NFCCardListProps> = ({
         <View className="flex-1">
           <View className="flex-row items-center mb-1">
             <CreditCard size={16} color="#60a5fa" />
-            <Text className="text-text-default font-mono text-lg ml-2">
+            <Text className="text-text-dark font-mono text-lg ml-2">
               {card.nfc_card_name || card.nfc_card_uid}
             </Text>
           </View>

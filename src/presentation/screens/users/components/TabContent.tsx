@@ -14,6 +14,7 @@ interface TabContentProps {
   onUserPress: (userId: string) => void;
   onVaultSelect: (vaultId: number) => void;
   onRefresh: () => Promise<void>;
+  onTransferOwnership?: (user: User) => void;
 }
 
 export const TabContent: React.FC<TabContentProps> = ({
@@ -23,7 +24,8 @@ export const TabContent: React.FC<TabContentProps> = ({
   onUserPress,
   onVaultSelect,
   onRefresh,
-}) => { 
+  onTransferOwnership,
+}) => {
   return (
     <View>
       {activeTab === 'users' ? (
@@ -31,6 +33,7 @@ export const TabContent: React.FC<TabContentProps> = ({
           users={users}
           onUserPress={onUserPress}
           onRefresh={onRefresh}
+          onTransferOwnership={onTransferOwnership}
         />
       ) : (
         <VaultList

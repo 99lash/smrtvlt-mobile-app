@@ -1,6 +1,6 @@
 import React from 'react';
 import { View, Text, TouchableOpacity } from 'react-native';
-import { User as UserIcon, Users } from 'lucide-react-native';
+import { User as UserIcon, Users, Crown } from 'lucide-react-native';
 import { User as UserType } from '../../../../types/UserTypes';
 import { EnhancedEmptyState } from '../../../component/common/EnhancedEmptyState';
 import BorderedList from '../../../component/lists/BorderedList';
@@ -13,6 +13,7 @@ interface UsersListProps {
   onEditUser?: (user: UserType) => void;
   onDeleteUser?: (userId: string) => void;
   onToggleStatus?: (userId: string) => void;
+  onTransferOwnership?: (user: UserType) => void;
 }
 
 export const UserList: React.FC<UsersListProps> = ({
@@ -21,6 +22,7 @@ export const UserList: React.FC<UsersListProps> = ({
   onEditUser,
   onDeleteUser,
   onToggleStatus,
+  onTransferOwnership,
 }) => {
   const formatLastAccess = (lastAccess: string | undefined): string => {
     if (!lastAccess) return 'Never';
@@ -58,6 +60,7 @@ export const UserList: React.FC<UsersListProps> = ({
     const isAdmin = item.role.toLowerCase() === 'admin';
     const adminCount = users.filter((u: UserType) => u.role.toLowerCase() === 'admin').length;
     const canDelete = !(isAdmin && adminCount === 1);
+    const canTransferOwnership = isAdmin && onTransferOwnership;
 
     return ( 
       <View className="flex-row items-center gap-3" >
@@ -96,7 +99,7 @@ export const UserList: React.FC<UsersListProps> = ({
                   isAdmin ? 'bg-primary-default' : 'bg-icons-default'
                 }`}
               >
-                <Text className="text-text-dark text-xs capitalize">
+                <Text className={isAdmin ? 'text-text-default text-xs capitalize' : 'text-text-dark text-xs capitalize'}>
                   {item.role}
                 </Text>
               </View>
@@ -137,6 +140,21 @@ export const UserList: React.FC<UsersListProps> = ({
       keyExtractor={(user) => user.id.toString()}
       renderItem={renderUserItem}
       onItemPress={() => {}}
+      rightContentExtractor={(user, index) => {
+        const isAdmin = user.role.toLowerCase() === 'admin';
+        const canTransferOwnership = isAdmin && onTransferOwnership;
+
+        if (!canTransferOwnership) return null;
+
+        return (
+          <TouchableOpacity
+            onPress={() => onTransferOwnership(user)}
+            className="bg-primary-default p-2 rounded-lg"
+          >
+            <Crown size={16} color="#FFFFFF" />
+          </TouchableOpacity>
+        );
+      }}
       getId={getId}
       maxVisibleItems={8}
       itemHeight={80}

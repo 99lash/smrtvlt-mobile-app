@@ -40,6 +40,8 @@ export const API_CONFIG = {
       CREATE: '/vaults/',
       LIST: '/vaults/',
       BY_ID: (id: string) => `/vaults/${id}`,
+      TRANSFER_INITIATE: (vaultId: number) => `/vaults/${vaultId}/transfer/initiate`,
+      TRANSFER_ACCEPT: (vaultId: number) => `/vaults/${vaultId}/transfer/accept`,
     },
   },
   

@@ -202,7 +202,7 @@ const Login: React.FC<LoginProps> = ({ onLoginSuccess, onLoginError }) => {
 
               {/* Sign Up Link */}
               <View className="flex-row justify-center items-center">
-                <Text className="text-text-default/70 text-sm">
+                <Text className="text-muted-default text-sm">
                   Don't have an account?{' '}
                 </Text>
                 <TouchableOpacity onPress={() => setRegisterModalVisible(true)}>

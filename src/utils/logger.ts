@@ -68,20 +68,23 @@ class Logger {
   private async initializeRedisServices(): Promise<void> {
     try {
       if (this.config.enableRedisLogging && !this.redisLogger) {
-        const { redisLogger } = await import('../service/RedisLoggerService');
-        this.redisLogger = redisLogger;
+        // Use require instead of dynamic import to avoid Metro bundling issues
+        const RedisLoggerService = require('../service/RedisLoggerService');
+        this.redisLogger = RedisLoggerService.redisLogger;
         await this.redisLogger.initialize();
       }
 
       if (this.config.enableLogCaching && !this.logCacheService) {
-        const { logCacheService } = await import('../service/LogCacheService');
-        this.logCacheService = logCacheService;
+        // Use require instead of dynamic import to avoid Metro bundling issues
+        const LogCacheService = require('../service/LogCacheService');
+        this.logCacheService = LogCacheService.logCacheService;
         await this.logCacheService.initialize();
       }
 
       if (this.config.enableLogStreaming && !this.logStreamingService) {
-        const { logStreamingService } = await import('../service/LogStreamingService');
-        this.logStreamingService = logStreamingService;
+        // Use require instead of dynamic import to avoid Metro bundling issues
+        const LogStreamingService = require('../service/LogStreamingService');
+        this.logStreamingService = LogStreamingService.logStreamingService;
         await this.logStreamingService.initialize();
       }
     } catch (error) {

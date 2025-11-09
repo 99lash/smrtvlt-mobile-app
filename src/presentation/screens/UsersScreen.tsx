@@ -6,6 +6,7 @@ import { useAuth } from '../hooks/useAuth';
 import { useInvitationFlow } from '../hooks/user/useInvitationFlow';
 import { VaultService, VaultMembership } from '../../service/VaultService';
 import InvitationModal from '../component/invitations/InvitationModal';
+import TransferOwnershipModal from '../component/modals/TransferOwnershipModal';
 import ButtonSecondary from '../component/buttons/ButtonSecondary';
 import { FloatingActionButton } from '../component/buttons/FloatingActionButton';
 import CustomModal from '../component/modals/CustomModal';
@@ -31,6 +32,11 @@ export default function UsersScreen({ navigation }: UsersScreenProps) {
     setActiveTab,
     showActionModal,
     setShowActionModal,
+    showTransferModal,
+    selectedUserForTransfer,
+    handleTransferOwnership,
+    handleCloseTransferModal,
+    handleRefreshAfterTransfer,
     users,
     vaults,
     loading,
@@ -57,6 +63,7 @@ export default function UsersScreen({ navigation }: UsersScreenProps) {
     handleVaultSelect,
     handleInvitationAccepted,
     handleJoinVault,
+    handleInitiateOwnershipTransfer,
   } = useUserActions({
     navigation,
     vaults,
@@ -126,6 +133,7 @@ export default function UsersScreen({ navigation }: UsersScreenProps) {
         onUserPress={handleUserPress}
         onVaultSelect={handleVaultSelect}
         onRefresh={loadData}
+        onTransferOwnership={handleTransferOwnership}
       />
 
       {/* Vault Selector Modal */}
@@ -190,6 +198,26 @@ export default function UsersScreen({ navigation }: UsersScreenProps) {
           onInviteUser={handleInviteUser}
         />
       </CustomModal>
+
+      {/* Transfer Ownership Modal */}
+      <TransferOwnershipModal
+        visible={showTransferModal && !!selectedUserForTransfer}
+        onClose={handleCloseTransferModal}
+        user={selectedUserForTransfer || {
+          id: 0,
+          firstName: '',
+          lastName: '',
+          username: '',
+          email: '',
+          role: '',
+          status: '',
+          lastAccess: '',
+          enabled: false
+        }}
+        adminVaults={VaultService.getAdminVaults(vaults)}
+        onInitiateTransfer={handleInitiateOwnershipTransfer}
+        onRefreshData={handleRefreshAfterTransfer}
+      />
 
       {/* Floating Action Button */}
       <FloatingActionButton onPress={() => setShowActionModal(true)} />

@@ -1,5 +1,7 @@
 import React from 'react';
-import { Modal, View, Text } from 'react-native';
+import { Modal, View, Text, ScrollView, TouchableOpacity } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { X } from 'lucide-react-native';
 import ButtonPrimary from '../buttons/ButtonPrimary';
 import ButtonSecondary from '../buttons/ButtonSecondary';
 
@@ -36,74 +38,48 @@ const CustomModal: React.FC<CustomModalProps> = ({
     <Modal
       visible={visible}
       transparent={true}
-      animationType="fade"
+      animationType="slide"
       onRequestClose={onClose}
     >
-      <View className="flex-1 bg-black/50 justify-center items-center">
-        <View className="bg-surface-default p-6 rounded-2xl w-4/5 shadow-lg max-h-[90%] flex-col">
-          {title && (
-            <View className="items-center mb-4">
-              {/* Icon on top (centered) */}
-              {icon && iconPosition === 'top' && (
-                <View className="mb-3">{icon}</View>
-              )}
-              
-              {/* Icon and title in a row (centered) */}
-              {iconPosition !== 'top' && (
-                <View className="flex-row items-center justify-center">
-                  {/* Icon on the left */}
-                  {icon && iconPosition === 'left' && (
-                    <View className="mr-2">{icon}</View>
-                  )}
-                  
-                  <Text className="text-2xl font-bold text-center text-text-dark">
-                    {title}
-                  </Text>
-                  
-                  {/* Icon on the right */}
-                  {icon && iconPosition === 'right' && (
-                    <View className="ml-2">{icon}</View>
-                  )}
-                </View>
-              )}
-              
-              {/* Title when icon is on top */}
-              {iconPosition === 'top' && (
-                <Text className="text-2xl font-bold text-center text-text-dark">
-                  {title}
-                </Text>
-              )}
+      <SafeAreaView className="flex-1 bg-surface-default">
+        <View className="flex-1">
+          {/* Header */}
+          <View className="flex-row items-center justify-between p-4 border-b border-gray-200">
+            <View className="flex-row items-center">
+              {icon && iconPosition === 'left' && <View className="mr-2">{icon}</View>}
+              <Text className="text-lg font-bold text-text-dark">{title}</Text>
             </View>
-          )}
-          
-          {/* Content passed from parent */}
-          <View className="mb-6">
-            {children}
+            <TouchableOpacity onPress={onClose} className="p-2">
+              <X size={24} color="#6B7280" />
+            </TouchableOpacity>
           </View>
 
-          {/* Footer buttons */}
-          <View className="gap-3 border-t border-gray-200 pt-4">
-            {/* Primary button */}
-            {primaryAction && (
-              <View className="w-full">
-                <ButtonPrimary
-                  title={primaryAction.label}
-                  onPress={primaryAction.onPress}
-                  disabled={primaryAction.disabled}
-                  loading={primaryAction.loading}
+          {/* Content */}
+          <ScrollView contentContainerStyle={{ padding: 16 }}>
+            {children}
+          </ScrollView>
+
+          {/* Footer */}
+          {(primaryAction || secondaryAction) && (
+            <View className="p-4 border-t border-gray-200">
+              <View className="gap-3">
+                {primaryAction && (
+                  <ButtonPrimary
+                    title={primaryAction.label}
+                    onPress={primaryAction.onPress}
+                    disabled={primaryAction.disabled}
+                    loading={primaryAction.loading}
+                  />
+                )}
+                <ButtonSecondary
+                  title={secondaryAction?.label ?? 'Close'}
+                  onPress={secondaryAction?.onPress ?? onClose}
                 />
               </View>
-            )}
-            {/* Secondary button (defaults to Close) */}
-            <View className="w-full">
-              <ButtonSecondary
-                title={secondaryAction?.label ?? 'Close'}
-                onPress={secondaryAction?.onPress ?? onClose}
-              />
             </View>
-          </View>
+          )}
         </View>
-      </View>
+      </SafeAreaView>
     </Modal>
   );
 };

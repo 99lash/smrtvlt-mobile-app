@@ -141,7 +141,7 @@ const WiFiCredentialsModal: React.FC<WiFiCredentialsModalProps> = ({
             getSignal={d => d.rssi || 0}
             selectedId={selectedSSID ?? undefined}
             renderItem={(d) => (
-              <Text className='text-text-default'
+              <Text className='text-text-dark'
               >{d.ssid}
               </Text>
             )}
@@ -154,7 +154,7 @@ const WiFiCredentialsModal: React.FC<WiFiCredentialsModalProps> = ({
         {/* Password input */}
         {selectedSSID && (
           <View className="mt-3 relative">
-            <Text className="text-text-default dark:text-text-dark mb-1">
+            <Text className="text-text-dark dark:text-text-default mb-1">
               {PROVISIONING_CONSTANTS.MESSAGES.ENTER_WIFI_PASSWORD}
             </Text>
             <View className="flex-row items-center border border-border-dark rounded-3xl px-2 py-2 bg-surface-default">
@@ -163,7 +163,7 @@ const WiFiCredentialsModal: React.FC<WiFiCredentialsModalProps> = ({
                 onChangeText={setWifiPassword}
                 secureTextEntry={!showPassword}
                 placeholder={PROVISIONING_CONSTANTS.MESSAGES.ENTER_WIFI_PASSWORD}
-                className="flex-1 text-text-default"
+                className="flex-1 text-text-dark"
                 placeholderTextColor="#64748b"
               />
               <TouchableOpacity

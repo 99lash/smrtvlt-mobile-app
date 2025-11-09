@@ -42,7 +42,7 @@ export function VaultSelectorModal({
                 accessibilityRole="button"
                 accessibilityLabel={`Vault ${item.vault_id}, role ${item.role}`}
               >
-                <Text className="text-white font-medium text-base">
+                <Text className="text-text-dark font-medium text-base">
                   Vault ID: {item.vault_id}
                 </Text>
                 <Text className="text-neutral-400 text-sm capitalize">

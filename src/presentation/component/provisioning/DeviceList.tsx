@@ -32,7 +32,7 @@ const DeviceList = <T,>({
 }: DeviceListProps<T>) => {
   return (
     <View className="mt-4">
-      <Text className="text-sm font-semibold mb-2 text-text-default dark:text-text-dark">
+      <Text className="text-sm font-semibold mb-2 text-text-dark dark:text-text-dark">
         {title} ({devices.length})
       </Text>
  
@@ -46,7 +46,7 @@ const DeviceList = <T,>({
             renderItem(item, isSelected)
           ) : (
             <Text
-              className={`font-medium ${isSelected ? 'text-primary-dark' : 'text-text-default'}`}
+              className={`font-medium ${isSelected ? 'text-primary-dark' : 'text-text-dark'}`}
             >
               {getName(item)}
             </Text>

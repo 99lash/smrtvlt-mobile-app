@@ -141,7 +141,7 @@ const SettingsScreen = () => {
               }
               renderItem={(vault) => (
                 <View className="flex-1">
-                  <Text className="text-text-default font-medium">
+                  <Text className="text-text-dark font-medium">
                     {vault.vault_name || `Vault ${vault.vault_id}`}
                   </Text>
                   <Text className="text-muted-default text-sm">

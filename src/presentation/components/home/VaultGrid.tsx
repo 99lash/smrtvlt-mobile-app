@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, TouchableOpacity, FlatList } from 'react-native';
+import { View, Text, TouchableOpacity } from 'react-native';
 import { Shield, Unlock } from 'lucide-react-native';
 import { VaultMembership } from '../../../service/VaultService';
 
@@ -147,15 +147,11 @@ export const VaultGrid: React.FC<VaultGridProps> = ({
         My Vaults ({vaults.length})
       </Text>
 
-      <FlatList
-        data={vaults}
-        keyExtractor={(item) => item.vault_id.toString()}
-        renderItem={({ item }) => (
-          <VaultCard vault={item} onPress={() => onVaultPress(item)} />
-        )}
-        showsVerticalScrollIndicator={false}
-        contentContainerStyle={{ paddingBottom: 16 }}
-      />
+      <View>
+        {vaults.map((item) => (
+          <VaultCard key={item.vault_id} vault={item} onPress={() => onVaultPress(item)} />
+        ))}
+      </View>
     </View>
   );
 };

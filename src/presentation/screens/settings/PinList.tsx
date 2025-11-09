@@ -80,7 +80,7 @@ export const PinList: React.FC<PinListProps> = ({
         <View className="flex-1">
           <View className="flex-row items-center mb-1">
             <Keyboard size={16} color="#60a5fa" />
-            <Text className="text-text-default font-mono text-lg ml-2">
+            <Text className="text-text-dark font-mono text-lg ml-2">
               {pin.pin_code}
             </Text>
             {pin.user_id && (
