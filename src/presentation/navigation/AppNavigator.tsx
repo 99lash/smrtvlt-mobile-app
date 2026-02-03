@@ -1,28 +1,17 @@
 import React from 'react';
-import { View, ActivityIndicator } from 'react-native';
-import { useAuthContext } from '../context/AuthContext';
+import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import BottomTabNavigator from './BottomTabNavigator';
 import LoginScreen from '../screens/LoginScreen';
 
+const Stack = createNativeStackNavigator();
+
 const AppNavigator = () => {
-  const { isAuthenticated, isLoading } = useAuthContext();
-
-  // Show loading spinner only during initial app load (not during login)
-  if (isLoading && !isAuthenticated) {
-    return (
-      <View className="flex-1 justify-center items-center bg-white">
-        <ActivityIndicator size="large" color="#3B82F6" />
-      </View>
-    );
-  }
-
-  // Show login screen if not authenticated
-  if (!isAuthenticated) {
-    return <LoginScreen />;
-  }
-
-  // Show main app if authenticated
-  return <BottomTabNavigator />;
+  return (
+    <Stack.Navigator screenOptions={{ headerShown: false }} initialRouteName="Login">
+      <Stack.Screen name="Login" component={LoginScreen} />
+      <Stack.Screen name="Main" component={BottomTabNavigator} />
+    </Stack.Navigator>
+  );
 };
 
 export default AppNavigator;

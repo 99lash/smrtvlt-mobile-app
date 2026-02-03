@@ -1,9 +1,6 @@
 import React, { useState } from 'react';
 import { View, Text, TouchableOpacity } from 'react-native';
 import { UserCircle } from 'lucide-react-native';
-import UserMenuModal from '../modals/UserMenuModal';
-import { useUserActions } from '../../hooks/useUserActions';
-import { useNavigationActions } from '../../hooks/useNavigationActions';
 import { HEADER_CONSTANTS } from './HeaderConstants';
 
 interface HeaderProps {
@@ -28,56 +25,39 @@ export const Header: React.FC<HeaderProps> = ({
   onProfilePress,
   onSettingsPress,
 }) => {
-  const [showUserModal, setShowUserModal] = useState(false);
-  const { user, handleLogout } = useUserActions();
-  const { handleBackPress } = useNavigationActions();
-
-  // Use user data from context if available, otherwise fall back to props
-  const displayName = user?.name || userName || HEADER_CONSTANTS.DEFAULT_USER_NAME;
-  const displayInitials = user?.name ? user.name.charAt(0).toUpperCase() : userInitials || HEADER_CONSTANTS.DEFAULT_USER_INITIALS;
+  const displayName = userName || HEADER_CONSTANTS.DEFAULT_USER_NAME;
+  const displayInitials = userInitials || HEADER_CONSTANTS.DEFAULT_USER_INITIALS;
 
   return (
-    <>
-      <View className={`flex-row items-center justify-between ${containerClassName}`}>
-        {/* Title on the left */}
-        <Text className='text-text-default text-l font-semibold'>
-          SMARTVAULT
-        </Text>
+    <View className={`flex-row items-center justify-between ${containerClassName}`}>
+      {/* Title on the left */}
+      <Text className='text-text-default text-l font-semibold'>
+        SMARTVAULT
+      </Text>
+      
+      {/* Right side container */}
+      <View className="flex-row items-center gap-3">
+        {rightComponent && (
+          <View>
+            {rightComponent}
+          </View>
+        )}
         
-        {/* Right side container */}
-        <View className="flex-row items-center gap-3">
-          {rightComponent && (
-            <View>
-              {rightComponent}
-            </View>
-          )}
-          
-          {/* User Icon Button */}
-          <TouchableOpacity
-            onPress={() => setShowUserModal(true)}
-            className="w-10 h-10 rounded-full bg-primary-default items-center justify-center"
-            style={{
-              borderWidth: 1,
-              borderColor: HEADER_CONSTANTS.BORDER_COLOR,
-            }}
-            accessible={true}
-            accessibilityRole="button"
-            accessibilityLabel={HEADER_CONSTANTS.USER_BUTTON_ACCESSIBILITY_LABEL}
-          >
-            <UserCircle size={HEADER_CONSTANTS.USER_ICON_SIZE} color={HEADER_CONSTANTS.ICON_COLOR} />
-          </TouchableOpacity>
-        </View>
+        {/* User Icon Button */}
+        <TouchableOpacity
+          onPress={() => console.log('User profile pressed')}
+          className="w-10 h-10 rounded-full bg-primary-default items-center justify-center"
+          style={{
+            borderWidth: 1,
+            borderColor: HEADER_CONSTANTS.BORDER_COLOR,
+          }}
+          accessible={true}
+          accessibilityRole="button"
+          accessibilityLabel={HEADER_CONSTANTS.USER_BUTTON_ACCESSIBILITY_LABEL}
+        >
+          <UserCircle size={HEADER_CONSTANTS.USER_ICON_SIZE} color={HEADER_CONSTANTS.ICON_COLOR} />
+        </TouchableOpacity>
       </View>
-
-      {/* User Management Modal */}
-      <UserMenuModal
-        visible={showUserModal}
-        onClose={() => setShowUserModal(false)}
-        user={user}
-        onProfilePress={onProfilePress}
-        onSettingsPress={onSettingsPress}
-        onLogout={handleLogout}
-      />
-    </>
+    </View>
   );
 };

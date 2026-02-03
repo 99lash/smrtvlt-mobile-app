@@ -1,132 +1,63 @@
 import React, { useState } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, Alert, RefreshControl } from 'react-native';
+import { View, Text, ScrollView, RefreshControl, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
-import {
-  Shield,
-  Unlock,
-  Battery,
-  AlertTriangle,
-  CheckCircle,
-  Clock,
-  Smartphone,
-  Activity,
-  User,
-  Bell
-} from 'lucide-react-native';
+import { CheckCircle } from 'lucide-react-native';
 
-// Import new components
+// Import existing UI components (assuming they are dumb or prop-driven)
 import { VaultGrid } from '../components/home/VaultGrid';
 import { AnalyticsCards } from '../components/home/AnalyticsCards';
 import { ActivityFeed } from '../components/home/ActivityFeed';
 import { QuickActions } from '../components/home/QuickActions';
 import { DateFilterDropdown } from '../components/home/DateFilterDropdown';
 
-// Import hooks and services
-import { useHomeDashboard } from '../hooks/useHomeDashboard';
-import { useVaultManagement } from '../hooks/VaultContext';
-import { useAuthContext } from '../context/AuthContext';
+// Dummy Data
+const DUMMY_METRICS = {
+  totalAccesses: 124,
+  activeUsers: 12,
+  securityAlerts: 0,
+  isLoading: false
+};
 
-interface HomeScreenProps {
-  isConnected: boolean;
-  vaultStatus: string;
-  setVaultStatus: (status: string) => void;
-  hasActiveAlarm: boolean;
-  setHasActiveAlarm: (status: boolean) => void;
-  onNavigateToSettings?: () => void;
-  onNavigateToActivity?: () => void;
-}
+const DUMMY_VAULTS = [
+  { vault_id: 1, vault_name: 'Main Vault', role: 'admin', status: 'locked', last_sync: new Date().toISOString() },
+  { vault_id: 2, vault_name: 'Office Safe', role: 'member', status: 'unlocked', last_sync: new Date().toISOString() }
+];
+
+const DUMMY_ACTIVITY = [
+  { id: '1', user: 'John Doe', action: 'Unlocking', vault_name: 'Main Vault', timestamp: new Date().toISOString(), status: 'success' },
+  { id: '2', user: 'Jane Smith', action: 'Access Denied', vault_name: 'Office Safe', timestamp: new Date(Date.now() - 3600000).toISOString(), status: 'failed' }
+];
 
 export default function HomeScreen({
-  isConnected,
-  vaultStatus,
-  setVaultStatus,
-  hasActiveAlarm,
-  setHasActiveAlarm,
+  isConnected = true,
+  vaultStatus = 'locked',
+  setVaultStatus = () => {},
+  hasActiveAlarm = false,
+  setHasActiveAlarm = () => {},
   onNavigateToSettings,
   onNavigateToActivity,
-}: HomeScreenProps) {
+}: any) {
   const navigation = useNavigation();
-  const { user } = useAuthContext();
-  const { currentVault, selectVault, availableVaults } = useVaultManagement();
-  const {
-    metrics,
-    recentActivity,
-    refreshData,
-    isRefreshing,
-    selectedDateFilter,
-    setSelectedDateFilter
-  } = useHomeDashboard();
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  const [selectedDateFilter, setSelectedDateFilter] = useState('today');
 
-  const [isUnlocking, setIsUnlocking] = useState(false);
-  const [isClearingAlarm, setIsClearingAlarm] = useState(false);
-
-  const handleRemoteUnlock = () => {
-    if (!isConnected || vaultStatus === 'unlocked') return;
-
-    setIsUnlocking(true);
-    Alert.alert(
-      'Remote Unlock',
-      'Confirm vault unlock request?',
-      [
-        {
-          text: 'Cancel',
-          style: 'cancel',
-          onPress: () => setIsUnlocking(false),
-        },
-        {
-          text: 'Unlock',
-          style: 'destructive',
-          onPress: () => {
-            setVaultStatus('unlocked');
-            setIsUnlocking(false);
-            setTimeout(() => {
-              setVaultStatus('locked');
-            }, 30000);
-          },
-        },
-      ]
-    );
-  };
-
-  const handleClearAlarm = () => {
-    if (!hasActiveAlarm) return;
-
-    setIsClearingAlarm(true);
-    Alert.alert(
-      'Clear Alarm',
-      'Are you sure you want to clear the security alarm?',
-      [
-        {
-          text: 'Cancel',
-          style: 'cancel',
-          onPress: () => setIsClearingAlarm(false),
-        },
-        {
-          text: 'Clear',
-          onPress: () => {
-            setHasActiveAlarm(false);
-            setIsClearingAlarm(false);
-          },
-        },
-      ]
-    );
+  const refreshData = () => {
+    setIsRefreshing(true);
+    setTimeout(() => setIsRefreshing(false), 1000);
   };
 
   const handleVaultPress = (vault: any) => {
-    selectVault(vault.vault_id);
-    console.log('🏠 HomeScreen: Selected vault:', vault.vault_name || vault.vault_id);
+    console.log('🏠 HomeScreen: Selected vault:', vault.vault_name);
   };
 
-  const handleViewAllActivity = () => {
-    // Navigate to Activity tab
-    navigation.navigate('Activity' as never);
+  const handleRemoteUnlock = () => {
+    console.log('Remote unlock pressed');
+    Alert.alert('Remote Unlock', 'Unlock simulated');
   };
 
-  const handleSettingsPress = () => {
-    if (onNavigateToSettings) {
-      onNavigateToSettings();
-    }
+  const handleClearAlarm = () => {
+    console.log('Clear alarm pressed');
   };
 
   return (
@@ -151,10 +82,9 @@ export default function HomeScreen({
                 🏠 SmartVault
               </Text>
               <Text className="text-text-dark text-base mt-1 opacity-70">
-                Welcome back, {user?.username || 'User'}!
+                Welcome back, User!
               </Text>
             </View>
-            
           </View>
         </View>
 
@@ -169,36 +99,36 @@ export default function HomeScreen({
 
         {/* Dashboard Metrics */}
         <AnalyticsCards
-          metrics={metrics}
+          metrics={DUMMY_METRICS}
           onRefresh={refreshData}
           isRefreshing={isRefreshing}
         />
 
         {/* Vault Grid */}
         <VaultGrid
-          vaults={availableVaults}
+          vaults={DUMMY_VAULTS}
           onVaultPress={handleVaultPress}
-          isLoading={metrics.isLoading}
+          isLoading={false}
         />
 
         {/* Quick Actions */}
         <QuickActions
           onRemoteUnlock={handleRemoteUnlock}
           onClearAlarm={handleClearAlarm}
-          onSettings={handleSettingsPress}
+          onSettings={() => navigation.navigate('Settings' as never)}
           isConnected={isConnected}
           vaultStatus={vaultStatus}
           hasActiveAlarm={hasActiveAlarm}
-          isUnlocking={isUnlocking}
-          isClearingAlarm={isClearingAlarm}
+          isUnlocking={false}
+          isClearingAlarm={false}
         />
 
         {/* Recent Activity */}
         <ActivityFeed
-          activities={recentActivity}
-          onViewAll={handleViewAllActivity}
+          activities={DUMMY_ACTIVITY}
+          onViewAll={() => navigation.navigate('Activity' as never)}
           onRefresh={refreshData}
-          isLoading={metrics.isLoading}
+          isLoading={false}
           isRefreshing={isRefreshing}
         />
 
@@ -214,31 +144,15 @@ export default function HomeScreen({
           }}
         >
           <View className="flex-row items-center gap-3">
-            {isConnected ? (
-              <>
-                <CheckCircle size={20} color="#22c55e" />
-                <View className="flex-1">
-                  <Text className="text-text-dark font-medium">
-                    Connected to Vault Network
-                  </Text>
-                  <Text className="text-text-dark text-sm mt-0.5 opacity-70">
-                    All features available
-                  </Text>
-                </View>
-              </>
-            ) : (
-              <>
-                <AlertTriangle size={20} color="#eab308" />
-                <View className="flex-1">
-                  <Text className="text-text-dark font-medium">
-                    Offline Mode
-                  </Text>
-                  <Text className="text-text-dark text-sm mt-0.5 opacity-70">
-                    Limited functionality available
-                  </Text>
-                </View>
-              </>
-            )}
+            <CheckCircle size={20} color="#22c55e" />
+            <View className="flex-1">
+              <Text className="text-text-dark font-medium">
+                Connected to Vault Network
+              </Text>
+              <Text className="text-text-dark text-sm mt-0.5 opacity-70">
+                All features available
+              </Text>
+            </View>
           </View>
         </View>
       </ScrollView>
