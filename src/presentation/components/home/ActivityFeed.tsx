@@ -1,12 +1,10 @@
 import React from 'react';
-import { View, Text, TouchableOpacity, FlatList } from 'react-native';
+import { View, Text, TouchableOpacity } from 'react-native';
 import {
-  CheckCircle,
-  AlertTriangle,
   Clock,
-  Info,
   RefreshCw,
-  Activity
+  Activity,
+  ChevronRight
 } from 'lucide-react-native';
 
 interface RecentActivity {
@@ -26,72 +24,32 @@ interface ActivityFeedProps {
   isRefreshing?: boolean;
 }
 
-interface ActivityItemProps {
-  activity: RecentActivity;
-}
-
-const ActivityItem: React.FC<ActivityItemProps> = ({ activity }) => {
-  const getActivityIcon = (type: string) => {
-    const iconSize = 20;
-    switch (type) {
-      case 'success':
-        return <CheckCircle size={iconSize} color="#22c55e" />;
-      case 'failed':
-        return <AlertTriangle size={iconSize} color="#ef4444" />;
-      case 'info':
-        return <Info size={iconSize} color="#3b82f6" />;
-      default:
-        return <Clock size={iconSize} color="#64748b" />;
-    }
-  };
-
-  const getActivityBgColor = (type: string) => {
-    switch (type) {
-      case 'success':
-        return 'bg-success-light/20';
-      case 'failed':
-        return 'bg-error-light/20';
-      case 'info':
-        return 'bg-info-light/20';
-      default:
-        return 'bg-surface-active dark:bg-border-dark';
-    }
-  };
-
-  const formatTimestamp = (timestamp: string) => {
-    const date = new Date(timestamp);
-    const now = new Date();
-    const diffInMinutes = Math.floor((now.getTime() - date.getTime()) / (1000 * 60));
-
-    if (diffInMinutes < 1) return 'Just now';
-    if (diffInMinutes < 60) return `${diffInMinutes}m ago`;
-    if (diffInMinutes < 1440) return `${Math.floor(diffInMinutes / 60)}h ago`;
-    return `${Math.floor(diffInMinutes / 1440)}d ago`;
-  };
+const ActivityItem = ({ activity }: { activity: RecentActivity }) => {
+  const isFailed = activity.type === 'failed';
 
   return (
-    <View className={`flex-row items-start gap-3 p-3 rounded-lg ${getActivityBgColor(activity.type)}`}>
-      <View className="mt-0.5">
-        {getActivityIcon(activity.type)}
+    <View className="flex-row items-center gap-4 p-6 rounded-[24px] border bg-zinc-950 border-zinc-900 mb-4">
+      <View className={`w-14 h-14 rounded-2xl items-center justify-center bg-black border ${isFailed ? 'border-white' : 'border-zinc-800'}`}>
+        <View className={`w-2 h-2 rounded-full ${isFailed ? 'bg-white' : 'bg-zinc-600'}`} />
       </View>
 
       <View className="flex-1">
         <View className="flex-row items-center justify-between mb-1">
-          <Text className="text-text-dark dark:text-text-dark font-medium text-sm">
+          <Text className="text-white font-black text-sm uppercase tracking-tight">
             {activity.title}
           </Text>
-          <Text className="text-muted-default dark:text-muted-dark text-xs">
-            {formatTimestamp(activity.timestamp)}
+          <Text className="text-zinc-600 text-[9px] font-black uppercase">
+            {activity.timestamp}
           </Text>
         </View>
 
-        <Text className="text-muted-default dark:text-muted-dark text-sm mb-1">
+        <Text className="text-zinc-500 text-xs font-medium leading-4 mb-1">
           {activity.description}
         </Text>
 
         {activity.user && (
-          <Text className="text-muted-default dark:text-muted-dark text-xs">
-            by {activity.user}
+          <Text className="text-zinc-700 text-[8px] font-black uppercase tracking-widest">
+            AUTH: {activity.user}
           </Text>
         )}
       </View>
@@ -106,108 +64,53 @@ export const ActivityFeed: React.FC<ActivityFeedProps> = ({
   isLoading = false,
   isRefreshing = false
 }) => {
-  if (isLoading) {
-    return (
-      <View className="bg-surface-default dark:bg-surface-dark rounded-xl p-6 mb-4">
-        <View className="flex-row items-center justify-between mb-4">
-          <View className="flex-row items-center gap-2">
-            <Activity size={20} color="#2563eb" />
-            <Text className="text-text-dark dark:text-text-dark text-lg font-semibold">
-              Recent Activity
-            </Text>
-          </View>
-          {onRefresh && (
-            <TouchableOpacity onPress={onRefresh} disabled={isRefreshing}>
-              <RefreshCw size={20} color={isRefreshing ? '#64748b' : '#2563eb'} />
-            </TouchableOpacity>
-          )}
-        </View>
-
-        <View className="gap-3">
-          {[1, 2, 3].map((i) => (
-            <View key={i} className="flex-row items-start gap-3 p-3 bg-surface-active dark:bg-border-dark rounded-lg animate-pulse">
-              <View className="w-5 h-5 bg-border-default dark:bg-border-dark rounded mt-0.5" />
-              <View className="flex-1">
-                <View className="h-4 bg-border-default dark:bg-border-dark rounded mb-2" />
-                <View className="h-3 bg-border-default dark:bg-border-dark rounded w-3/4" />
-              </View>
-            </View>
-          ))}
-        </View>
-      </View>
-    );
-  }
-
-  if (activities.length === 0) {
-    return (
-      <View className="bg-surface-default dark:bg-surface-dark rounded-xl p-6 mb-4">
-        <View className="flex-row items-center justify-between mb-4">
-          <View className="flex-row items-center gap-2">
-            <Activity size={20} color="#2563eb" />
-            <Text className="text-text-dark dark:text-text-dark text-lg font-semibold">
-              Recent Activity
-            </Text>
-          </View>
-          {onRefresh && (
-            <TouchableOpacity onPress={onRefresh} disabled={isRefreshing}>
-              <RefreshCw size={20} color={isRefreshing ? '#64748b' : '#2563eb'} />
-            </TouchableOpacity>
-          )}
-        </View>
-
-        <View className="items-center py-8">
-          <Clock size={48} color="#64748b" />
-          <Text className="text-muted-default dark:text-muted-dark text-center mt-4">
-            No recent activity
-          </Text>
-          <Text className="text-muted-default dark:text-muted-dark text-center text-sm mt-2">
-            Activity will appear here when vaults are accessed
-          </Text>
-        </View>
-      </View>
-    );
-  }
-
   return (
-    <View
-      className="bg-surface-default dark:bg-surface-dark rounded-xl p-6 mb-4"
-      style={{
-        shadowColor: "#000",
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.15,
-        shadowRadius: 8,
-        elevation: 6,
-      }}
-    >
-      <View className="flex-row items-center justify-between mb-4">
+    <View className="mb-4">
+      <View className="flex-row items-center justify-between mb-6">
         <View className="flex-row items-center gap-2">
-          <Activity size={20} color="#2563eb" />
-          <Text className="text-text-dark dark:text-text-dark text-lg font-semibold">
-            Recent Activity ({activities.length})
+          <View className="w-1.5 h-6 bg-white rounded-full" />
+          <Text className="text-white text-xl font-black uppercase tracking-tighter ml-1">
+            Activity
           </Text>
         </View>
         {onRefresh && (
           <TouchableOpacity onPress={onRefresh} disabled={isRefreshing}>
-            <RefreshCw size={20} color={isRefreshing ? '#64748b' : '#2563eb'} />
+            <RefreshCw size={14} color="white" strokeWidth={3} style={isRefreshing ? { transform: [{ rotate: '180deg' }] } : undefined} />
           </TouchableOpacity>
         )}
       </View>
 
-      <View className="gap-3 mb-4">
-        {activities.slice(0, 5).map((activity) => (
-          <ActivityItem key={activity.id} activity={activity} />
-        ))}
+      <View>
+        {isLoading ? (
+          <View>
+            {[1, 2].map((i) => (
+              <View key={i} className="h-24 bg-zinc-950 rounded-[24px] mb-4 animate-pulse border border-zinc-900" />
+            ))}
+          </View>
+        ) : activities.length === 0 ? (
+          <View className="py-12 items-center bg-zinc-950 rounded-[24px] border border-dashed border-zinc-900">
+            <Clock size={32} color="#27272A" />
+            <Text className="text-zinc-700 font-black uppercase text-[10px] tracking-widest mt-4">Buffer Empty</Text>
+          </View>
+        ) : (
+          <View>
+            {activities.slice(0, 3).map((activity) => (
+              <ActivityItem key={activity.id} activity={activity} />
+            ))}
+          </View>
+        )}
       </View>
 
-      {onViewAll && activities.length >= 5 && (
+      {onViewAll && activities.length >= 3 && (
         <TouchableOpacity
-          className="p-3 rounded-lg border border-border-default dark:border-border-dark items-center"
+          className="p-5 rounded-[24px] border border-zinc-900 items-center bg-zinc-950 active:bg-zinc-900 flex-row justify-center gap-2 mt-2"
           onPress={onViewAll}
           activeOpacity={0.7}
         >
-          <Text className="text-text-dark dark:text-text-dark text-sm font-medium">
-            View All Activity
+          <Text className="text-white text-[10px] font-black uppercase tracking-[3px]">
+            SYSTEM LOGS
           </Text>
+          <ChevronRight size={14} color="white" strokeWidth={3} />
         </TouchableOpacity>
       )}
     </View>

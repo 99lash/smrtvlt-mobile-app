@@ -34,23 +34,23 @@ const ButtonPrimary: React.FC<ButtonPrimaryProps> = ({
       onPress={!disabled && !loading ? onPress : undefined}
       activeOpacity={0.7}
       disabled={disabled || loading}
-      className={`bg-primary-default rounded-3xl px-4 py-4 flex-row items-center justify-center w-full
-        ${disabled ? "opacity-50" : ""}
+      className={`bg-white rounded-2xl px-4 py-4 flex-row items-center justify-center w-full
+        ${disabled ? "opacity-30" : ""}
         ${className}`}
       style={{
         borderWidth: 1,
-        borderColor: 'rgba(255, 255, 255, 0.1)',
+        borderColor: 'rgba(0, 0, 0, 0.1)',
       }}
     >
       {loading ? (
-        <ActivityIndicator color="white" />
+        <ActivityIndicator color="black" />
       ) : (
         <View className="flex-row items-center justify-center">
           {styledIcon && iconPosition === "left" && (
             <View className="mr-2">{styledIcon}</View>
           )}
           <Text
-            className={`text-neutral text-text-default text-center ${textClassName}`}
+            className={`text-black text-base font-black uppercase tracking-widest text-center ${textClassName}`}
           >
             {title}
           </Text>

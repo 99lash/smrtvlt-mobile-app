@@ -13,7 +13,7 @@ const LoginScreen = () => {
   };
 
   return (
-    <View className="flex-1 bg-white">
+    <View className="flex-1 bg-black">
       <Login onLoginSuccess={handleLoginSuccess} />
     </View>
   );

@@ -1,6 +1,6 @@
 import React from 'react';
 import { View, Text, TouchableOpacity } from 'react-native';
-import { Shield, Unlock } from 'lucide-react-native';
+import { Shield, Unlock, Lock, ChevronRight } from 'lucide-react-native';
 import { VaultMembership } from '../../../service/VaultService';
 
 interface VaultGridProps {
@@ -15,73 +15,50 @@ interface VaultCardProps {
 }
 
 const VaultCard: React.FC<VaultCardProps> = ({ vault, onPress }) => {
-  const getStatusColor = (role: string) => {
-    switch (role) {
-      case 'admin':
-        return '#22c55e'; // Green for admin
-      case 'member':
-        return '#3b82f6'; // Blue for member
-      case 'guest':
-        return '#64748b'; // Gray for guest
-      default:
-        return '#64748b';
-    }
-  };
-
-  const getStatusIcon = (role: string) => {
-    switch (role) {
-      case 'admin':
-        return <Shield size={16} color="#22c55e" />;
-      case 'member':
-        return <Unlock size={16} color="#3b82f6" />;
-      case 'guest':
-        return <Shield size={16} color="#64748b" />;
-      default:
-        return <Shield size={16} color="#64748b" />;
-    }
-  };
+  const isAdmin = vault.role.toLowerCase() === 'admin';
 
   return (
     <TouchableOpacity
-      className="bg-surface-default dark:bg-surface-dark rounded-xl p-4 mb-3 mx-1 border border-border-default dark:border-border-dark"
+      className="bg-zinc-950 rounded-[24px] p-6 mb-4 border border-zinc-900 flex-row items-center gap-4"
       onPress={onPress}
       activeOpacity={0.7}
-      style={{
-        shadowColor: "#000",
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.1,
-        shadowRadius: 4,
-        elevation: 3,
-      }}
     >
-      <View className="flex-row items-center justify-between mb-3">
-        <View className="flex-row items-center gap-2">
-          <View
-            className="w-10 h-10 rounded-full items-center justify-center"
-            style={{ backgroundColor: `${getStatusColor(vault.role)}20` }}
-          >
-            {getStatusIcon(vault.role)}
-          </View>
-          <View>
-            <Text className="text-text-dark dark:text-text-dark font-semibold text-base">
-              {vault.vault_name || `Vault ${vault.vault_id}`}
-            </Text>
-            <Text className="text-muted-default dark:text-muted-dark text-sm">
-              {vault.vault_location || 'No location'}
-            </Text>
-          </View>
-        </View>
+      <View
+        className={`w-14 h-14 rounded-2xl items-center justify-center ${isAdmin ? 'bg-white' : 'bg-zinc-900 border border-zinc-800'}`}
+      >
+        {isAdmin ? (
+          <Shield size={22} color="black" strokeWidth={2.5} />
+        ) : (
+          <Unlock size={22} color="white" strokeWidth={2} />
+        )}
+      </View>
+      
+      <View className="flex-1">
+        <Text 
+          className="text-white font-black text-lg tracking-tight uppercase"
+          numberOfLines={1}
+        >
+          {vault.vault_name || `UNIT-${vault.vault_id}`}
+        </Text>
+        <Text 
+          className="text-zinc-600 text-[10px] font-black uppercase tracking-widest mt-1"
+          numberOfLines={1}
+        >
+          {vault.vault_location || 'SECURE SECTOR'}
+        </Text>
+      </View>
+
+      <View className="flex-row items-center gap-2">
         <View
-          className="px-2 py-1 rounded-full"
-          style={{ backgroundColor: `${getStatusColor(vault.role)}20` }}
+          className={`px-3 py-1 rounded-lg border ${isAdmin ? 'bg-zinc-800 border-zinc-700' : 'bg-transparent border-zinc-800'}`}
         >
           <Text
-            className="text-xs font-medium"
-            style={{ color: getStatusColor(vault.role) }}
+            className={`text-[8px] font-black uppercase tracking-tighter ${isAdmin ? 'text-white' : 'text-zinc-500'}`}
           >
-            {vault.role.toUpperCase()}
+            {vault.role}
           </Text>
         </View>
+        <ChevronRight size={16} color="#27272A" />
       </View>
     </TouchableOpacity>
   );
@@ -92,66 +69,42 @@ export const VaultGrid: React.FC<VaultGridProps> = ({
   onVaultPress,
   isLoading = false
 }) => {
-  if (isLoading) {
-    return (
-      <View className="bg-surface-default dark:bg-surface-dark rounded-xl p-6 mb-4">
-        <Text className="text-text-dark dark:text-text-dark text-lg font-semibold mb-4">
-          My Vaults
-        </Text>
-        <View className="flex-row gap-3">
-          {[1, 2, 3].map((i) => (
-            <View
-              key={i}
-              className="bg-surface-active dark:bg-border-dark rounded-xl p-4 mb-3 flex-1 animate-pulse"
-            >
-              <View className="h-4 bg-border-default dark:bg-border-dark rounded mb-2" />
-              <View className="h-3 bg-border-default dark:bg-border-dark rounded w-3/4" />
-            </View>
+  return (
+    <View className="mb-4">
+      <View className="flex-row items-center justify-between mb-6">
+        <View className="flex-row items-center gap-2">
+            <View className="w-1.5 h-6 bg-white rounded-full" />
+            <Text className="text-white text-xl font-black uppercase tracking-tighter ml-1">
+                Active Units
+            </Text>
+        </View>
+        <View className="bg-white px-3 py-1 rounded-full">
+            <Text className="text-black font-black text-[9px] uppercase">
+                {vaults.length} Units
+            </Text>
+        </View>
+      </View>
+
+      {isLoading ? (
+        <View>
+          {[1, 2].map((i) => (
+            <View key={i} className="h-24 bg-zinc-950 rounded-[24px] mb-4 animate-pulse border border-zinc-900" />
           ))}
         </View>
-      </View>
-    );
-  }
-
-  if (vaults.length === 0) {
-    return (
-      <View className="bg-surface-default dark:bg-surface-dark rounded-xl p-6 mb-4">
-        <Text className="text-text-dark dark:text-text-dark text-lg font-semibold mb-4">
-          My Vaults
-        </Text>
-        <View className="items-center py-8">
-          <Shield size={48} color="#64748b" />
-          <Text className="text-muted-default dark:text-muted-dark text-center mt-4">
-            No vaults available
-          </Text>
-          <Text className="text-muted-default dark:text-muted-dark text-center text-sm mt-2">
-            Contact your administrator to get access to vaults
+      ) : vaults.length === 0 ? (
+        <View className="py-12 items-center bg-zinc-950 rounded-[24px] border border-dashed border-zinc-900">
+          <Lock size={40} color="#27272A" />
+          <Text className="text-zinc-600 text-center mt-4 font-black uppercase tracking-[2px] text-[9px]">
+            No Secure Nodes Detected
           </Text>
         </View>
-      </View>
-    );
-  }
-
-  return (
-    <View
-      className="bg-surface-default dark:bg-surface-dark rounded-xl p-6 mb-4"
-      style={{
-        shadowColor: "#000",
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.15,
-        shadowRadius: 8,
-        elevation: 6,
-      }}
-    >
-      <Text className="text-text-dark dark:text-text-dark text-lg font-semibold mb-4">
-        My Vaults ({vaults.length})
-      </Text>
-
-      <View>
-        {vaults.map((item) => (
-          <VaultCard key={item.vault_id} vault={item} onPress={() => onVaultPress(item)} />
-        ))}
-      </View>
+      ) : (
+        <View>
+          {vaults.map((item) => (
+            <VaultCard key={item.vault_id} vault={item} onPress={() => onVaultPress(item)} />
+          ))}
+        </View>
+      )}
     </View>
   );
 };

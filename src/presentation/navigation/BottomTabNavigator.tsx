@@ -3,31 +3,28 @@ import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { House, Users, Activity, Settings } from 'lucide-react-native';
 import { Pressable, Text, View, StyleSheet } from 'react-native';
 import { useTheme } from '@react-navigation/native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import type { BottomTabBarProps } from '@react-navigation/bottom-tabs';
 import HomeScreen from '../screens/HomeScreen';
 import UsersScreen from '../screens/UsersScreen';
 import ActivityScreen from '../screens/ActivityScreen';
 import SettingsScreen from '../screens/SettingsScreen';
-import { Header } from '../component/common/Header';
 
-// Wrapper components with header
 const HomeScreenWithHeader = () => (
-  <View className="flex-1">
-    <Header/>
+  <View className="flex-1 bg-bg-default">
     <HomeScreen
       isConnected={true}
       vaultStatus="locked"
-      setVaultStatus={() => console.log('setVaultStatus')}
+      setVaultStatus={() => {}}
       hasActiveAlarm={false}
-      setHasActiveAlarm={() => console.log('setHasActiveAlarm')}
+      setHasActiveAlarm={() => {}}
     />
   </View>
 );
 
 const UsersScreenWithHeader = () => {
   return (
-    <View className="flex-1 bg-black">
-      <Header title="SmartVault"/>
+    <View className="flex-1 bg-bg-default">
       <UsersScreen />
     </View>
   );
@@ -35,16 +32,14 @@ const UsersScreenWithHeader = () => {
 
 const ActivityScreenWithHeader = () => {
   return (
-    <View className="flex-1 bg-black">
-      <Header title="SmartVault" />
+    <View className="flex-1 bg-bg-default">
       <ActivityScreen />
     </View>
   );
 };
 
 const SettingsScreenWithHeader = () => (
-  <View className="flex-1 bg-black">
-    <Header title="SmartVault" />
+  <View className="flex-1 bg-bg-default">
     <SettingsScreen />
   </View>
 );
@@ -53,14 +48,18 @@ const Tab = createBottomTabNavigator();
 
 function MyTabBar({ state, descriptors, navigation }: BottomTabBarProps) {
   const { colors } = useTheme();
+  const insets = useSafeAreaInsets();
   
   return (
-    <View className="absolute bottom-6 left-0 right-0 items-center px-4">
+    <View 
+      style={{ bottom: Math.max(insets.bottom, 24) }}
+      className="absolute left-0 right-0 items-center px-4"
+    >
       <View
         style={styles.container}
-        className="bg-[#1055C9] rounded-full px-4 py-3"
+        className="bg-white rounded-full px-2 py-2 flex-row items-center justify-between"
       >
-        <View className="flex-row items-center gap-2">
+        <View className="flex-row items-center justify-center gap-1">
           {state.routes.map((route, index) => {
             const { options } = descriptors[route.key]; 
             const label =
@@ -93,24 +92,26 @@ function MyTabBar({ state, descriptors, navigation }: BottomTabBarProps) {
               <Pressable
                 key={route.key}
                 onPress={onPress}
-                className={`flex-row items-center gap-2 px-4 py-2 rounded-full ${
-                  isFocused ? 'bg-white' : ''
+                className={`items-center justify-center rounded-full ${
+                  isFocused ? 'bg-black px-6 py-3' : 'px-4 py-3'
                 }`}
-                android_ripple={{ color: colors.primary, borderless: true }}
+                android_ripple={{ color: 'rgba(0,0,0,0.1)', borderless: true }}
               >
-                <Icon 
-                  color={isFocused ? '#1a0f3e' : 'rgba(255, 255, 255, 0.7)'} 
-                  size={20}
-                  strokeWidth={2}
-                />
-                {isFocused && (
-                  <Text 
-                    className="text-sm font-medium text-[#1a0f3e]"
-                    numberOfLines={1}
-                  >
-                    {label}
-                  </Text>
-                )}
+                <View className="flex-row items-center justify-center">
+                  <Icon 
+                    color={isFocused ? '#FFFFFF' : '#000000'} 
+                    size={20}
+                    strokeWidth={isFocused ? 2.5 : 2}
+                  />
+                  {isFocused && (
+                    <Text 
+                      className="text-xs font-black text-white ml-2 uppercase tracking-tighter"
+                      numberOfLines={1}
+                    >
+                      {label}
+                    </Text>
+                  )}
+                </View>
               </Pressable>
             );
           })}
@@ -123,12 +124,13 @@ function MyTabBar({ state, descriptors, navigation }: BottomTabBarProps) {
 const styles = StyleSheet.create({
   container: {
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 10 },
-    shadowOpacity: 0.3,
-    shadowRadius: 20,
-    elevation: 10,
+    shadowOffset: { width: 0, height: 15 },
+    shadowOpacity: 0.5,
+    shadowRadius: 25,
+    elevation: 20,
     borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.1)',
+    borderColor: 'rgba(0, 0, 0, 0.05)',
+    minWidth: '90%',
   },
 });
 
@@ -138,7 +140,7 @@ const BottomTabNavigator = () => {
       tabBar={(props) => <MyTabBar {...props} />}
       screenOptions={{
         headerShown: false,
-        tabBarStyle: { display: 'none' } // Hide default tab bar completely
+        tabBarStyle: { display: 'none' } 
       }}
     >
       <Tab.Screen name="Home" component={HomeScreenWithHeader} />

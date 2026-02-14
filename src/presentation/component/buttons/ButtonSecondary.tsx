@@ -22,10 +22,10 @@ const ButtonSecondary: React.FC<ButtonSecondaryProps> = ({
   icon,
   iconPosition = "left",
 }) => {
-  // base colors
-  const activeBg = "#eff1ed";
-  const disabledBg = "#d9dbd7";
-  const textColor = disabled ? "#9ea19b" : "#5e5e5e";
+  // monochrome colors
+  const activeBg = "#27272A"; // Zinc-800
+  const disabledBg = "#18181B"; // Zinc-900
+  const textColor = disabled ? "#52525B" : "#FFFFFF";
 
   const coloredIcon =
     icon &&
@@ -42,14 +42,16 @@ const ButtonSecondary: React.FC<ButtonSecondaryProps> = ({
         backgroundColor: disabled ? disabledBg : activeBg,
         shadowColor: disabled ? "transparent" : "#000",
         shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: disabled ? 0 : 0.15,
+        shadowOpacity: disabled ? 0 : 0.2,
         shadowRadius: 8,
         elevation: disabled ? 0 : 6,
-        borderRadius: 24,
-        paddingVertical: 12,
-        paddingHorizontal: 16,
+        borderRadius: 16,
+        paddingVertical: 14,
+        paddingHorizontal: 20,
+        borderWidth: 1,
+        borderColor: '#3F3F46',
       }}
-      className={`rounded-3xl flex-row items-center justify-center ${className}`}
+      className={`flex-row items-center justify-center ${className}`}
     >
         {loading ? (
           <ActivityIndicator color={textColor} />

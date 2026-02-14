@@ -1,10 +1,9 @@
 import React from 'react';
 import { View, Text, TouchableOpacity } from 'react-native';
-import { User as UserIcon, Users, Crown } from 'lucide-react-native';
+import { Users, Crown } from 'lucide-react-native';
 import { User as UserType } from '../../../../types/UserTypes';
 import { EnhancedEmptyState } from '../../../component/common/EnhancedEmptyState';
 import BorderedList from '../../../component/lists/BorderedList';
-import { Edit, Trash2 } from 'lucide-react-native';
 
 interface UsersListProps {
   users: UserType[];
@@ -14,6 +13,7 @@ interface UsersListProps {
   onDeleteUser?: (userId: string) => void;
   onToggleStatus?: (userId: string) => void;
   onTransferOwnership?: (user: UserType) => void;
+  scrollEnabled?: boolean;
 }
 
 export const UserList: React.FC<UsersListProps> = ({
@@ -23,24 +23,10 @@ export const UserList: React.FC<UsersListProps> = ({
   onDeleteUser,
   onToggleStatus,
   onTransferOwnership,
+  scrollEnabled = true,
 }) => {
   const formatLastAccess = (lastAccess: string | undefined): string => {
-    if (!lastAccess) return 'Never';
-    
-    const accessDate = new Date(lastAccess);
-    const now = new Date();
-    const diffMs = now.getTime() - accessDate.getTime();
-    const diffMins = Math.floor(diffMs / 60000);
-    const diffHours = Math.floor(diffMs / 3600000);
-    const diffDays = Math.floor(diffMs / 86400000);
-    
-    if (diffMins < 1) return 'Just now';
-    if (diffMins < 60) return `${diffMins}m ago`;
-    if (diffHours < 24) return `${diffHours}h ago`;
-    if (diffDays < 7) return `${diffDays}d ago`;
-    if (diffDays < 30) return `${Math.floor(diffDays / 7)}w ago`;
-    if (diffDays < 365) return `${Math.floor(diffDays / 30)}mo ago`;
-    return `${Math.floor(diffDays / 365)}y ago`;
+    return 'ACTIVE';
   };
 
   const renderUserItem = (item: UserType, index: number, isSelected: boolean) => {
@@ -48,72 +34,44 @@ export const UserList: React.FC<UsersListProps> = ({
       ? `${item.firstName} ${item.lastName}`
       : item.username || `User ${item.id}`;
 
-    // Get initials for avatar
     const initials = displayName
       .split(' ')
       .map((n: string) => n[0])
       .join('')
       .toUpperCase()
-      .slice(0, 2); // Limit to 2 characters
+      .slice(0, 2);
 
     const isActive = item.status.toLowerCase() === 'active';
     const isAdmin = item.role.toLowerCase() === 'admin';
-    const adminCount = users.filter((u: UserType) => u.role.toLowerCase() === 'admin').length;
-    const canDelete = !(isAdmin && adminCount === 1);
-    const canTransferOwnership = isAdmin && onTransferOwnership;
 
     return ( 
-      <View className="flex-row items-center gap-3" >
-        
-        {/* Avatar - Always show initials */}
-        <View className="w-12 h-12 rounded-full bg-icons-dark items-center justify-center">
-          <Text className="text-text-dark font-semibold text-sm">
+      <View className="flex-row items-center gap-5 py-2" >
+        <View className={`w-16 h-16 rounded-full ${isAdmin ? 'bg-white' : 'bg-black border border-zinc-800'} items-center justify-center shadow-lg`}>
+          <Text className={`${isAdmin ? 'text-black' : 'text-white'} font-black text-xl`}>
             {initials}
           </Text>
         </View>
 
-        {/* Main Content */}
         <View className="flex-1">
-          {/* Name and Badges Row */}
-          <View className="flex-row items-center justify-between mb-1">
+          <View className="flex-row items-center justify-between mb-1.5">
             <Text 
-              className={`font-semibold text-base text-text-dark flex-1`}
+              className="font-black text-lg text-text-default uppercase tracking-tighter"
               numberOfLines={1}
             >
               {displayName}
             </Text>
             
-            <View className="flex-row items-center gap-2">
-              {/* Inactive Badge */}
-              {!isActive && (
-                <View className="px-2 py-0.5 rounded border border-neutral-600">
-                  <Text className="text-neutral-400 text-xs">
-                    Inactive
-                  </Text>
-                </View>
-              )}
-
-              {/* Role Badge */}
-              <View 
-                className={`px-2 py-0.5 rounded ${
-                  isAdmin ? 'bg-primary-default' : 'bg-icons-default'
-                }`}
-              >
-                <Text className={isAdmin ? 'text-text-default text-xs capitalize' : 'text-text-dark text-xs capitalize'}>
+            <View className={`px-3 py-1 rounded-lg border ${isAdmin ? 'bg-white border-white' : 'bg-transparent border-zinc-800'}`}>
+                <Text className={`${isAdmin ? 'text-black' : 'text-white'} text-[9px] font-black uppercase tracking-widest`}>
                   {item.role}
                 </Text>
-              </View>
             </View>
           </View>
 
-          {/* Last Access and Auth Methods Row */}
-          <View className="flex-row items-center gap-4">
-            <Text
-              className={`text-xs ${
-                isSelected ? "text-blue-700" : "text-neutral-400"
-              }`}
-            >
-              Joined: {formatLastAccess(item.lastAccess)}
+          <View className="flex-row items-center gap-3">
+            <View className={`w-2 h-2 rounded-full ${isActive ? 'bg-white' : 'bg-zinc-800'}`} />
+            <Text className="text-[10px] text-zinc-500 font-black uppercase tracking-widest">
+              {isActive ? 'ACTIVE LINK' : 'INACTIVE'} • USER ID: {item.id}
             </Text>
           </View>
         </View>
@@ -125,12 +83,14 @@ export const UserList: React.FC<UsersListProps> = ({
 
   if (users.length === 0) {
     return (
-      <EnhancedEmptyState
-        icon={Users}
-        iconSize={48}
-        title="No users found"
-        message="No users are currently shared in your vaults"
-      />
+      <View className="px-6">
+        <EnhancedEmptyState
+            icon={Users}
+            iconSize={48}
+            title="NO USERS DETECTED"
+            message="DATABASE BUFFER EMPTY"
+        />
+      </View>
     );
   }
 
@@ -142,23 +102,23 @@ export const UserList: React.FC<UsersListProps> = ({
       onItemPress={() => {}}
       rightContentExtractor={(user, index) => {
         const isAdmin = user.role.toLowerCase() === 'admin';
-        const canTransferOwnership = isAdmin && onTransferOwnership;
-
-        if (!canTransferOwnership) return null;
+        if (!isAdmin || !onTransferOwnership) return null;
 
         return (
           <TouchableOpacity
             onPress={() => onTransferOwnership(user)}
-            className="bg-primary-default p-2 rounded-lg"
+            className="bg-zinc-100 p-3 rounded-2xl shadow-xl border border-zinc-200"
           >
-            <Crown size={16} color="#FFFFFF" />
+            <Crown size={20} color="#000000" strokeWidth={3} />
           </TouchableOpacity>
         );
       }}
       getId={getId}
-      maxVisibleItems={8}
-      itemHeight={80}
-      className="mx-4"
+      maxVisibleItems={10}
+      itemHeight={100}
+      itemGap={16}
+      className="mx-6"
+      scrollEnabled={scrollEnabled}
     />
   );
 };

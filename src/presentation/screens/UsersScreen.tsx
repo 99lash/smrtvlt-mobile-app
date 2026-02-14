@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, FlatList } from 'react-native';
+import { View, ScrollView, Text } from 'react-native';
 import { Loader } from 'lucide-react-native';
 
 // Extracted components
@@ -50,42 +50,42 @@ export default function UsersScreen({ navigation }: any) {
 
   if (loading) {
     return (
-      <View className="flex-1 bg-bg-default">
-        <EnhancedEmptyState
-          icon={Loader}
-          title="Loading"
-          message="Please wait..."
-        />
+      <View className="flex-1 bg-bg-default justify-center items-center">
+        <Loader size={48} color="#FFFFFF" />
       </View>
     );
   }
 
-  const renderHeader = () => (
-    <View className="pt-4">
-      {/* Tab Navigation */}
-      <TabNavigation activeTab={activeTab} onTabChange={setActiveTab as any} />
-
-      {/* Tab Content */}
-      <TabContent
-        activeTab={activeTab}
-        users={DUMMY_USERS as any}
-        vaults={DUMMY_VAULTS as any}
-        onUserPress={handleUserPress}
-        onVaultSelect={handleVaultSelect}
-        onRefresh={loadData}
-        onTransferOwnership={handleTransferOwnership}
-      />
-    </View>
-  );
-
   return (
     <View className="flex-1 bg-bg-default">
-      <FlatList
-        data={[]}
-        renderItem={null}
-        ListHeaderComponent={renderHeader}
-        contentContainerStyle={{ paddingBottom: 120 }}
-      />
+      <ScrollView 
+        contentContainerStyle={{ paddingBottom: 140, paddingTop: 40 }}
+        showsVerticalScrollIndicator={false}
+      >
+        <View className="px-6 mb-10">
+            <Text className="text-white text-5xl font-black tracking-tighter uppercase leading-[48px]">ARCHIVE</Text>
+            <Text className="text-zinc-500 text-[10px] font-black uppercase tracking-[3px] mt-2">Personnel & Unit Registry</Text>
+        </View>
+
+        {/* Tab Navigation */}
+        <View className="mb-10">
+          <TabNavigation activeTab={activeTab} onTabChange={setActiveTab as any} />
+        </View>
+
+        {/* Tab Content */}
+        <View className="px-2">
+          <TabContent
+            activeTab={activeTab}
+            users={DUMMY_USERS as any}
+            vaults={DUMMY_VAULTS as any}
+            onUserPress={handleUserPress}
+            onVaultSelect={handleVaultSelect}
+            onRefresh={loadData}
+            onTransferOwnership={handleTransferOwnership}
+            scrollEnabled={false}
+          />
+        </View>
+      </ScrollView>
 
       {/* Floating Action Button */}
       <FloatingActionButton onPress={() => console.log('FAB pressed')} />

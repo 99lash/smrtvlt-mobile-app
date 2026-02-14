@@ -1,5 +1,5 @@
 import React, { ReactElement } from 'react';
-import { FlatList, View, Text, Pressable } from 'react-native';
+import { FlatList, View, Text, Pressable, ScrollView } from 'react-native';
 
 type BorderedListProps<T> = {
   data: T[];
@@ -14,6 +14,7 @@ type BorderedListProps<T> = {
   selectedId?: string;
   getId?: (item: T) => string;
   itemGap?: number; // gap between items in pixels
+  scrollEnabled?: boolean; // If false, renders as a simple View mapping to avoid VirtualizedList nesting errors
 };
 
 function BorderedList<T>({
@@ -28,67 +29,78 @@ function BorderedList<T>({
   itemHeight = 56,
   selectedId,
   getId,
-  itemGap = 8, // default 8px gap
+  itemGap = 8,
+  scrollEnabled = true,
 }: BorderedListProps<T>) {
   const maxHeight = maxVisibleItems * itemHeight;
 
+  const renderItemContent = (item: T, index: number) => {
+    const leftIcon = iconExtractor?.(item, index);
+    const rightContent = rightContentExtractor?.(item, index);
+    const isSelected =
+      selectedId && getId ? selectedId === getId(item) : false;
+
+    return (
+      <Pressable
+        key={keyExtractor(item, index)}
+        disabled={!onItemPress}
+        onPress={() => onItemPress?.(item, index)}
+        className={`flex-row items-center justify-between px-5 py-4 gap-3 rounded-2xl ${
+          isSelected ? 'bg-primary-default' : 'bg-surface-default'
+        }`}
+        style={{
+          minHeight: itemHeight,
+          marginBottom: itemGap,
+          shadowColor: '#000',
+          shadowOffset: { width: 0, height: 4 },
+          shadowOpacity: 0.15,
+          shadowRadius: 8,
+          elevation: 6,
+        }}
+      >
+        <View className="flex-row items-center flex-1">
+          {leftIcon && <View className="mr-3">{leftIcon}</View>}
+          {renderItem ? (
+            renderItem(item, index, isSelected)
+          ) : (
+            <Text
+              className={`flex-1 ${
+                isSelected
+                  ? 'text-text-default font-semibold'
+                  : 'text-text-default dark:text-text-default'
+              }`}
+              style={{ flexWrap: 'wrap' }}
+            >
+              {String(item)}
+            </Text>
+          )}
+        </View>
+
+        {rightContent && <View className="ml-3">{rightContent}</View>}
+      </Pressable>
+    );
+  };
+
+  if (!scrollEnabled) {
+    return (
+      <View className={`bg-transparent ${className}`}>
+        {data.map((item, index) => renderItemContent(item, index))}
+      </View>
+    );
+  }
+
   return (
     <View
-      className={`bg-bg-default overflow-hidden  ${className}`}
+      className={`bg-transparent overflow-hidden ${className}`}
+      style={{ maxHeight }}
     >
       <FlatList
         data={data}
         keyExtractor={keyExtractor}
-        ItemSeparatorComponent={() => <View style={{ height: itemGap }} />}
-        contentContainerStyle={{ padding: itemGap }}
-        style={{ maxHeight }}
         showsVerticalScrollIndicator={true}
         nestedScrollEnabled={true}
-        renderItem={({ item, index }) => {
-          const leftIcon = iconExtractor?.(item, index);
-          const rightContent = rightContentExtractor?.(item, index);
-          const isSelected =
-            selectedId && getId ? selectedId === getId(item) : false;
-
-          return (
-            <Pressable
-              disabled={!onItemPress}
-              onPress={() => onItemPress?.(item, index)}
-              className={`flex-row items-center justify-between px-5 py-4 gap-3 rounded-2xl ${
-                isSelected ? 'bg-primary-default' : 'bg-surface-default'
-              }`}
-              style={{
-                minHeight: itemHeight,
-                maxHeight,
-                shadowColor: '#000',
-                shadowOffset: { width: 0, height: 4 },
-                shadowOpacity: 0.15,
-                shadowRadius: 8,
-                elevation: 6,
-              }}
-            >
-              <View className="flex-row items-center flex-1">
-                {leftIcon && <View className="mr-3">{leftIcon}</View>}
-                {renderItem ? (
-                  renderItem(item, index, isSelected)
-                ) : (
-                  <Text
-                    className={`flex-1 ${
-                      isSelected
-                        ? 'text-primary-dark font-semibold'
-                        : 'text-text-dark dark:text-text-default'
-                    }`}
-                    style={{ flexWrap: 'wrap' }}
-                  >
-                    {String(item)}
-                  </Text>
-                )}
-              </View>
-
-              {rightContent && <View className="ml-3">{rightContent}</View>}
-            </Pressable>
-          );
-        }}
+        renderItem={({ item, index }) => renderItemContent(item, index)}
+        // Remove ItemSeparator and contentContainer padding to match map logic
       />
     </View>
   );

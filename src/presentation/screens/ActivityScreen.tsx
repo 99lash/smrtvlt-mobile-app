@@ -1,26 +1,66 @@
 import React from 'react';
-import { FlatList } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { FlatList, View, Text } from 'react-native';
 import { ActivityCard } from './activity';
+import { ActivityLog } from '../../types/ActivityTypes';
 
-const DUMMY_LOGS = [
-  { id: '1', user: 'admin', action: 'UNLOCK', vault_name: 'Main Vault', timestamp: new Date().toISOString(), status: 'SUCCESS', details: 'Remote unlock' },
-  { id: '2', user: 'guest', action: 'ACCESS_DENIED', vault_name: 'Office Safe', timestamp: new Date(Date.now() - 3600000).toISOString(), status: 'FAILURE', details: 'Invalid PIN' },
-  { id: '3', user: 'admin', action: 'SETTINGS_CHANGE', vault_name: 'Main Vault', timestamp: new Date(Date.now() - 7200000).toISOString(), status: 'SUCCESS', details: 'Changed alarm sensitivity' }
+const DUMMY_LOGS: ActivityLog[] = [
+  {
+    id: '1',
+    status: 'success',
+    eventType: 'remote_unlock',
+    title: 'REMOTE UNLOCK',
+    description: 'Protocol execution successful. Access granted.',
+    timestamp: '2m ago',
+    user: { initials: 'AD', name: 'ADMIN' }
+  },
+  {
+    id: '2',
+    status: 'failed',
+    eventType: 'failed_pin',
+    title: 'AUTH FAILURE',
+    description: 'Multiple invalid credentials detected.',
+    timestamp: '1h ago',
+    user: { initials: 'UN', name: 'UNKNOWN' }
+  },
+  {
+    id: '3',
+    status: 'success',
+    eventType: 'vault_unlock',
+    title: 'UNIT ACCESS',
+    description: 'Manual biometric verification successful.',
+    timestamp: '3h ago',
+    user: { initials: 'JD', name: 'J. DOE' }
+  },
+  {
+    id: '4',
+    status: 'warning',
+    eventType: 'tamper_alert',
+    title: 'SYSTEM ALERT',
+    description: 'Unusual vibration detected in Sector 7.',
+    timestamp: '5h ago',
+    user: { initials: 'SV', name: 'SMARTVAULT' }
+  }
 ];
 
 export default function ActivityScreen({ navigation }: any) {
+  const renderHeader = () => (
+    <View className="px-6 mb-10 pt-10">
+        <Text className="text-white text-5xl font-black tracking-tighter uppercase leading-[48px]">LOGS</Text>
+        <Text className="text-zinc-500 text-[10px] font-black uppercase tracking-[3px] mt-2">Historical Event Stream</Text>
+    </View>
+  );
+
   return (
-    <SafeAreaView className="flex-1 bg-bg-default">
-      {/* Activity Logs */}
+    <View className="flex-1 bg-bg-default">
       <FlatList
         data={DUMMY_LOGS}
         renderItem={({ item }) => <ActivityCard log={item} />}
         keyExtractor={(item) => item.id}
-        className="flex-1 px-3 pt-6"
-        contentContainerStyle={{ paddingBottom: 120 }}
+        ListHeaderComponent={renderHeader}
+        className="flex-1"
+        contentContainerStyle={{ paddingBottom: 140 }}
         showsVerticalScrollIndicator={false}
       />
-    </SafeAreaView>
+    </View>
   );
 }

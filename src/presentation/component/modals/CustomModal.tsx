@@ -38,48 +38,55 @@ const CustomModal: React.FC<CustomModalProps> = ({
     <Modal
       visible={visible}
       transparent={true}
-      animationType="slide"
+      animationType="fade"
       onRequestClose={onClose}
     >
-      <SafeAreaView className="flex-1 bg-surface-default">
-        <View className="flex-1">
-          {/* Header */}
-          <View className="flex-row items-center justify-between p-4 border-b border-gray-200">
-            <View className="flex-row items-center">
-              {icon && iconPosition === 'left' && <View className="mr-2">{icon}</View>}
-              <Text className="text-lg font-bold text-text-dark">{title}</Text>
+      <View className="flex-1 bg-black/90 justify-center px-4">
+        <SafeAreaView className="max-h-[85%] bg-zinc-950 border border-zinc-800 rounded-[40px] overflow-hidden">
+            {/* Header */}
+            <View className="flex-row items-center justify-between p-8 border-b border-zinc-900">
+                <View className="flex-row items-center">
+                {icon && iconPosition === 'left' && <View className="mr-3">{icon}</View>}
+                <Text className="text-2xl font-black text-white uppercase tracking-tighter">{title}</Text>
+                </View>
+                <TouchableOpacity 
+                    onPress={onClose} 
+                    className="bg-zinc-900 p-2 rounded-full border border-zinc-800"
+                >
+                <X size={20} color="#FFFFFF" strokeWidth={3} />
+                </TouchableOpacity>
             </View>
-            <TouchableOpacity onPress={onClose} className="p-2">
-              <X size={24} color="#6B7280" />
-            </TouchableOpacity>
-          </View>
 
-          {/* Content */}
-          <ScrollView contentContainerStyle={{ padding: 16 }}>
-            {children}
-          </ScrollView>
+            {/* Content */}
+            <ScrollView 
+                contentContainerStyle={{ padding: 24 }}
+                showsVerticalScrollIndicator={false}
+            >
+                {children}
+            </ScrollView>
 
-          {/* Footer */}
-          {(primaryAction || secondaryAction) && (
-            <View className="p-4 border-t border-gray-200">
-              <View className="gap-3">
-                {primaryAction && (
-                  <ButtonPrimary
-                    title={primaryAction.label}
-                    onPress={primaryAction.onPress}
-                    disabled={primaryAction.disabled}
-                    loading={primaryAction.loading}
-                  />
-                )}
-                <ButtonSecondary
-                  title={secondaryAction?.label ?? 'Close'}
-                  onPress={secondaryAction?.onPress ?? onClose}
-                />
-              </View>
-            </View>
-          )}
-        </View>
-      </SafeAreaView>
+            {/* Footer */}
+            {(primaryAction || secondaryAction) && (
+                <View className="p-8 border-t border-zinc-900 bg-black">
+                <View className="gap-4">
+                    {primaryAction && (
+                    <ButtonPrimary
+                        title={primaryAction.label}
+                        onPress={primaryAction.onPress}
+                        disabled={primaryAction.disabled}
+                        loading={primaryAction.loading}
+                    />
+                    )}
+                    <ButtonSecondary
+                    title={secondaryAction?.label ?? 'DISMISS'}
+                    onPress={secondaryAction?.onPress ?? onClose}
+                    className="border-zinc-800"
+                    />
+                </View>
+                </View>
+            )}
+        </SafeAreaView>
+      </View>
     </Modal>
   );
 };

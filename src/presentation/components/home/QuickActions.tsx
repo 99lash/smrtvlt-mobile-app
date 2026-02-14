@@ -4,8 +4,7 @@ import {
   Unlock,
   AlertTriangle,
   Settings,
-  Smartphone,
-  RefreshCw
+  ChevronRight
 } from 'lucide-react-native';
 
 interface QuickActionsProps {
@@ -19,6 +18,31 @@ interface QuickActionsProps {
   isClearingAlarm?: boolean;
 }
 
+const ActionCard = ({ icon: Icon, title, subtitle, onPress, disabled, variant = 'dark' }: any) => (
+    <TouchableOpacity
+        onPress={onPress}
+        disabled={disabled}
+        className={`p-6 rounded-[24px] border flex-row items-center gap-4 ${
+            variant === 'light' 
+            ? 'bg-white border-white' 
+            : 'bg-zinc-950 border-zinc-900'
+        } ${disabled ? 'opacity-30' : 'active:bg-zinc-900'} mb-4`}
+    >
+        <View className={`w-14 h-14 rounded-2xl items-center justify-center ${variant === 'light' ? 'bg-black' : 'bg-zinc-900 border border-zinc-800'}`}>
+            <Icon size={24} color="white" strokeWidth={2.5} />
+        </View>
+        <View className="flex-1">
+            <Text className={`text-lg font-black uppercase tracking-tight leading-5 ${variant === 'light' ? 'text-black' : 'text-white'}`}>
+                {title}
+            </Text>
+            <Text className={`text-[10px] font-black uppercase tracking-widest mt-1 ${variant === 'light' ? 'text-zinc-500' : 'text-zinc-600'}`}>
+                {subtitle}
+            </Text>
+        </View>
+        <ChevronRight size={20} color={variant === 'light' ? '#E4E4E7' : '#27272A'} />
+    </TouchableOpacity>
+);
+
 export const QuickActions: React.FC<QuickActionsProps> = ({
   onRemoteUnlock,
   onClearAlarm,
@@ -29,114 +53,37 @@ export const QuickActions: React.FC<QuickActionsProps> = ({
   isUnlocking = false,
   isClearingAlarm = false,
 }) => {
-  const isUnlockDisabled = !isConnected || vaultStatus === 'unlocked' || isUnlocking;
-  const isAlarmDisabled = !hasActiveAlarm || isClearingAlarm;
-
   return (
-    <View
-      className="bg-surface-default dark:bg-surface-dark rounded-xl p-6 mb-4"
-      style={{
-        shadowColor: "#000",
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.15,
-        shadowRadius: 8,
-        elevation: 6,
-      }}
-    >
-      <View className="flex-row items-center gap-2 mb-4">
-        <Smartphone size={20} color="#2563eb" />
-        <Text className="text-text-dark dark:text-text-dark text-lg font-semibold">
-          Quick Actions
+    <View className="mb-4">
+      <View className="flex-row items-center gap-2 mb-6">
+        <View className="w-1.5 h-6 bg-white rounded-full" />
+        <Text className="text-white text-xl font-black uppercase tracking-tighter ml-1">
+            Shortcuts
         </Text>
       </View>
 
-      <View className="gap-3">
-        {/* Remote Unlock */}
-        <TouchableOpacity
-          className={`flex-row items-center gap-3 p-4 rounded-lg border ${
-            isUnlockDisabled
-              ? 'bg-surface-active/50 dark:bg-border-dark/50 border-border-default/50 dark:border-border-dark/50'
-              : 'bg-surface-active dark:bg-border-dark border-border-default dark:border-border-dark active:bg-surface-active/80 dark:active:bg-border-dark/80'
-          }`}
-          onPress={onRemoteUnlock}
-          disabled={isUnlockDisabled}
-          activeOpacity={0.7}
-        >
-          <View className={`p-2 rounded-full ${isUnlockDisabled ? 'bg-border-default/50 dark:bg-border-dark/50' : 'bg-primary/20'}`}>
-            <Unlock
-              size={16}
-              color={isUnlockDisabled ? '#64748b' : '#2563eb'}
-            />
-          </View>
-          <View className="flex-1">
-            <Text className={`text-sm font-medium ${isUnlockDisabled ? 'text-muted-default dark:text-muted-dark' : 'text-text-dark dark:text-text-dark'}`}>
-              Remote Unlock
-            </Text>
-            <Text className="text-xs text-muted-default dark:text-muted-dark mt-0.5">
-              {isUnlocking
-                ? 'Unlocking...'
-                : isUnlockDisabled
-                  ? vaultStatus === 'unlocked'
-                    ? 'Vault already unlocked'
-                    : 'Vault offline'
-                  : 'Unlock vault remotely'
-              }
-            </Text>
-          </View>
-          {isUnlocking && <RefreshCw size={16} color="#2563eb" className="animate-spin" />}
-        </TouchableOpacity>
-
-        {/* Clear Alarm */}
-        <TouchableOpacity
-          className={`flex-row items-center gap-3 p-4 rounded-lg border ${
-            isAlarmDisabled
-              ? 'bg-surface-active/50 dark:bg-border-dark/50 border-border-default/50 dark:border-border-dark/50'
-              : 'bg-surface-active dark:bg-border-dark border-border-default dark:border-border-dark active:bg-surface-active/80 dark:active:bg-border-dark/80'
-          }`}
-          onPress={onClearAlarm}
-          disabled={isAlarmDisabled}
-          activeOpacity={0.7}
-        >
-          <View className={`p-2 rounded-full ${isAlarmDisabled ? 'bg-border-default/50 dark:bg-border-dark/50' : 'bg-warning/20'}`}>
-            <AlertTriangle
-              size={16}
-              color={isAlarmDisabled ? '#64748b' : '#f59e0b'}
-            />
-          </View>
-          <View className="flex-1">
-            <Text className={`text-sm font-medium ${isAlarmDisabled ? 'text-muted-default dark:text-muted-dark' : 'text-text-dark dark:text-text-dark'}`}>
-              Clear Alarm
-            </Text>
-            <Text className="text-xs text-muted-default dark:text-muted-dark mt-0.5">
-              {isClearingAlarm
-                ? 'Clearing...'
-                : isAlarmDisabled
-                  ? 'No active alarms'
-                  : 'Dismiss security alarm'
-              }
-            </Text>
-          </View>
-          {isClearingAlarm && <RefreshCw size={16} color="#f59e0b" className="animate-spin" />}
-        </TouchableOpacity>
-
-        {/* Settings */}
-        <TouchableOpacity
-          className="flex-row items-center gap-3 p-4 rounded-lg border bg-surface-active dark:bg-border-dark border-border-default dark:border-border-dark active:bg-surface-active/80 dark:active:bg-border-dark/80"
-          onPress={onSettings}
-          activeOpacity={0.7}
-        >
-          <View className="p-2 rounded-full bg-primary/20">
-            <Settings size={16} color="#2563eb" />
-          </View>
-          <View className="flex-1">
-            <Text className="text-text-dark dark:text-text-dark text-sm font-medium">
-              Device Settings
-            </Text>
-            <Text className="text-xs text-muted-default dark:text-muted-dark mt-0.5">
-              Configure vault preferences
-            </Text>
-          </View>
-        </TouchableOpacity>
+      <View>
+        <ActionCard 
+            icon={Unlock}
+            title={isUnlocking ? "Wait..." : "Remote Unlock"}
+            subtitle="Access Control"
+            onPress={onRemoteUnlock}
+            disabled={!isConnected || vaultStatus === 'unlocked' || isUnlocking}
+            variant="light"
+        />
+        <ActionCard 
+            icon={AlertTriangle}
+            title="Clear Alarm"
+            subtitle="Security Reset"
+            onPress={onClearAlarm}
+            disabled={!hasActiveAlarm || isClearingAlarm}
+        />
+        <ActionCard 
+            icon={Settings}
+            title="System Config"
+            subtitle="Parameters"
+            onPress={onSettings}
+        />
       </View>
     </View>
   );

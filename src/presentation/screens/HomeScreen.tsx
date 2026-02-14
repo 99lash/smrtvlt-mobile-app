@@ -1,15 +1,14 @@
 import React, { useState } from 'react';
 import { View, Text, FlatList, RefreshControl, Alert } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
-import { CheckCircle, AlertTriangle } from 'lucide-react-native';
+import { Shield, Activity as ActivityIcon } from 'lucide-react-native';
 
 // Import existing UI components
 import { VaultGrid } from '../components/home/VaultGrid';
 import { AnalyticsCards } from '../components/home/AnalyticsCards';
 import { ActivityFeed } from '../components/home/ActivityFeed';
 import { QuickActions } from '../components/home/QuickActions';
-import { DateFilterDropdown } from '../components/home/DateFilterDropdown';
+import { DateFilterDropdown, DATE_FILTER_OPTIONS } from '../components/home/DateFilterDropdown';
 
 // Dummy Data
 const DUMMY_METRICS = {
@@ -28,9 +27,9 @@ const DUMMY_VAULTS = [
 ];
 
 const DUMMY_ACTIVITY = [
-  { id: 1, type: 'success', title: 'Remote Unlock', description: 'Main Vault was unlocked remotely', timestamp: new Date().toISOString(), user: 'John Doe' },
-  { id: 2, type: 'failed', title: 'Access Denied', description: 'Invalid PIN entered at Office Safe', timestamp: new Date(Date.now() - 3600000).toISOString(), user: 'Unknown' },
-  { id: 3, type: 'info', title: 'Settings Updated', description: 'Alarm sensitivity changed', timestamp: new Date(Date.now() - 7200000).toISOString(), user: 'Admin' }
+  { id: 1, type: 'success', title: 'Remote Unlock', description: 'Main Vault access granted.', timestamp: '2m ago', user: 'ADMIN' },
+  { id: 2, type: 'failed', title: 'Auth Failure', description: 'Invalid credentials detected.', timestamp: '1h ago', user: 'SYSTEM' },
+  { id: 3, type: 'info', title: 'Sync Done', description: 'System database updated.', timestamp: '3h ago', user: 'AUTO' }
 ];
 
 export default function HomeScreen({
@@ -44,7 +43,7 @@ export default function HomeScreen({
 }: any) {
   const navigation = useNavigation();
   const [isRefreshing, setIsRefreshing] = useState(false);
-  const [selectedDateFilter, setSelectedDateFilter] = useState('today');
+  const [selectedDateFilter, setSelectedDateFilter] = useState(DATE_FILTER_OPTIONS[0]);
 
   const refreshData = () => {
     setIsRefreshing(true);
@@ -55,128 +54,103 @@ export default function HomeScreen({
     console.log('🏠 HomeScreen: Selected vault:', vault.vault_name);
   };
 
-  const handleRemoteUnlock = () => {
-    console.log('Remote unlock pressed');
-    Alert.alert('Remote Unlock', 'Unlock simulated');
-  };
-
-  const handleClearAlarm = () => {
-    console.log('Clear alarm pressed');
-  };
-
   const renderHeader = () => (
-    <View className="px-6 pt-6">
-      <View>
-        <Text className="text-text-dark text-2xl font-bold">
-          🏠 SmartVault
-        </Text>
-        <Text className="text-text-dark text-base mt-1 opacity-70">
-          Welcome back, User!
-        </Text>
+    <View className="px-6 pt-12 bg-bg-default">
+      {/* Hero Section */}
+      <View className="mb-12">
+        <View className="flex-row items-center justify-between">
+            <View>
+                <Text className="text-zinc-600 text-[10px] font-black uppercase tracking-[5px] mb-1">
+                    System.Status.v2
+                </Text>
+                <Text className="text-white text-5xl font-black tracking-tighter leading-[48px]">
+                    DASHBOARD
+                </Text>
+            </View>
+            <View className="w-14 h-14 bg-white rounded-[20px] items-center justify-center shadow-2xl">
+                <Shield size={28} color="black" strokeWidth={2.5} />
+            </View>
+        </View>
+        
+        <View className="flex-row items-center gap-2 mt-6 p-3 bg-zinc-950 border border-zinc-900 rounded-2xl self-start">
+            <View className={`w-2 h-2 rounded-full ${isConnected ? 'bg-white shadow-[0_0_10px_white]' : 'bg-zinc-700'} animate-pulse`} />
+            <Text className="text-white text-[10px] font-black uppercase tracking-widest ml-1">
+                {isConnected ? 'Network: Active' : 'Network: Offline'}
+            </Text>
+        </View>
       </View>
 
-      {/* Date Filter */}
-      <View className="mt-4 mb-4">
-        <DateFilterDropdown
-          selectedOption={selectedDateFilter}
-          onOptionChange={setSelectedDateFilter}
-          disabled={isRefreshing}
+      {/* Primary Metrics */}
+      <View className="mb-12">
+        <AnalyticsCards
+            metrics={DUMMY_METRICS as any}
+            onRefresh={refreshData}
+            isRefreshing={isRefreshing}
         />
       </View>
 
-      {/* Dashboard Metrics */}
-      <AnalyticsCards
-        metrics={DUMMY_METRICS as any}
-        onRefresh={refreshData}
-        isRefreshing={isRefreshing}
-      />
+      {/* Vault Units */}
+      <View className="mb-12">
+        <VaultGrid
+            vaults={DUMMY_VAULTS as any}
+            onVaultPress={handleVaultPress}
+            isLoading={false}
+        />
+      </View>
 
-      {/* Vault Grid */}
-      <VaultGrid
-        vaults={DUMMY_VAULTS as any}
-        onVaultPress={handleVaultPress}
-        isLoading={false}
-      />
+      {/* Control Shortcuts */}
+      <View className="mb-12">
+        <QuickActions
+            onRemoteUnlock={() => Alert.alert('Command', 'Unlock request sent.')}
+            onClearAlarm={() => Alert.alert('Command', 'Alarm buffer cleared.')}
+            onSettings={() => navigation.navigate('Settings' as never)}
+            isConnected={isConnected}
+            vaultStatus={vaultStatus}
+            hasActiveAlarm={hasActiveAlarm}
+            isUnlocking={false}
+            isClearingAlarm={false}
+        />
+      </View>
 
-      {/* Quick Actions */}
-      <QuickActions
-        onRemoteUnlock={handleRemoteUnlock}
-        onClearAlarm={handleClearAlarm}
-        onSettings={() => navigation.navigate('Settings' as never)}
-        isConnected={isConnected}
-        vaultStatus={vaultStatus}
-        hasActiveAlarm={hasActiveAlarm}
-        isUnlocking={false}
-        isClearingAlarm={false}
-      />
+      {/* Log Feed */}
+      <View className="mb-12">
+        <ActivityFeed
+            activities={DUMMY_ACTIVITY as any}
+            onViewAll={() => navigation.navigate('Activity' as never)}
+            onRefresh={refreshData}
+            isLoading={false}
+            isRefreshing={isRefreshing}
+        />
+      </View>
 
-      {/* Recent Activity */}
-      <ActivityFeed
-        activities={DUMMY_ACTIVITY as any}
-        onViewAll={() => navigation.navigate('Activity' as never)}
-        onRefresh={refreshData}
-        isLoading={false}
-        isRefreshing={isRefreshing}
-      />
-
-      {/* Connection Status */}
-      <View
-        className="mb-6 p-4 bg-surface-default dark:bg-surface-dark rounded-xl border border-border-default dark:border-border-dark"
-        style={{
-          shadowColor: "#000",
-          shadowOffset: { width: 0, height: 4 },
-          shadowOpacity: 0.15,
-          shadowRadius: 8,
-          elevation: 6,
-        }}
-      >
-        <View className="flex-row items-center gap-3">
-          {isConnected ? (
-            <>
-              <CheckCircle size={20} color="#22c55e" />
-              <View className="flex-1">
-                <Text className="text-text-dark font-medium">
-                  Connected to Vault Network
-                </Text>
-                <Text className="text-text-dark text-sm mt-0.5 opacity-70">
-                  All features available
-                </Text>
-              </View>
-            </>
-          ) : (
-            <>
-              <AlertTriangle size={20} color="#eab308" />
-              <View className="flex-1">
-                <Text className="text-text-dark font-medium">
-                  Offline Mode
-                </Text>
-                <Text className="text-text-dark text-sm mt-0.5 opacity-70">
-                  Limited functionality available
-                </Text>
-              </View>
-            </>
-          )}
-        </View>
+      {/* Safety Info Footer */}
+      <View className="mb-24 px-2 items-center">
+         <View className="w-8 h-[1px] bg-zinc-800 mb-4" />
+         <Text className="text-zinc-700 text-[9px] font-black uppercase tracking-[3px] text-center">
+            Secured via RSA-4096 Protocol • v2.4.0
+         </Text>
       </View>
     </View>
   );
 
   return (
-    <SafeAreaView className="flex-1 bg-bg-default dark:bg-bg-dark" edges={['top', 'left', 'right']}>
+    <View className="flex-1 bg-bg-default">
       <FlatList
         data={[]}
         renderItem={null}
         ListHeaderComponent={renderHeader}
-        contentContainerStyle={{ paddingBottom: 120 }}
+        contentContainerStyle={{ paddingBottom: 160 }}
+        showsVerticalScrollIndicator={false}
         refreshControl={
           <RefreshControl
             refreshing={isRefreshing}
             onRefresh={refreshData}
-            colors={['#2563eb']}
-            tintColor="#2563eb"
+            colors={['#FFFFFF']}
+            tintColor="#FFFFFF"
+            progressBackgroundColor="#000000"
           />
         }
       />
-    </SafeAreaView>
+    </View>
   );
 }

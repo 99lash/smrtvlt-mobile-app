@@ -1,23 +1,9 @@
 import React, { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, ScrollView, Dimensions, Image, StyleSheet, ActivityIndicator } from 'react-native';
-
-// Placeholder for ButtonPrimary to keep it self-contained or import if refactored.
-// For now I'll implement a simple button here to ensure "no logic/libs" dependency for this file.
-const SimpleButton = ({ title, onPress, disabled, loading }: any) => (
-  <TouchableOpacity
-    onPress={onPress}
-    disabled={disabled || loading}
-    style={[styles.button, disabled && styles.buttonDisabled]}
-  >
-    {loading ? (
-      <ActivityIndicator color="white" />
-    ) : (
-      <Text style={styles.buttonText}>{title}</Text>
-    )}
-  </TouchableOpacity>
-);
+import { View, Text, TextInput, TouchableOpacity, ScrollView, Dimensions, StyleSheet, ActivityIndicator } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 const Login = ({ onLoginSuccess }: { onLoginSuccess?: () => void, onLoginError?: (err: string) => void }) => {
+  const insets = useSafeAreaInsets();
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -25,7 +11,6 @@ const Login = ({ onLoginSuccess }: { onLoginSuccess?: () => void, onLoginError?:
 
   const handleLogin = () => {
     setLoading(true);
-    console.log('Login pressed');
     setTimeout(() => {
       setLoading(false);
       onLoginSuccess?.();
@@ -41,28 +26,29 @@ const Login = ({ onLoginSuccess }: { onLoginSuccess?: () => void, onLoginError?:
       keyboardShouldPersistTaps="handled"
       showsVerticalScrollIndicator={false}
     >
-      <View style={[styles.background, { minHeight: height }]}>
+      <View style={[styles.background, { minHeight: height, paddingTop: insets.top, paddingBottom: insets.bottom }]}>
         <View style={styles.contentContainer}>
           
-          {/* Header Section */}
+          {/* Hero Section */}
           <View style={styles.logoContainer}>
-             {/* Placeholder for Logo */}
-             <View style={styles.logoPlaceholder}>
-                <Text style={styles.logoText}>Logo</Text>
+             <View style={styles.heroBox}>
+                <Text style={styles.heroText}>SV</Text>
              </View>
+             <Text style={styles.title}>SMARTVAULT</Text>
+             <Text style={styles.subtitle}>SECURE ACCESS PROTOCOL</Text>
           </View>
 
           {/* Login Card */}
           <View style={styles.card}>
             
-            {/* Username/Email Field */}
+            {/* Input Fields */}
             <View style={styles.inputContainer}>
+              <Text style={styles.label}>IDENTIFIER</Text>
               <View style={styles.inputWrapper}>
-                <Text style={styles.iconPlaceholder}>✉️</Text>
                 <TextInput
                   style={styles.input}
-                  placeholder="Enter your username or email"
-                  placeholderTextColor="#6B7280"
+                  placeholder="USERNAME / EMAIL"
+                  placeholderTextColor="#52525B"
                   value={username}
                   onChangeText={setUsername}
                   autoCapitalize="none"
@@ -70,14 +56,13 @@ const Login = ({ onLoginSuccess }: { onLoginSuccess?: () => void, onLoginError?:
               </View>
             </View>
 
-            {/* Password Field */}
             <View style={styles.inputContainer}>
+              <Text style={styles.label}>ACCESS KEY</Text>
               <View style={styles.inputWrapper}>
-                <Text style={styles.iconPlaceholder}>🔒</Text>
                 <TextInput
                   style={styles.input}
-                  placeholder="Enter your password"
-                  placeholderTextColor="#6B7280"
+                  placeholder="PASSWORD"
+                  placeholderTextColor="#52525B"
                   value={password}
                   onChangeText={setPassword}
                   secureTextEntry={!showPassword}
@@ -87,38 +72,36 @@ const Login = ({ onLoginSuccess }: { onLoginSuccess?: () => void, onLoginError?:
                   onPress={() => setShowPassword(!showPassword)}
                   style={styles.eyeIcon}
                 >
-                  <Text>{showPassword ? '👁️‍🗨️' : '👁️'}</Text>
+                  <Text style={styles.eyeText}>{showPassword ? 'HIDE' : 'SHOW'}</Text>
                 </TouchableOpacity>
               </View>
             </View>
 
-            {/* Forgot Password Link */}
             <TouchableOpacity
               style={styles.forgotPassword}
-              onPress={() => console.log('Forgot Password pressed')}
+              onPress={() => {}}
             >
-              <Text style={styles.linkText}>
-                Forgot Password?
-              </Text>
+              <Text style={styles.linkText}>RECOVER ACCESS</Text>
             </TouchableOpacity>
 
-            {/* Login Button */}
-            <SimpleButton
-              title="Sign In"
-              onPress={handleLogin}
-              loading={loading}
-              disabled={loading || !username || !password}
-            />
+            {/* Action Button */}
+            <TouchableOpacity
+                onPress={handleLogin}
+                disabled={loading || !username || !password}
+                style={[styles.button, (loading || !username || !password) && styles.buttonDisabled]}
+            >
+                {loading ? (
+                <ActivityIndicator color="black" />
+                ) : (
+                <Text style={styles.buttonText}>AUTHENTICATE</Text>
+                )}
+            </TouchableOpacity>
 
-            {/* Sign Up Link */}
+            {/* Signup */}
             <View style={styles.signupContainer}>
-              <Text style={styles.mutedText}>
-                Don't have an account?{' '}
-              </Text>
-              <TouchableOpacity onPress={() => console.log('Create Account pressed')}>
-                <Text style={[styles.linkText, styles.underline]}>
-                  Create Account
-                </Text>
+              <Text style={styles.mutedText}>NO CREDENTIALS? </Text>
+              <TouchableOpacity onPress={() => {}}>
+                <Text style={styles.linkTextBold}>ENROLL NOW</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -131,104 +114,125 @@ const Login = ({ onLoginSuccess }: { onLoginSuccess?: () => void, onLoginError?:
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    backgroundColor: '#000000',
   },
   background: {
     flex: 1,
-    backgroundColor: '#f3f4f6', // bg-default
+    backgroundColor: '#000000',
   },
   contentContainer: {
     flex: 1,
     justifyContent: 'center',
-    paddingHorizontal: 24,
-    paddingVertical: 32,
-    backgroundColor: '#ffffff', // bg-surface-default ??? usually surface is white
+    paddingHorizontal: 32,
   },
   logoContainer: {
     alignItems: 'center',
-    marginBottom: 24,
+    marginBottom: 48,
   },
-  logoPlaceholder: {
-    width: 100,
-    height: 100,
-    backgroundColor: '#e5e7eb',
+  heroBox: {
+    width: 80,
+    height: 80,
+    backgroundColor: '#FFFFFF',
     justifyContent: 'center',
     alignItems: 'center',
-    borderRadius: 50,
+    borderRadius: 24,
+    marginBottom: 20,
   },
-  logoText: {
-    fontWeight: 'bold',
-    color: '#6b7280',
+  heroText: {
+    fontSize: 32,
+    fontWeight: '900',
+    color: '#000000',
+  },
+  title: {
+    fontSize: 28,
+    fontWeight: '900',
+    color: '#FFFFFF',
+    letterSpacing: -1,
+  },
+  subtitle: {
+    fontSize: 10,
+    fontWeight: '700',
+    color: '#71717A',
+    letterSpacing: 4,
+    marginTop: 4,
   },
   card: {
-    backgroundColor: '#ffffff',
-    borderRadius: 24,
-    padding: 32,
-    borderColor: '#e5e7eb',
-    borderWidth: 1,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.15,
-    shadowRadius: 8,
-    elevation: 6,
+    backgroundColor: '#000000',
   },
   inputContainer: {
     marginBottom: 24,
+  },
+  label: {
+    color: '#FFFFFF',
+    fontSize: 10,
+    fontWeight: '900',
+    letterSpacing: 2,
+    marginBottom: 8,
+    marginLeft: 4,
   },
   inputWrapper: {
     flexDirection: 'row',
     alignItems: 'center',
     borderRadius: 16,
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    backgroundColor: '#f9fafb', // light gray
-    borderColor: '#e5e7eb',
+    paddingHorizontal: 20,
+    height: 64,
+    backgroundColor: '#18181B',
     borderWidth: 1,
-  },
-  iconPlaceholder: {
-    fontSize: 20,
-    color: '#6B7280',
+    borderColor: '#27272A',
   },
   input: {
     flex: 1,
-    marginLeft: 12,
-    fontSize: 16,
-    color: '#1f2937', // text-dark
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#FFFFFF',
   },
   eyeIcon: {
     marginLeft: 12,
-    padding: 4,
+  },
+  eyeText: {
+    color: '#FFFFFF',
+    fontSize: 10,
+    fontWeight: '900',
   },
   forgotPassword: {
-    marginBottom: 32,
-    alignSelf: 'flex-end',
+    marginBottom: 40,
+    alignSelf: 'center',
   },
   linkText: {
-    color: '#3b82f6', // primary-default
-    fontSize: 14,
-    fontWeight: '600',
+    color: '#71717A',
+    fontSize: 11,
+    fontWeight: '700',
+    letterSpacing: 1,
   },
-  underline: {
+  linkTextBold: {
+    color: '#FFFFFF',
+    fontSize: 11,
+    fontWeight: '900',
+    letterSpacing: 1,
     textDecorationLine: 'underline',
   },
   button: {
-    backgroundColor: '#3b82f6',
-    borderRadius: 24,
-    paddingVertical: 16,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 20,
+    height: 64,
     alignItems: 'center',
-    marginBottom: 24,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 2,
+    justifyContent: 'center',
+    marginBottom: 32,
+    shadowColor: "#FFFFFF",
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.2,
+    shadowRadius: 10,
+    elevation: 5,
   },
   buttonDisabled: {
-    opacity: 0.5,
+    backgroundColor: '#27272A',
+    shadowOpacity: 0,
   },
   buttonText: {
-    color: 'white',
+    color: '#000000',
     fontSize: 16,
-    fontWeight: '600',
+    fontWeight: '900',
+    letterSpacing: 1,
   },
   signupContainer: {
     flexDirection: 'row',
@@ -236,8 +240,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   mutedText: {
-    color: '#6b7280',
-    fontSize: 14,
+    color: '#71717A',
+    fontSize: 11,
+    fontWeight: '700',
   },
 });
 

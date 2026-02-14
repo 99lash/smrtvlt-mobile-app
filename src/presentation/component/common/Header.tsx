@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { View, Text, TouchableOpacity } from 'react-native';
 import { UserCircle } from 'lucide-react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { HEADER_CONSTANTS } from './HeaderConstants';
 
 interface HeaderProps {
@@ -25,15 +26,22 @@ export const Header: React.FC<HeaderProps> = ({
   onProfilePress,
   onSettingsPress,
 }) => {
-  const displayName = userName || HEADER_CONSTANTS.DEFAULT_USER_NAME;
-  const displayInitials = userInitials || HEADER_CONSTANTS.DEFAULT_USER_INITIALS;
+  const insets = useSafeAreaInsets();
 
   return (
-    <View className={`flex-row items-center justify-between ${containerClassName}`}>
+    <View 
+      style={{ paddingTop: Math.max(insets.top, 16) }}
+      className={`flex-row items-center justify-between px-6 pb-4 bg-black border-b border-zinc-900 ${containerClassName}`}
+    >
       {/* Title on the left */}
-      <Text className='text-text-default text-l font-semibold'>
-        SMARTVAULT
-      </Text>
+      <View>
+        <Text className='text-white text-xl font-black tracking-tighter'>
+            SMARTVAULT
+        </Text>
+        <Text className='text-zinc-500 text-[8px] font-bold uppercase tracking-[3px]'>
+            Terminal
+        </Text>
+      </View>
       
       {/* Right side container */}
       <View className="flex-row items-center gap-3">
@@ -46,16 +54,11 @@ export const Header: React.FC<HeaderProps> = ({
         {/* User Icon Button */}
         <TouchableOpacity
           onPress={() => console.log('User profile pressed')}
-          className="w-10 h-10 rounded-full bg-primary-default items-center justify-center"
-          style={{
-            borderWidth: 1,
-            borderColor: HEADER_CONSTANTS.BORDER_COLOR,
-          }}
+          className="w-10 h-10 rounded-xl bg-white items-center justify-center border border-white"
           accessible={true}
           accessibilityRole="button"
-          accessibilityLabel={HEADER_CONSTANTS.USER_BUTTON_ACCESSIBILITY_LABEL}
         >
-          <UserCircle size={HEADER_CONSTANTS.USER_ICON_SIZE} color={HEADER_CONSTANTS.ICON_COLOR} />
+          <UserCircle size={22} color="#000000" strokeWidth={2.5} />
         </TouchableOpacity>
       </View>
     </View>

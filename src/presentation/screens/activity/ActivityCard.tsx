@@ -1,72 +1,62 @@
 import React from 'react';
 import { View, Text } from 'react-native';
-import { ActivityLog, ActivityStatus } from '../../../types/ActivityTypes';
-import { ACTIVITY_COLORS, ACTIVITY_STATUS_LABELS } from '../../../utils/activityConstants';
-import { StatusIcon } from './StatusIcon';
-import { EventIcon } from './EventIcon';
+import { ActivityLog } from '../../../types/ActivityTypes';
 
 interface ActivityCardProps {
   log: ActivityLog;
 }
 
 export const ActivityCard: React.FC<ActivityCardProps> = React.memo(({ log }) => {
-  const getStatusColor = (): string => {
-    switch (log.status) {
-      case 'success':
-        return 'bg-green-500';
-      case 'failed':
-        return 'bg-red-500';
-      case 'warning':
-        return 'bg-orange-500';
-      default:
-        return 'bg-green-500';
-    }
-  };
-
-  const getStatusText = (): string => {
-    return ACTIVITY_STATUS_LABELS[log.status];
-  };
+  const isFailed = log.status === 'failed';
 
   return (
-    <View className="bg-bg-default rounded-lg p-4 mb-3"
-    style={{
-      shadowColor: "#000",
-      shadowOffset: { width: 0, height: 4 },
-      shadowOpacity: 0.15,
-      shadowRadius: 8,
-      elevation: 6,
-      borderRadius: 24,
-      paddingVertical: 12,
-      paddingHorizontal: 16,
-    }}
+    <View 
+      className="bg-surface-default rounded-3xl p-6 mb-4 border border-zinc-800 shadow-xl"
+      style={{
+        shadowColor: "#000",
+        shadowOffset: { width: 0, height: 6 },
+        shadowOpacity: 0.4,
+        shadowRadius: 12,
+        elevation: 10,
+      }}
     >
       <View className="flex-row items-start">
-        <View className="flex-1 ml-2">
-          <View className="flex-row items-center justify-between mb-1">
-            <Text className="text-text-dark text-base font-medium">
+        <View className="flex-1">
+          {/* Header Row */}
+          <View className="flex-row items-center justify-between mb-3">
+            <Text className="text-text-default text-xl font-black uppercase tracking-tighter">
               {log.title}
             </Text>
-            <View className={`${getStatusColor()} px-2 py-1 rounded-full`}>
-              <Text className="text-white text-xs font-medium">
-                {getStatusText()}
+            <View className={`${isFailed ? 'bg-white' : 'bg-zinc-800'} px-3 py-1 rounded-lg`}>
+              <Text className={`${isFailed ? 'text-black' : 'text-white'} text-[10px] font-black uppercase tracking-widest`}>
+                {log.status}
               </Text>
             </View>
           </View>
-          <Text className="text-text-dark text-xs mb-1">
+
+          {/* Description */}
+          <Text className="text-muted-default text-sm font-medium mb-4 leading-5">
             {log.description}
           </Text>
-          <View className="flex-row items-center justify-between">
+
+          {/* Footer Row */}
+          <View className="flex-row items-center justify-between border-t border-zinc-800 pt-4">
             <View className="flex-row items-center">
-              <View className="w-6 h-6 bg-blue-500 rounded-full items-center justify-center mr-2">
-                <Text className="text-white text-xs font-bold">
+              <View className="w-10 h-10 bg-black border border-zinc-700 rounded-full items-center justify-center mr-3">
+                <Text className="text-white text-xs font-black">
                   {log.user.initials}
                 </Text>
               </View>
-              <Text className="text-text-dark text-sm">
-                {log.user.name}
-              </Text>
+              <View>
+                <Text className="text-text-default text-sm font-black uppercase tracking-tighter">
+                    {log.user.name}
+                </Text>
+                <Text className="text-zinc-600 text-[10px] font-bold uppercase tracking-widest mt-0.5">
+                    Authorized User
+                </Text>
+              </View>
             </View>
-            <Text className="text-text-dark text-sm opacity-70">
+            <Text className="text-zinc-500 text-[10px] font-black uppercase">
               {log.timestamp}
             </Text>
           </View>

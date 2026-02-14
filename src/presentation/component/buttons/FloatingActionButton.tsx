@@ -16,17 +16,17 @@ export const FloatingActionButton: React.FC<FloatingActionButtonProps> = ({
   return (
     <TouchableOpacity
       onPress={onPress}
-      className={`absolute bottom-32 right-6 bg-primary-default rounded-full items-center justify-center ${className}`}
+      className={`absolute bottom-32 right-6 bg-white rounded-full items-center justify-center ${className}`}
       style={{
         width: size,
         height: size,
-        elevation: 8,
+        elevation: 12,
         shadowColor: '#000',
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.3,
-        shadowRadius: 8,
+        shadowOffset: { width: 0, height: 6 },
+        shadowOpacity: 0.4,
+        shadowRadius: 12,
         borderWidth: 1,
-        borderColor: 'rgba(255, 255, 255, 0.1)',
+        borderColor: 'rgba(0, 0, 0, 0.1)',
       }}
       accessible={true}
       accessibilityRole="button"
@@ -34,7 +34,7 @@ export const FloatingActionButton: React.FC<FloatingActionButtonProps> = ({
       accessibilityHint="Opens a menu with join and invite options"
     >
       <View className="items-center justify-center">
-        <Plus size={24} color="#ffffff" />
+        <Plus size={28} color="#000000" strokeWidth={3} />
       </View>
     </TouchableOpacity>
   );

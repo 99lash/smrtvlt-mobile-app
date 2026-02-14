@@ -36,19 +36,19 @@ export const DateFilterDropdown: React.FC<DateFilterDropdownProps> = ({
 
   const renderOption = ({ item }: { item: DateFilterOption }) => (
     <TouchableOpacity
-      className={`p-4 border-b border-border-light dark:border-border-dark ${
+      className={`p-5 border-b border-border-default ${
         item.key === selectedOption.key
-          ? 'bg-primary-light/10 dark:bg-primary-dark/10'
-          : 'bg-surface-default dark:bg-surface-dark'
+          ? 'bg-primary-default/20'
+          : 'bg-surface-default'
       }`}
       onPress={() => handleOptionSelect(item)}
       disabled={disabled}
     >
       <Text
-        className={`text-sm font-medium ${
+        className={`text-base font-bold ${
           item.key === selectedOption.key
-            ? 'text-primary'
-            : 'text-text-dark dark:text-text-default'
+            ? 'text-primary-default'
+            : 'text-text-default'
         }`}
       >
         {item.label}
@@ -59,19 +59,20 @@ export const DateFilterDropdown: React.FC<DateFilterDropdownProps> = ({
   return (
     <>
       <TouchableOpacity
-        className={`flex-row items-center justify-between p-3 rounded-lg border border-border-light dark:border-border-dark bg-surface-default dark:bg-surface-dark ${
+        className={`flex-row items-center justify-between p-4 rounded-2xl border border-border-default bg-surface-default ${
           disabled ? 'opacity-50' : ''
         }`}
         onPress={() => !disabled && setIsVisible(true)}
         disabled={disabled}
+        activeOpacity={0.7}
       >
-        <View className="flex-row items-center gap-2">
-          <Calendar size={16} color="#64748b" />
-          <Text className="text-text-dark dark:text-text-default text-sm font-medium">
+        <View className="flex-row items-center gap-3">
+          <Calendar size={18} color="#1055C9" />
+          <Text className="text-text-default text-sm font-bold tracking-wide">
             {selectedOption.label}
           </Text> 
         </View>
-        <ChevronDown size={16} color="#64748b" />
+        <ChevronDown size={18} color="#64748b" />
       </TouchableOpacity>
 
       <CustomModal
@@ -79,13 +80,15 @@ export const DateFilterDropdown: React.FC<DateFilterDropdownProps> = ({
         onClose={() => setIsVisible(false)}
         title="Select Time Range"
       >
-        <FlatList
-          data={DATE_FILTER_OPTIONS}
-          renderItem={renderOption}
-          keyExtractor={(item) => item.key}
-          showsVerticalScrollIndicator={false}
-          className="max-h-64"
-        />
+        <View className="bg-bg-default rounded-3xl overflow-hidden">
+            <FlatList
+            data={DATE_FILTER_OPTIONS}
+            renderItem={renderOption}
+            keyExtractor={(item) => item.key}
+            showsVerticalScrollIndicator={false}
+            scrollEnabled={false} // CustomModal already has ScrollView
+            />
+        </View>
       </CustomModal>
     </>
   );
