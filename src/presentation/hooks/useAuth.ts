@@ -73,9 +73,9 @@ export const useAuth = () => {
     }
   };
 
-  const login = async (username: string, password: string) => {
+  const login = async (email: string, password: string) => {
     try {
-      await AuthService.login({ username, password });
+      await AuthService.login({ email, password });
       // Don't call checkAuthStatus here - let useLogin handle the complete flow
       return true;
     } catch (error) {
@@ -86,7 +86,7 @@ export const useAuth = () => {
 
   const logout = async () => {
     try {
-      await StorageService.removeAccessToken();
+      await AuthService.logout();
       setAuthState({
         isAuthenticated: false,
         isLoading: false,

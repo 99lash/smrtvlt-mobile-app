@@ -25,7 +25,7 @@ export class UserDataService {
         return null;
       }
 
-      const userData = await ApiService.get<User>('/users/test/me', token);
+      const userData = await ApiService.get<User>(API_CONFIG.ENDPOINTS.USERS.ME, token);
 
       if (__DEV__) {
         console.log('UserDataService - Successfully fetched current user:', userData);

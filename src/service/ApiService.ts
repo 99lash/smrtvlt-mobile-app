@@ -13,6 +13,45 @@ export class ApiError extends Error {
 }
 
 export class ApiService {
+  private static isRefreshing = false;
+  private static refreshPromise: Promise<boolean> | null = null;
+
+  /**
+   * Attempt to refresh the access token. Deduplicates concurrent refresh calls.
+   * Returns true if refresh succeeded.
+   */
+  private static refreshHandler: (() => Promise<void>) | null = null;
+
+  /**
+   * Register a token refresh handler (called by AuthService on init to avoid circular deps)
+   */
+  public static setRefreshHandler(handler: () => Promise<void>): void {
+    this.refreshHandler = handler;
+  }
+
+  private static async tryRefreshToken(): Promise<boolean> {
+    if (!this.refreshHandler) return false;
+
+    if (this.isRefreshing && this.refreshPromise) {
+      return this.refreshPromise;
+    }
+
+    this.isRefreshing = true;
+    this.refreshPromise = (async () => {
+      try {
+        await this.refreshHandler!();
+        return true;
+      } catch {
+        return false;
+      } finally {
+        this.isRefreshing = false;
+        this.refreshPromise = null;
+      }
+    })();
+
+    return this.refreshPromise;
+  }
+
   /**
    * Build full URL from endpoint
    */
@@ -79,12 +118,13 @@ export class ApiService {
   }
 
   /**
-   * Generic request handler
+   * Generic request handler with automatic 401 retry via token refresh
    */
   private static async request<T>(
     endpoint: string,
     options: RequestInit,
-    logPrefix: string
+    logPrefix: string,
+    isRetry = false
   ): Promise<T> {
     try {
       const url = this.buildUrl(endpoint);
@@ -94,6 +134,25 @@ export class ApiService {
       }
 
       const response = await fetch(url, options);
+
+      if (response.status === 401 && !isRetry) {
+        if (__DEV__) {
+          console.log('[API] 401 received, attempting token refresh...');
+        }
+
+        const refreshed = await this.tryRefreshToken();
+        if (refreshed) {
+          // Rebuild auth headers with new token and retry
+          const newToken = await StorageService.getAccessToken();
+          if (newToken && options.headers) {
+            const headers = { ...(options.headers as Record<string, string>) };
+            headers['Authorization'] = `Bearer ${newToken}`;
+            options.headers = headers;
+          }
+          return this.request<T>(endpoint, options, logPrefix, true);
+        }
+      }
+
       return await this.handleResponse<T>(response, endpoint);
 
     } catch (error) {

@@ -1,20 +1,24 @@
 import React, { useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, ScrollView, Dimensions, StyleSheet, ActivityIndicator } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useLogin } from '../../../hooks/useLogin';
 
-const Login = ({ onLoginSuccess }: { onLoginSuccess?: () => void, onLoginError?: (err: string) => void }) => {
+const Login = ({ onLoginSuccess, onLoginError }: { onLoginSuccess?: () => void, onLoginError?: (err: string) => void }) => {
   const insets = useSafeAreaInsets();
-  const [username, setUsername] = useState('');
+  const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
-  const [loading, setLoading] = useState(false);
+  const { login, isLoading: loading, error } = useLogin();
 
-  const handleLogin = () => {
-    setLoading(true);
-    setTimeout(() => {
-      setLoading(false);
-      onLoginSuccess?.();
-    }, 1000);
+  const handleLogin = async () => {
+    try {
+      const success = await login(email, password);
+      if (success) {
+        onLoginSuccess?.();
+      }
+    } catch (err: any) {
+      onLoginError?.(err.message || 'Login failed');
+    }
   };
 
   const { height } = Dimensions.get('window');
@@ -47,11 +51,13 @@ const Login = ({ onLoginSuccess }: { onLoginSuccess?: () => void, onLoginError?:
               <View style={styles.inputWrapper}>
                 <TextInput
                   style={styles.input}
-                  placeholder="USERNAME / EMAIL"
+                  placeholder="EMAIL"
                   placeholderTextColor="#52525B"
-                  value={username}
-                  onChangeText={setUsername}
+                  value={email}
+                  onChangeText={setEmail}
                   autoCapitalize="none"
+                  keyboardType="email-address"
+                  autoComplete="email"
                 />
               </View>
             </View>
@@ -77,6 +83,12 @@ const Login = ({ onLoginSuccess }: { onLoginSuccess?: () => void, onLoginError?:
               </View>
             </View>
 
+            {error && (
+              <View style={styles.errorContainer}>
+                <Text style={styles.errorText}>{error}</Text>
+              </View>
+            )}
+
             <TouchableOpacity
               style={styles.forgotPassword}
               onPress={() => {}}
@@ -87,8 +99,8 @@ const Login = ({ onLoginSuccess }: { onLoginSuccess?: () => void, onLoginError?:
             {/* Action Button */}
             <TouchableOpacity
                 onPress={handleLogin}
-                disabled={loading || !username || !password}
-                style={[styles.button, (loading || !username || !password) && styles.buttonDisabled]}
+                disabled={loading || !email || !password}
+                style={[styles.button, (loading || !email || !password) && styles.buttonDisabled]}
             >
                 {loading ? (
                 <ActivityIndicator color="black" />
@@ -243,6 +255,20 @@ const styles = StyleSheet.create({
     color: '#71717A',
     fontSize: 11,
     fontWeight: '700',
+  },
+  errorContainer: {
+    backgroundColor: '#2D1215',
+    borderRadius: 12,
+    padding: 12,
+    marginBottom: 16,
+    borderWidth: 1,
+    borderColor: '#5C2328',
+  },
+  errorText: {
+    color: '#F87171',
+    fontSize: 12,
+    fontWeight: '600',
+    textAlign: 'center',
   },
 });
 

@@ -2,9 +2,10 @@ import React, { createContext, useContext, ReactNode } from 'react';
 import { useAuth, AuthState } from '../hooks/useAuth';
 
 interface AuthContextType extends AuthState {
-  login: (username: string, password: string) => Promise<boolean>;
+  login: (email: string, password: string) => Promise<boolean>;
   logout: () => Promise<void>;
   checkAuthStatus: () => Promise<void>;
+  updateAuthState: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);

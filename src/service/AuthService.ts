@@ -1,99 +1,122 @@
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import { UserRegistrationRequest, UserRegistrationResponse, UserLoginRequest, UserLoginResponse } from '../types/UserTypes';
+import { UserLoginRequest, UserLoginResponse } from '../types/UserTypes';
 import { API_CONFIG } from '../config/api';
 import { StorageService } from './StorageService';
-import { NetworkService } from './NetworkService';
 import { ApiService } from './ApiService';
 
 /**
  * Authentication Service
  *
- * Handles user authentication, registration, and token management.
- * Follows Single Responsibility Principle - only handles auth concerns.
+ * Handles user authentication, token management, and session lifecycle.
+ * Updated to work with /api/v1/auth/* backend endpoints.
  */
 export class AuthService {
-  private static readonly API_TIMEOUT = 10000; // 10 seconds
+  private static _initialized = false;
 
   /**
-   * Register a new user account
-   * @param registrationData - User registration data
-   * @returns Promise<UserRegistrationResponse>
-   * @throws Error with specific message based on API response
+   * Register the refresh handler with ApiService (breaks circular dependency)
    */
-  static async register(registrationData: UserRegistrationRequest): Promise<UserRegistrationResponse> {
-    if (__DEV__) {
-      console.log('AuthService - Registration attempt for:', registrationData.username);
-    }
-
-    // Test basic connectivity first using NetworkService
-    await NetworkService.testConnectivity();
-
-    try {
-      const responseData = await ApiService.post<UserRegistrationResponse>(
-        '/users/register',
-        registrationData
-      );
-
-      if (__DEV__) {
-        console.log('AuthService - Registration successful for:', registrationData.username);
-      }
-
-      return responseData;
-
-    } catch (error) {
-      this.logError('Registration', error, { registrationData });
-      throw this.processError(error, 'registration');
-    }
+  static initialize(): void {
+    if (this._initialized) return;
+    ApiService.setRefreshHandler(() => AuthService.refreshToken().then(() => {}));
+    this._initialized = true;
   }
 
   /**
    * Authenticate user login
-   * @param loginData - User login credentials
-   * @returns Promise<UserLoginResponse>
-   * @throws Error with specific message based on API response
+   * Backend expects OAuth2 form-encoded: username (email) + password
+   * Returns access_token + refresh_token (JWT)
    */
   static async login(loginData: UserLoginRequest): Promise<UserLoginResponse> {
     if (__DEV__) {
-      console.log('AuthService - Login attempt for:', loginData.username);
+      console.log('AuthService - Login attempt for:', loginData.email);
     }
 
     try {
-      // Create form data for login (backend expects form-encoded data)
-      const formData = new URLSearchParams();
-      formData.append('username', loginData.username);
-      formData.append('password', loginData.password);
-
-      const responseData = await ApiService.postForm<UserLoginResponse>(
-        '/users/login',
-        formData,
-        { 'Content-Type': 'application/x-www-form-urlencoded' }
+      const responseData = await ApiService.postPublic<UserLoginResponse>(
+        API_CONFIG.ENDPOINTS.AUTH.LOGIN,
+        { email: loginData.email, password: loginData.password }
       );
 
-      // Validate response structure for successful login
-      if (!responseData || !responseData.access_token || !responseData.token_type) {
+      if (!responseData || !responseData.access_token || !responseData.refresh_token) {
         throw new Error('Invalid response format from server');
       }
 
-      if (__DEV__) {
-        console.log('AuthService - Login successful for:', loginData.username);
-      }
+      // Store both tokens
+      await StorageService.setAccessToken(responseData.access_token);
+      await StorageService.setRefreshToken(responseData.refresh_token);
 
-      // Store the token after successful login
-      if (responseData.access_token) {
-        await StorageService.setAccessToken(responseData.access_token);
+      if (__DEV__) {
+        console.log('AuthService - Login successful, tokens stored');
       }
 
       return responseData;
-
     } catch (error) {
-      this.logError('Login', error, { username: loginData.username });
+      this.logError('Login', error, { email: loginData.email });
       throw this.processError(error, 'login');
     }
   }
 
   /**
+   * Refresh the access token using the stored refresh token
+   * Returns a new token pair (atomic rotation — old refresh token is invalidated)
+   */
+  static async refreshToken(): Promise<UserLoginResponse> {
+    const refreshToken = await StorageService.getRefreshToken();
+    if (!refreshToken) {
+      throw new Error('No refresh token available');
+    }
+
+    try {
+      const responseData = await ApiService.postPublic<UserLoginResponse>(
+        API_CONFIG.ENDPOINTS.AUTH.REFRESH,
+        { refresh_token: refreshToken }
+      );
+
+      if (!responseData || !responseData.access_token || !responseData.refresh_token) {
+        throw new Error('Invalid refresh response format');
+      }
+
+      // Store rotated tokens
+      await StorageService.setAccessToken(responseData.access_token);
+      await StorageService.setRefreshToken(responseData.refresh_token);
+
+      if (__DEV__) {
+        console.log('AuthService - Token refresh successful');
+      }
+
+      return responseData;
+    } catch (error) {
+      // Refresh failed — clear all tokens (session expired)
+      await StorageService.removeAllTokens();
+      this.logError('Token Refresh', error);
+      throw this.processError(error, 'token refresh');
+    }
+  }
+
+  /**
+   * Logout — revoke refresh token on backend and clear local storage
+   */
+  static async logout(): Promise<void> {
+    try {
+      const refreshToken = await StorageService.getRefreshToken();
+      if (refreshToken) {
+        await ApiService.postPublic(
+          API_CONFIG.ENDPOINTS.AUTH.LOGOUT,
+          { refresh_token: refreshToken }
+        );
+      }
+    } catch (error) {
+      // Best-effort — still clear local tokens even if backend call fails
+      if (__DEV__) {
+        console.warn('AuthService - Backend logout failed, clearing local tokens anyway', error);
+      }
+    } finally {
+      await StorageService.removeAllTokens();
+    }
+  }
+
+  /**
    * Get stored authentication token
-   * @returns Promise<string | null>
    */
   static async getStoredToken(): Promise<string | null> {
     try {
@@ -107,87 +130,27 @@ export class AuthService {
   }
 
   /**
-   * Store authentication token
-   * @param token - JWT token to store
-   * @returns Promise<void>
-   */
-  static async storeToken(token: string): Promise<void> {
-    try {
-      await AsyncStorage.setItem(API_CONFIG.STORAGE_KEYS.ACCESS_TOKEN, token);
-      if (__DEV__) {
-        console.log('AuthService - Token stored successfully');
-      }
-    } catch (error) {
-      if (__DEV__) {
-        console.error('AuthService - Error storing token:', error);
-      }
-      throw new Error('Failed to store authentication token');
-    }
-  }
-
-  /**
-   * Clear stored authentication token
-   * @returns Promise<void>
+   * Clear all stored tokens
    */
   static async clearToken(): Promise<void> {
     try {
-      await StorageService.removeAccessToken();
+      await StorageService.removeAllTokens();
       if (__DEV__) {
-        console.log('AuthService - Token cleared successfully');
+        console.log('AuthService - Tokens cleared successfully');
       }
     } catch (error) {
       if (__DEV__) {
-        console.error('AuthService - Error clearing token:', error);
+        console.error('AuthService - Error clearing tokens:', error);
       }
     }
   }
 
   /**
-   * Check if user is authenticated
-   * @returns Promise<boolean>
+   * Check if user is authenticated (has a stored access token)
    */
   static async isAuthenticated(): Promise<boolean> {
     const token = await this.getStoredToken();
     return !!token;
-  }
-
-
-  /**
-   * Handle registration-specific errors
-   * @private
-   */
-  private static handleRegistrationError(status: number, responseData: UserRegistrationResponse): never {
-    switch (status) {
-      case 409:
-        throw new Error('User already exists with this username or email');
-      case 422:
-        throw new Error('Password and confirmation password do not match');
-      case 400:
-        throw new Error('Invalid registration data provided');
-      case 500:
-        throw new Error('Server error occurred during registration');
-      default:
-        const errorMessage = responseData.detail || 'Registration failed';
-        throw new Error(errorMessage);
-    }
-  }
-
-  /**
-   * Handle login-specific errors
-   * @private
-   */
-  private static handleLoginError(status: number, responseData: any): never {
-    switch (status) {
-      case 401:
-        throw new Error('Invalid username or password');
-      case 400:
-        throw new Error('Invalid login credentials provided');
-      case 500:
-        throw new Error('Server error occurred during login');
-      default:
-        const errorMessage = (responseData && responseData.detail) || 'Login failed';
-        throw new Error(errorMessage);
-    }
   }
 
   /**
@@ -197,22 +160,8 @@ export class AuthService {
   private static logError(operation: string, error: any, context?: any): void {
     if (__DEV__) {
       console.error(`AuthService - ${operation} error:`, error);
-
-      if (error instanceof Error) {
-        console.error(`AuthService - Error type:`, error.constructor.name);
-        console.error(`AuthService - Error message:`, error.message);
-        console.error(`AuthService - Error stack:`, error.stack);
-
-        if (error.name === 'AbortError' || error.message.includes('timeout')) {
-          console.error(`AuthService - This appears to be a timeout error`);
-          console.error(`AuthService - The request timed out after`, this.API_TIMEOUT, 'ms');
-        }
-      } else {
-        console.error('AuthService - Non-Error object thrown:', error);
-      }
-
       if (context) {
-        console.error('AuthService - Operation context:', context);
+        console.error('AuthService - Context:', context);
       }
     }
   }
@@ -225,11 +174,6 @@ export class AuthService {
     if (error instanceof Error) {
       return error;
     }
-
-    if (error instanceof TypeError && error.message.includes('fetch')) {
-      return new Error(`Network error occurred during ${operation}`);
-    }
-
     return new Error(`Unknown error occurred during ${operation}`);
   }
 }

@@ -12,6 +12,7 @@ export const APP_CONSTANTS = {
   // Storage Keys
   STORAGE_KEYS: {
     ACCESS_TOKEN: 'access_token',
+    REFRESH_TOKEN: 'refresh_token',
     USER_DATA: 'user_data',
   },
   

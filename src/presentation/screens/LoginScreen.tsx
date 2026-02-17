@@ -1,15 +1,14 @@
 import React from 'react';
 import { View } from 'react-native';
-import { useNavigation } from '@react-navigation/native';
 import Login from '../component/users/login/Login';
+import { useAuthContext } from '../context/AuthContext';
 
 const LoginScreen = () => {
-  const navigation = useNavigation();
+  const { updateAuthState } = useAuthContext();
 
   const handleLoginSuccess = () => {
-    console.log('LoginScreen - Login successful - navigating to Main');
-    // Navigate to Main stack
-    navigation.navigate('Main' as never);
+    console.log('LoginScreen - Login successful, updating auth state');
+    updateAuthState();
   };
 
   return (

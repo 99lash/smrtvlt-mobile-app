@@ -37,6 +37,33 @@ export class StorageService {
   }
 
   /**
+   * Get refresh token from storage
+   */
+  static async getRefreshToken(): Promise<string | null> {
+    try {
+      const token = await AsyncStorage.getItem(API_CONFIG.STORAGE_KEYS.REFRESH_TOKEN);
+      log.debug('Storage', 'Refresh token retrieved', { hasToken: !!token });
+      return token;
+    } catch (error) {
+      log.error('Storage', 'Error retrieving refresh token', error);
+      return null;
+    }
+  }
+
+  /**
+   * Store refresh token
+   */
+  static async setRefreshToken(token: string): Promise<void> {
+    try {
+      await AsyncStorage.setItem(API_CONFIG.STORAGE_KEYS.REFRESH_TOKEN, token);
+      log.debug('Storage', 'Refresh token stored successfully');
+    } catch (error) {
+      log.error('Storage', 'Error storing refresh token', error);
+      throw new Error('Failed to store refresh token');
+    }
+  }
+
+  /**
    * Remove access token
    */
   static async removeAccessToken(): Promise<void> {
@@ -45,6 +72,21 @@ export class StorageService {
       log.debug('Storage', 'Token removed');
     } catch (error) {
       log.error('Storage', 'Error removing token', error);
+    }
+  }
+
+  /**
+   * Remove all auth tokens
+   */
+  static async removeAllTokens(): Promise<void> {
+    try {
+      await AsyncStorage.multiRemove([
+        API_CONFIG.STORAGE_KEYS.ACCESS_TOKEN,
+        API_CONFIG.STORAGE_KEYS.REFRESH_TOKEN,
+      ]);
+      log.debug('Storage', 'All tokens removed');
+    } catch (error) {
+      log.error('Storage', 'Error removing tokens', error);
     }
   }
 

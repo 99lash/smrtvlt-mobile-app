@@ -1,5 +1,5 @@
 export interface LoginFormData {
-  username: string;
+  email: string;
   password: string;
 }
 
@@ -9,7 +9,7 @@ export interface LoginState {
 }
 
 export interface LoginActions {
-  login: (username: string, password: string) => Promise<boolean>;
+  login: (email: string, password: string) => Promise<boolean>;
   clearError: () => void;
 }
 

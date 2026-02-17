@@ -1,6 +1,6 @@
 /**
  * Centralized Logging System
- * 
+ *
  * Provides consistent logging across the application with different log levels
  * and context-aware logging for better debugging and monitoring.
  */
@@ -18,30 +18,16 @@ export interface LogEntry {
 export interface LoggerConfig {
   enableConsole: boolean;
   enableRemoteLogging: boolean;
-  enableRedisLogging: boolean;
-  enableLogCaching: boolean;
-  enableLogStreaming: boolean;
   minLevel: LogLevel;
   contextFilter?: string[];
-  vaultId?: number;
-  deviceId?: string;
-  userId?: number;
 }
 
 class Logger {
   private config: LoggerConfig = {
     enableConsole: true,
     enableRemoteLogging: false,
-    enableRedisLogging: false,
-    enableLogCaching: false,
-    enableLogStreaming: false,
     minLevel: __DEV__ ? 'debug' : 'warn',
   };
-
-  // Redis services (lazy loaded)
-  private redisLogger: any = null;
-  private logCacheService: any = null;
-  private logStreamingService: any = null;
 
   private logLevels: Record<LogLevel, number> = {
     debug: 0,
@@ -55,41 +41,6 @@ class Logger {
    */
   configure(config: Partial<LoggerConfig>): void {
     this.config = { ...this.config, ...config };
-    
-    // Initialize Redis services if enabled
-    if (config.enableRedisLogging || config.enableLogCaching || config.enableLogStreaming) {
-      this.initializeRedisServices();
-    }
-  }
-
-  /**
-   * Initialize Redis services (lazy loading)
-   */
-  private async initializeRedisServices(): Promise<void> {
-    try {
-      if (this.config.enableRedisLogging && !this.redisLogger) {
-        // Use require instead of dynamic import to avoid Metro bundling issues
-        const RedisLoggerService = require('../service/RedisLoggerService');
-        this.redisLogger = RedisLoggerService.redisLogger;
-        await this.redisLogger.initialize();
-      }
-
-      if (this.config.enableLogCaching && !this.logCacheService) {
-        // Use require instead of dynamic import to avoid Metro bundling issues
-        const LogCacheService = require('../service/LogCacheService');
-        this.logCacheService = LogCacheService.logCacheService;
-        await this.logCacheService.initialize();
-      }
-
-      if (this.config.enableLogStreaming && !this.logStreamingService) {
-        // Use require instead of dynamic import to avoid Metro bundling issues
-        const LogStreamingService = require('../service/LogStreamingService');
-        this.logStreamingService = LogStreamingService.logStreamingService;
-        await this.logStreamingService.initialize();
-      }
-    } catch (error) {
-      console.error('Failed to initialize Redis services:', error);
-    }
   }
 
   /**
@@ -154,29 +105,6 @@ class Logger {
     // Remote logging (future implementation)
     if (this.config.enableRemoteLogging) {
       this.sendToRemote(entry);
-    }
-
-    // Redis logging
-    if (this.config.enableRedisLogging && this.redisLogger) {
-      try {
-        await this.redisLogger.sendLog({
-          ...entry,
-          vault_id: this.config.vaultId,
-          device_id: this.config.deviceId,
-          user_id: this.config.userId,
-        });
-      } catch (error) {
-        console.error('Failed to send log to Redis:', error);
-      }
-    }
-
-    // Log caching
-    if (this.config.enableLogCaching && this.logCacheService) {
-      try {
-        await this.logCacheService.cacheLog(entry, this.config.vaultId, this.config.deviceId);
-      } catch (error) {
-        console.error('Failed to cache log:', error);
-      }
     }
   }
 
@@ -268,112 +196,6 @@ class Logger {
    */
   performance(operation: string, duration: number, context?: any): void {
     this.info('PERFORMANCE', `${operation} took ${duration}ms`, context);
-  }
-
-  /**
-   * Enable Redis logging with configuration
-   */
-  enableRedisLogging(vaultId?: number, deviceId?: string, userId?: number): void {
-    this.configure({
-      enableRedisLogging: true,
-      vaultId,
-      deviceId,
-      userId,
-    });
-  }
-
-  /**
-   * Enable log caching for offline support
-   */
-  enableLogCaching(vaultId?: number, deviceId?: string): void {
-    this.configure({
-      enableLogCaching: true,
-      vaultId,
-      deviceId,
-    });
-  }
-
-  /**
-   * Enable log streaming for real-time updates
-   */
-  enableLogStreaming(vaultId?: number): void {
-    this.configure({
-      enableLogStreaming: true,
-      vaultId,
-    });
-  }
-
-  /**
-   * Get Redis logger statistics
-   */
-  async getRedisStats(): Promise<any> {
-    if (this.redisLogger) {
-      return this.redisLogger.getStats();
-    }
-    return null;
-  }
-
-  /**
-   * Get cache statistics
-   */
-  async getCacheStats(): Promise<any> {
-    if (this.logCacheService) {
-      return this.logCacheService.getStats();
-    }
-    return null;
-  }
-
-  /**
-   * Sync cached logs with Redis
-   */
-  async syncCachedLogs(): Promise<any> {
-    if (this.logCacheService && this.redisLogger) {
-      return await this.logCacheService.syncWithRedis(this.redisLogger);
-    }
-    return null;
-  }
-
-  /**
-   * Subscribe to real-time log updates
-   */
-  async subscribeToLogs(vaultId: number, callback: (log: any) => void): Promise<boolean> {
-    if (this.logStreamingService) {
-      await this.logStreamingService.subscribeToVault(vaultId);
-      this.logStreamingService.addCallback(callback);
-      return true;
-    }
-    return false;
-  }
-
-  /**
-   * Unsubscribe from log updates
-   */
-  async unsubscribeFromLogs(vaultId: number): Promise<boolean> {
-    if (this.logStreamingService) {
-      return await this.logStreamingService.unsubscribeFromVault(vaultId);
-    }
-    return false;
-  }
-
-  /**
-   * Disconnect all Redis services
-   */
-  async disconnectRedisServices(): Promise<void> {
-    const promises = [];
-
-    if (this.redisLogger) {
-      promises.push(this.redisLogger.disconnect());
-    }
-
-    if (this.logCacheService) {
-      promises.push(this.logCacheService.disconnect());
-    }
-
-    if (this.logStreamingService) {
-      promises.push(this.logStreamingService.disconnect());
-    }
-
-    await Promise.all(promises);
   }
 }
 

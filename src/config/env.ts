@@ -47,7 +47,7 @@ function getEnvArray(key: string, fallback: string[]): string[] {
  * Environment configuration object
  */
 export const ENV_CONFIG: EnvConfig = {
-  BASE_URL: getEnvVar('BASE_URL', 'https://quenchlessly-headachy-enriqueta.ngrok-free.dev'),
+  BASE_URL: getEnvVar('BASE_URL', 'https://inscriptional-myrtie-oversecurely.ngrok-free.dev'),
   DEFAULT_VAULT_ID: getEnvNumber('DEFAULT_VAULT_ID', 2),
   DEFAULT_PREFIXES: getEnvArray('DEFAULT_PREFIXES', ['Locked', 'Tamper', 'DUAL', 'Failure', 'NFC']),
   EVENT_WS_URL: process.env.EVENT_WS_URL,

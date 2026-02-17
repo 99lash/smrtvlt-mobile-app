@@ -8,8 +8,8 @@ export const useLogin = (): UseLoginReturn => {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const login = async (username: string, password: string): Promise<boolean> => {
-    if (!username.trim() || !password.trim()) {
+  const login = async (email: string, password: string): Promise<boolean> => {
+    if (!email.trim() || !password.trim()) {
       throw new Error('Please fill in all fields');
     }
 
@@ -17,27 +17,31 @@ export const useLogin = (): UseLoginReturn => {
     setError(null);
 
     try {
-      console.log('🔐 useLogin - Starting complete authentication flow...');
-      
+      console.log('useLogin - Starting complete authentication flow...');
+
       // Step 1: Login API call
-      console.log('🔐 useLogin - Step 1: Login API call');
-      await AuthService.login({ username: username.trim(), password });
+      console.log('useLogin - Step 1: Login API call');
+      await AuthService.login({ email: email.trim(), password });
       
       // Step 2: Fetch user data
-      console.log('🔐 useLogin - Step 2: Fetching user data');
+      console.log('useLogin - Step 2: Fetching user data');
       const user = await UserDataService.getCurrentUser();
       if (!user) {
         throw new Error('Failed to fetch user data after login');
       }
-      
-      // Step 3: Load vault data
-      console.log('🔐 useLogin - Step 3: Loading vault data');
-      const token = await AuthService.getStoredToken();
-      if (token) {
-        await VaultService.getUserVaults(token);
+
+      // Step 3: Load vault data (non-blocking — don't fail login if vaults can't load)
+      console.log('useLogin - Step 3: Loading vault data');
+      try {
+        const token = await AuthService.getStoredToken();
+        if (token) {
+          await VaultService.getUserVaults(token);
+        }
+      } catch (vaultError) {
+        console.warn('useLogin - Vault loading failed (non-critical):', vaultError);
       }
-      
-      console.log('✅ useLogin - Complete authentication flow successful');
+
+      console.log('useLogin - Complete authentication flow successful');
       return true; // Success
     } catch (error) {
       const errorMessage = mapLoginError(error);
