@@ -1,9 +1,10 @@
 import React, { useState } from 'react';
-import { View, Text, ScrollView, TouchableOpacity } from 'react-native';
-import { ChevronDown, ChevronUp, Vault, ArrowRight } from 'lucide-react-native';
+import { View, Text, ScrollView, TouchableOpacity, Alert } from 'react-native';
+import { ChevronDown, ChevronUp, Vault, ArrowRight, LogOut } from 'lucide-react-native';
 import ButtonSecondary from '../component/buttons/ButtonSecondary';
 import CustomModal from '../component/modals/CustomModal';
 import BorderedList from '../component/lists/BorderedList';
+import { useAuthContext } from '../context/AuthContext';
 
 // Dummy Data
 const DUMMY_VAULTS = [
@@ -23,8 +24,34 @@ const ManagerPlaceholder = ({ title }: { title: string }) => (
 );
 
 const SettingsScreen = () => {
+  const { logout } = useAuthContext();
   const [currentVault, setCurrentVault] = useState(DUMMY_VAULTS[0]);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
+
+  const handleLogout = () => {
+    Alert.alert(
+      'Logout',
+      'Are you sure you want to logout?',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Logout',
+          style: 'destructive',
+          onPress: async () => {
+            setIsLoggingOut(true);
+            try {
+              await logout();
+            } catch (error) {
+              console.error('Logout failed:', error);
+            } finally {
+              setIsLoggingOut(false);
+            }
+          },
+        },
+      ]
+    );
+  };
 
   return (
     <View className="flex-1 bg-bg-default">
@@ -89,6 +116,28 @@ const SettingsScreen = () => {
              <ManagerPlaceholder title="User Archive" />
           )}
           <ManagerPlaceholder title="Provisioning" />
+
+          {/* Logout Button */}
+          <TouchableOpacity
+            onPress={handleLogout}
+            disabled={isLoggingOut}
+            className="bg-red-900/30 p-6 rounded-[32px] border border-red-800 mb-6"
+            activeOpacity={0.7}
+          >
+            <View className="flex-row items-center justify-between">
+              <View className="flex-row items-center gap-4">
+                <LogOut size={24} color="#EF4444" strokeWidth={2.5} />
+                <View>
+                  <Text className="text-red-500 font-black text-xl uppercase tracking-tighter">
+                    {isLoggingOut ? 'Logging out...' : 'Logout'}
+                  </Text>
+                  <Text className="text-red-500/50 text-[10px] font-bold uppercase tracking-[2px] mt-1">
+                    End current session
+                  </Text>
+                </View>
+              </View>
+            </View>
+          </TouchableOpacity>
         </View>
       </ScrollView>
 
