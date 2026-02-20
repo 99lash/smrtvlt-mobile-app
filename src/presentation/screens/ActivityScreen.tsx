@@ -1,48 +1,49 @@
-import React from 'react';
-import { FlatList, View, Text } from 'react-native';
+import React, { useState, useEffect, useCallback } from 'react';
+import { FlatList, View, Text, RefreshControl } from 'react-native';
 import { ActivityCard } from './activity';
 import { ActivityLog } from '../../types/ActivityTypes';
-
-const DUMMY_LOGS: ActivityLog[] = [
-  {
-    id: '1',
-    status: 'success',
-    eventType: 'remote_unlock',
-    title: 'REMOTE UNLOCK',
-    description: 'Protocol execution successful. Access granted.',
-    timestamp: '2m ago',
-    user: { initials: 'AD', name: 'ADMIN' }
-  },
-  {
-    id: '2',
-    status: 'failed',
-    eventType: 'failed_pin',
-    title: 'AUTH FAILURE',
-    description: 'Multiple invalid credentials detected.',
-    timestamp: '1h ago',
-    user: { initials: 'UN', name: 'UNKNOWN' }
-  },
-  {
-    id: '3',
-    status: 'success',
-    eventType: 'vault_unlock',
-    title: 'UNIT ACCESS',
-    description: 'Manual biometric verification successful.',
-    timestamp: '3h ago',
-    user: { initials: 'JD', name: 'J. DOE' }
-  },
-  {
-    id: '4',
-    status: 'warning',
-    eventType: 'tamper_alert',
-    title: 'SYSTEM ALERT',
-    description: 'Unusual vibration detected in Sector 7.',
-    timestamp: '5h ago',
-    user: { initials: 'SV', name: 'SMARTVAULT' }
-  }
-];
+import { MockDataService } from '../../service/MockDataService';
+import { VaultService, transformActivity, ActivityLogEntry } from '../../service/VaultService';
+import { MOCK_MODE } from '../../config/env';
 
 export default function ActivityScreen({ navigation }: any) {
+  const [logs, setLogs] = useState<ActivityLog[]>([]);
+  const [isRefreshing, setIsRefreshing] = useState(false);
+
+  const loadLogs = useCallback(async () => {
+    if (MOCK_MODE) {
+      const data = await MockDataService.getActivityLogs();
+      setLogs(data);
+      return;
+    }
+    try {
+      // Get vaults first, then load activity for all of them
+      const vaults = await VaultService.getUserVaults();
+      const allEntries: ActivityLogEntry[] = [];
+      for (const v of vaults) {
+        try {
+          const entries = await VaultService.getVaultActivity(String(v.vault_id), 50);
+          allEntries.push(...entries);
+        } catch {}
+      }
+      // Sort by created_at descending
+      allEntries.sort(
+        (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+      );
+      setLogs(allEntries.map(transformActivity));
+    } catch (e) {
+      console.error('ActivityScreen: loadLogs failed', e);
+    }
+  }, []);
+
+  useEffect(() => { loadLogs(); }, [loadLogs]);
+
+  const handleRefresh = async () => {
+    setIsRefreshing(true);
+    await loadLogs();
+    setIsRefreshing(false);
+  };
+
   const renderHeader = () => (
     <View className="px-6 mb-10 pt-10">
         <Text className="text-white text-5xl font-black tracking-tighter uppercase leading-[48px]">LOGS</Text>
@@ -53,13 +54,22 @@ export default function ActivityScreen({ navigation }: any) {
   return (
     <View className="flex-1 bg-bg-default">
       <FlatList
-        data={DUMMY_LOGS}
+        data={logs}
         renderItem={({ item }) => <ActivityCard log={item} />}
         keyExtractor={(item) => item.id}
         ListHeaderComponent={renderHeader}
         className="flex-1"
         contentContainerStyle={{ paddingBottom: 140 }}
         showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl
+            refreshing={isRefreshing}
+            onRefresh={handleRefresh}
+            colors={['#FFFFFF']}
+            tintColor="#FFFFFF"
+            progressBackgroundColor="#000000"
+          />
+        }
       />
     </View>
   );

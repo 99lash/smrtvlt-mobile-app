@@ -1,23 +1,75 @@
 import React, { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, ScrollView, Dimensions, StyleSheet, ActivityIndicator } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, ScrollView, Dimensions, StyleSheet, ActivityIndicator, Alert } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useLogin } from '../../../hooks/useLogin';
+import { useNavigation } from '@react-navigation/native';
+import { useBiometric } from '../../../hooks/useBiometric';
+import { AuthService } from '../../../../service/AuthService';
+import RegisterModal from '../register/RegisterModal';
 
-const Login = ({ onLoginSuccess, onLoginError }: { onLoginSuccess?: () => void, onLoginError?: (err: string) => void }) => {
+const Login = ({ onLoginSuccess, onLoginError, successMessage, onClearSuccessMessage }: { onLoginSuccess?: () => void, onLoginError?: (err: string) => void, successMessage?: string | null, onClearSuccessMessage?: () => void }) => {
   const insets = useSafeAreaInsets();
+  const navigation = useNavigation();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const { login, isLoading: loading, error } = useLogin();
+  const [biometricLoading, setBiometricLoading] = useState(false);
+  const [showRegister, setShowRegister] = useState(false);
+  const {
+    canPromptBiometrics,
+    biometricLabel,
+    isLoginEnabled,
+    enableBiometricLogin,
+    refreshStatus,
+  } = useBiometric();
 
   const handleLogin = async () => {
     try {
       const success = await login(email, password);
       if (success) {
+        if (canPromptBiometrics && !isLoginEnabled) {
+          Alert.alert(
+            'Enable biometric login?',
+            `Use ${biometricLabel} to sign in faster next time.`,
+            [
+              { text: 'Not now', style: 'cancel' },
+              {
+                text: 'Enable',
+                onPress: async () => {
+                  try {
+                    await enableBiometricLogin();
+                    await refreshStatus();
+                  } catch (biometricError) {
+                    Alert.alert(
+                      'Biometric setup failed',
+                      biometricError instanceof Error ? biometricError.message : 'Unable to enable biometric login.'
+                    );
+                  }
+                },
+              },
+            ]
+          );
+        }
         onLoginSuccess?.();
       }
     } catch (err: any) {
       onLoginError?.(err.message || 'Login failed');
+    }
+  };
+
+  const handleBiometricLogin = async () => {
+    try {
+      setBiometricLoading(true);
+      await AuthService.biometricLogin();
+      onLoginSuccess?.();
+    } catch (err: any) {
+      Alert.alert(
+        'Biometric login failed',
+        err instanceof Error ? err.message : 'Please sign in with email and password.'
+      );
+    } finally {
+      setBiometricLoading(false);
     }
   };
 
@@ -83,6 +135,15 @@ const Login = ({ onLoginSuccess, onLoginError }: { onLoginSuccess?: () => void, 
               </View>
             </View>
 
+            {successMessage && (
+              <View style={styles.successContainer}>
+                <Text style={styles.successText}>{successMessage}</Text>
+                <TouchableOpacity onPress={onClearSuccessMessage} style={styles.successDismiss}>
+                  <Text style={styles.successDismissText}>DISMISS</Text>
+                </TouchableOpacity>
+              </View>
+            )}
+
             {error && (
               <View style={styles.errorContainer}>
                 <Text style={styles.errorText}>{error}</Text>
@@ -91,7 +152,7 @@ const Login = ({ onLoginSuccess, onLoginError }: { onLoginSuccess?: () => void, 
 
             <TouchableOpacity
               style={styles.forgotPassword}
-              onPress={() => {}}
+              onPress={() => navigation.navigate('PasswordReset')}
             >
               <Text style={styles.linkText}>RECOVER ACCESS</Text>
             </TouchableOpacity>
@@ -99,8 +160,8 @@ const Login = ({ onLoginSuccess, onLoginError }: { onLoginSuccess?: () => void, 
             {/* Action Button */}
             <TouchableOpacity
                 onPress={handleLogin}
-                disabled={loading || !email || !password}
-                style={[styles.button, (loading || !email || !password) && styles.buttonDisabled]}
+                disabled={loading || biometricLoading || !email || !password}
+                style={[styles.button, (loading || biometricLoading || !email || !password) && styles.buttonDisabled]}
             >
                 {loading ? (
                 <ActivityIndicator color="black" />
@@ -109,16 +170,36 @@ const Login = ({ onLoginSuccess, onLoginError }: { onLoginSuccess?: () => void, 
                 )}
             </TouchableOpacity>
 
+            {canPromptBiometrics && isLoginEnabled && (
+              <TouchableOpacity
+                onPress={handleBiometricLogin}
+                disabled={biometricLoading || loading}
+                style={[styles.biometricButton, (biometricLoading || loading) && styles.buttonDisabled]}
+              >
+                {biometricLoading ? (
+                  <ActivityIndicator color="white" />
+                ) : (
+                  <Text style={styles.biometricButtonText}>
+                    LOGIN WITH {biometricLabel.toUpperCase()}
+                  </Text>
+                )}
+              </TouchableOpacity>
+            )}
+
             {/* Signup */}
             <View style={styles.signupContainer}>
               <Text style={styles.mutedText}>NO CREDENTIALS? </Text>
-              <TouchableOpacity onPress={() => {}}>
+              <TouchableOpacity onPress={() => setShowRegister(true)}>
                 <Text style={styles.linkTextBold}>ENROLL NOW</Text>
               </TouchableOpacity>
             </View>
           </View>
         </View>
       </View>
+      <RegisterModal
+        visible={showRegister}
+        onClose={() => setShowRegister(false)}
+      />
     </ScrollView>
   );
 };
@@ -246,6 +327,22 @@ const styles = StyleSheet.create({
     fontWeight: '900',
     letterSpacing: 1,
   },
+  biometricButton: {
+    backgroundColor: '#18181B',
+    borderRadius: 20,
+    height: 56,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 24,
+    borderWidth: 1,
+    borderColor: '#27272A',
+  },
+  biometricButtonText: {
+    color: '#FFFFFF',
+    fontSize: 12,
+    fontWeight: '900',
+    letterSpacing: 1,
+  },
   signupContainer: {
     flexDirection: 'row',
     justifyContent: 'center',
@@ -269,6 +366,32 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: '600',
     textAlign: 'center',
+  },
+  successContainer: {
+    backgroundColor: '#0F2A1F',
+    borderRadius: 12,
+    padding: 12,
+    marginBottom: 16,
+    borderWidth: 1,
+    borderColor: '#1F4D35',
+    alignItems: 'center',
+  },
+  successText: {
+    color: '#34D399',
+    fontSize: 12,
+    fontWeight: '600',
+    textAlign: 'center',
+    marginBottom: 8,
+  },
+  successDismiss: {
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+  },
+  successDismissText: {
+    color: '#FFFFFF',
+    fontSize: 10,
+    fontWeight: '900',
+    letterSpacing: 1,
   },
 });
 

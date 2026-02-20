@@ -14,7 +14,7 @@ export class UserService {
    * @throws Error with specific message based on API response
    */
   static async register(registrationData: UserRegistrationRequest): Promise<UserRegistrationResponse> {
-    const url = `${API_CONFIG.BASE_URL}${API_CONFIG.ENDPOINTS.USERS.REGISTER}`;
+    const url = `${API_CONFIG.BASE_URL}${API_CONFIG.ENDPOINTS.AUTH.SIGNUP}`;
 
     if (__DEV__) {
       console.log('UserService - Registration attempt for:', registrationData.username);
@@ -87,7 +87,7 @@ export class UserService {
           case 409:
             throw new Error('User already exists with this username or email');
           case 422:
-            throw new Error('Password and confirmation password do not match');
+            throw new Error(responseData?.detail || 'Validation error. Please check your input.');
           case 400:
             throw new Error('Invalid registration data provided');
           case 500:
@@ -156,7 +156,7 @@ export class UserService {
    * @throws Error with specific message based on API response
    */
   static async login(loginData: UserLoginRequest): Promise<UserLoginResponse> {
-    const url = `${API_CONFIG.BASE_URL}${API_CONFIG.ENDPOINTS.USERS.LOGIN}`;
+    const url = `${API_CONFIG.BASE_URL}${API_CONFIG.ENDPOINTS.AUTH.LOGIN}`;
 
     if (__DEV__) {
       console.log('UserService - Login attempt for:', loginData.username);
@@ -303,7 +303,7 @@ export class UserService {
        }
 
        // Get current user's vault memberships
-       const vaultsUrl = `${API_CONFIG.BASE_URL}${API_CONFIG.ENDPOINTS.VAULT_MEMBERSHIPS.USER_VAULTS}`;
+       const vaultsUrl = `${API_CONFIG.BASE_URL}${API_CONFIG.ENDPOINTS.VAULTS.LIST}`;
 
        if (__DEV__) {
          console.log('UserService - Fetching current user vaults from:', vaultsUrl);
@@ -322,7 +322,9 @@ export class UserService {
        }
 
        const vaultsData = await vaultsResponse.json();
-       const userVaults = vaultsData.data || [];
+       const userVaults = Array.isArray(vaultsData)
+         ? vaultsData
+         : (vaultsData.data || []);
 
        if (__DEV__) {
          console.log('UserService - Current user vaults:', userVaults.length);
@@ -332,13 +334,17 @@ export class UserService {
        const sharedUsersMap = new Map<number, User>();
 
        for (const vaultMembership of userVaults) {
-         const vaultId = vaultMembership.vault_id;
+         const vaultId = vaultMembership.vault_id ?? vaultMembership.id;
 
          if (__DEV__) {
            console.log('UserService - Fetching members for vault ID:', vaultId);
          }
 
-         const membersUrl = `${API_CONFIG.BASE_URL}${API_CONFIG.ENDPOINTS.USERS.VAULT_MEMBERS(vaultId)}`;
+         if (!vaultId) {
+           continue;
+         }
+
+         const membersUrl = `${API_CONFIG.BASE_URL}${API_CONFIG.ENDPOINTS.VAULTS.MEMBERS(vaultId)}`;
 
          const membersResponse = await fetch(membersUrl, {
            method: 'GET',
@@ -435,99 +441,11 @@ export class UserService {
    * @throws Error with specific message based on API response
    */
   static async fetchUsers(): Promise<User[]> {
-    const url = `${API_CONFIG.BASE_URL}${API_CONFIG.ENDPOINTS.USERS.LIST}`;
-
     if (__DEV__) {
-      console.log('UserService - Fetching users from:', url);
-      console.log('UserService - BASE_URL:', API_CONFIG.BASE_URL);
+      console.warn('UserService - fetchUsers is not supported; no backend endpoint exists.');
     }
 
-    try {
-      const token = await this.getStoredToken();
-      if (!token) {
-        throw new Error('No authentication token found');
-      }
-
-      if (__DEV__) {
-        console.log('UserService - Making GET request to:', url);
-        console.log('UserService - Request headers:', {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        });
-      }
-
-      const response = await fetch(url, {
-        method: 'GET',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        },
-      });
-
-      if (__DEV__) {
-        console.log('UserService - Response status:', response.status);
-        console.log('UserService - Response ok:', response.ok);
-      }
-
-      if (!response.ok) {
-        // Handle specific error cases based on status codes
-        switch (response.status) {
-          case 401:
-            throw new Error('Authentication required to fetch users');
-          case 403:
-            throw new Error('Insufficient permissions to view users');
-          case 500:
-            throw new Error('Server error occurred while fetching users');
-          default:
-            const errorText = await response.text();
-            throw new Error(`Failed to fetch users: ${errorText}`);
-        }
-      }
-
-      const users: User[] = await response.json();
-
-      if (__DEV__) {
-        console.log('UserService - Successfully fetched users:', users.length);
-      }
-
-      return users;
-
-    } catch (error) {
-      if (__DEV__) {
-        console.error('UserService - Fetch users error:', error);
-
-        // Type-safe error logging
-        if (error instanceof Error) {
-          console.error('UserService - Error type:', error.constructor.name);
-          console.error('UserService - Error message:', error.message);
-          console.error('UserService - Error stack:', error.stack);
-        } else {
-          console.error('UserService - Non-Error object thrown:', error);
-        }
-
-        // Log additional context for debugging
-        console.error('UserService - BASE_URL being used:', API_CONFIG.BASE_URL);
-        console.error('UserService - Full users URL:', url);
-
-        // Check if it's a network error
-        if (error instanceof TypeError && 'message' in error && error.message.includes('fetch')) {
-          console.error('UserService - This appears to be a network connectivity error');
-          console.error('UserService - Possible causes:');
-          console.error('UserService - 1. Server is not running');
-          console.error('UserService - 2. Incorrect BASE_URL');
-          console.error('UserService - 3. Network connectivity issues');
-          console.error('UserService - 4. Firewall blocking the request');
-        }
-      }
-
-      // Re-throw with more context if it's already a handled error
-      if (error instanceof Error) {
-        throw error;
-      }
-
-      // Handle network errors
-      throw new Error('Network error occurred while fetching users');
-    }
+    return [];
   }
 
   /**

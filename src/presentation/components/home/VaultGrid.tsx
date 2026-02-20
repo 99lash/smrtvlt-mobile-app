@@ -1,12 +1,13 @@
 import React from 'react';
 import { View, Text, TouchableOpacity } from 'react-native';
-import { Shield, Unlock, Lock, ChevronRight } from 'lucide-react-native';
+import { Shield, Unlock, Lock, ChevronRight, Plus } from 'lucide-react-native';
 import { VaultMembership } from '../../../service/VaultService';
 
 interface VaultGridProps {
   vaults: VaultMembership[];
   onVaultPress: (vault: VaultMembership) => void;
   isLoading?: boolean;
+  onAddVault?: () => void;
 }
 
 interface VaultCardProps {
@@ -67,7 +68,8 @@ const VaultCard: React.FC<VaultCardProps> = ({ vault, onPress }) => {
 export const VaultGrid: React.FC<VaultGridProps> = ({
   vaults,
   onVaultPress,
-  isLoading = false
+  isLoading = false,
+  onAddVault,
 }) => {
   return (
     <View className="mb-4">
@@ -78,10 +80,21 @@ export const VaultGrid: React.FC<VaultGridProps> = ({
                 Active Units
             </Text>
         </View>
-        <View className="bg-white px-3 py-1 rounded-full">
-            <Text className="text-black font-black text-[9px] uppercase">
-                {vaults.length} Units
-            </Text>
+        <View className="flex-row items-center gap-2">
+          {onAddVault ? (
+            <TouchableOpacity
+              onPress={onAddVault}
+              activeOpacity={0.8}
+              className="w-8 h-8 bg-white rounded-full items-center justify-center"
+            >
+              <Plus size={16} color="black" strokeWidth={2.5} />
+            </TouchableOpacity>
+          ) : null}
+          <View className="bg-white px-3 py-1 rounded-full">
+              <Text className="text-black font-black text-[9px] uppercase">
+                  {vaults.length} Units
+              </Text>
+          </View>
         </View>
       </View>
 

@@ -1,9 +1,15 @@
 /**
  * Environment Configuration
- * 
+ *
  * Type-safe environment variable handling with fallbacks.
  * Centralizes all environment-related configuration.
  */
+
+/**
+ * MOCK_MODE — when true, all API calls are bypassed and data is served from AsyncStorage.
+ * Set to false when the backend is available.
+ */
+export const MOCK_MODE = false;
 
 import { log } from '../utils/logger';
 

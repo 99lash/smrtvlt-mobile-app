@@ -5,7 +5,7 @@ import { log } from '../utils/logger';
 // --- API Configuration ---
 export const API_CONFIG = {
   BASE_URL: ENV_CONFIG.BASE_URL,
-  
+
   ENDPOINTS: {
     AUTH: {
       LOGIN: '/api/v1/auth/login',
@@ -19,50 +19,43 @@ export const API_CONFIG = {
     },
     USERS: {
       ME: '/api/v1/users/me',
-      LIST: '/users/',
-      REMOVE_FROM_VAULT: (vaultId: number, userId: number) => `/vault-memberships/${userId}/vault/${vaultId}`,
-      VAULT_MEMBERS: (vaultId: number) => `/vault-memberships/vault/${vaultId}`,
-      // Legacy aliases — these screens need rewriting for the new OTP-based auth flow
-      LOGIN: '/api/v1/auth/login',
-      REGISTER: '/api/v1/auth/signup',
-      VERIFY_EMAIL: '/api/v1/auth/verify-otp',
-      RESEND_VERIFICATION: '/api/v1/auth/request-otp',
-      SEND_VERIFICATION: '/api/v1/auth/request-otp',
-      VERIFICATION_STATUS: '/api/v1/auth/verify-otp',
-      REQUEST_PASSWORD_RESET: '/api/v1/auth/request-password-reset',
-      VALIDATE_RESET_TOKEN: '/api/v1/auth/confirm-password-reset',
-      RESET_PASSWORD: '/api/v1/auth/confirm-password-reset',
+      SEARCH: (email: string) => `/api/v1/users/search?email=${encodeURIComponent(email)}`,
     },
     LOGS: {
-      FILTERED: (vaultId: number) => `/logs/vault/${vaultId}/filtered`,
-      WS: '/logs/ws',
-    },
-    VAULT_MEMBERSHIPS: {
-      USER_VAULTS: '/vault-memberships/user/vaults',
-      ADMIN_CHECK: (vaultId: number) => `/vault-memberships/vaults/${vaultId}/admin-check`,
+      WS: '/api/v1/ws/user',
     },
     VAULT_INVITATIONS: {
-      CREATE: '/vault-invitations/',
-      VALIDATE: (code: string) => `/vault-invitations/${code}`,
-      ACCEPT: (code: string) => `/vault-invitations/${code}/accept`,
-      BY_VAULT: (vaultId: number) => `/vault-invitations/vault/${vaultId}`,
+      CREATE: '/api/v1/vault-invitations/',
+      VALIDATE: (code: string) => `/api/v1/vault-invitations/${code}`,
+      ACCEPT: (code: string) => `/api/v1/vault-invitations/${code}/accept`,
+      BY_VAULT: (vaultId: number) => `/api/v1/vault-invitations/vault/${vaultId}`,
     },
     VAULTS: {
-      CREATE: '/vaults/',
-      LIST: '/vaults/',
-      BY_ID: (id: string) => `/vaults/${id}`,
-      TRANSFER_INITIATE: (vaultId: number) => `/vaults/${vaultId}/transfer/initiate`,
-      TRANSFER_ACCEPT: (vaultId: number) => `/vaults/${vaultId}/transfer/accept`,
+      PROVISION: '/api/v1/vaults/provision',
+      LIST: '/api/v1/vaults',
+      STATUS: (vaultId: string | number) => `/api/v1/vaults/${vaultId}/status`,
+      UNLOCK: (vaultId: string | number) => `/api/v1/vaults/${vaultId}/unlock`,
+      PIN_SET: (vaultId: string | number) => `/api/v1/vaults/${vaultId}/pin`,
+      PIN_DELETE: (vaultId: string | number) => `/api/v1/vaults/${vaultId}/pin`,
+      PIN_STATUS: (vaultId: string | number) => `/api/v1/vaults/${vaultId}/pin/status`,
+      PIN_UNLOCK: (vaultId: string | number) => `/api/v1/vaults/${vaultId}/unlock/pin`,
+      MEMBERS: (vaultId: string | number) => `/api/v1/vaults/${vaultId}/members`,
+      ADD_MEMBER: (vaultId: string | number) => `/api/v1/vaults/${vaultId}/members`,
+      REMOVE_MEMBER: (vaultId: string | number, userId: string | number) => `/api/v1/vaults/${vaultId}/members/${userId}`,
+      ACTIVITY: (vaultId: string | number) => `/api/v1/vaults/${vaultId}/activity`,
+      TRANSFER_INITIATE: (vaultId: number) => `/api/v1/vaults/${vaultId}/transfer/initiate`,
+      TRANSFER_ACCEPT: (vaultId: number) => `/api/v1/vaults/${vaultId}/transfer/accept`,
+      TRANSFER_VALIDATE: (inviteCode: string) => `/api/v1/vaults/transfer/validate/${inviteCode}`,
     },
   },
-  
+
   DEFAULTS: {
     VAULT_ID: ENV_CONFIG.DEFAULT_VAULT_ID,
     PREFIXES: ENV_CONFIG.DEFAULT_PREFIXES,
     LOG_LIMIT: APP_CONSTANTS.DEFAULTS.LOG_LIMIT,
     LOG_OFFSET: APP_CONSTANTS.DEFAULTS.LOG_OFFSET,
   },
-  
+
   STORAGE_KEYS: APP_CONSTANTS.STORAGE_KEYS,
 } as const;
 

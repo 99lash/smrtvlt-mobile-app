@@ -1,6 +1,6 @@
 import React from 'react';
 import { View, Text, TouchableOpacity } from 'react-native';
-import { Users, Crown } from 'lucide-react-native';
+import { Users, Crown, Archive, Trash2 } from 'lucide-react-native';
 import { User as UserType } from '../../../../types/UserTypes';
 import { EnhancedEmptyState } from '../../../component/common/EnhancedEmptyState';
 import BorderedList from '../../../component/lists/BorderedList';
@@ -11,6 +11,7 @@ interface UsersListProps {
   onRefresh: () => void;
   onEditUser?: (user: UserType) => void;
   onDeleteUser?: (userId: string) => void;
+  onArchiveUser?: (userId: string) => void;
   onToggleStatus?: (userId: string) => void;
   onTransferOwnership?: (user: UserType) => void;
   scrollEnabled?: boolean;
@@ -21,6 +22,7 @@ export const UserList: React.FC<UsersListProps> = ({
   onRefresh,
   onEditUser,
   onDeleteUser,
+  onArchiveUser,
   onToggleStatus,
   onTransferOwnership,
   scrollEnabled = true,
@@ -102,15 +104,33 @@ export const UserList: React.FC<UsersListProps> = ({
       onItemPress={() => {}}
       rightContentExtractor={(user, index) => {
         const isAdmin = user.role.toLowerCase() === 'admin';
-        if (!isAdmin || !onTransferOwnership) return null;
-
         return (
-          <TouchableOpacity
-            onPress={() => onTransferOwnership(user)}
-            className="bg-zinc-100 p-3 rounded-2xl shadow-xl border border-zinc-200"
-          >
-            <Crown size={20} color="#000000" strokeWidth={3} />
-          </TouchableOpacity>
+          <View className="flex-row gap-2 items-center">
+            {isAdmin && onTransferOwnership && (
+              <TouchableOpacity
+                onPress={() => onTransferOwnership(user)}
+                className="bg-zinc-100 p-3 rounded-2xl border border-zinc-200"
+              >
+                <Crown size={18} color="#000000" strokeWidth={3} />
+              </TouchableOpacity>
+            )}
+            {!isAdmin && onArchiveUser && (
+              <TouchableOpacity
+                onPress={() => onArchiveUser(user.id.toString())}
+                className="bg-zinc-900 p-3 rounded-2xl border border-zinc-800"
+              >
+                <Archive size={18} color="#FFFFFF" strokeWidth={2.5} />
+              </TouchableOpacity>
+            )}
+            {!isAdmin && onDeleteUser && (
+              <TouchableOpacity
+                onPress={() => onDeleteUser(user.id.toString())}
+                className="bg-red-900/40 p-3 rounded-2xl border border-red-800"
+              >
+                <Trash2 size={18} color="#EF4444" strokeWidth={2.5} />
+              </TouchableOpacity>
+            )}
+          </View>
         );
       }}
       getId={getId}

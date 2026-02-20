@@ -2,6 +2,8 @@ import { useState, useEffect } from 'react';
 import { AuthService } from '../../service/AuthService';
 import { UserDataService } from '../../service/UserDataService';
 import { StorageService } from '../../service/StorageService';
+import { BiometricService } from '../../service/BiometricService';
+import { MockDataService } from '../../service/MockDataService';
 
 export interface AuthState {
   isAuthenticated: boolean;
@@ -57,6 +59,51 @@ export const useAuth = () => {
           });
         }
       } else {
+        // Attempt biometric login if enabled
+        let biometricSuccess = false;
+        try {
+          const isEnabled = await BiometricService.isBiometricLoginEnabled();
+          const canUse = await BiometricService.canUseBiometrics();
+          if (isEnabled && canUse) {
+            await AuthService.biometricLogin();
+            biometricSuccess = true;
+          }
+        } catch (biometricError) {
+          console.warn('Biometric login unavailable:', biometricError);
+        }
+
+        if (biometricSuccess) {
+          try {
+            const user = await UserDataService.getCurrentUser();
+            if (user) {
+              const ts = new Date().toISOString();
+              console.log(`\n[SmartVault] ${ts} | INFO  | AUTH  | POST /api/v1/auth/biometric-login | method=BIOMETRIC | user=${user.username ?? 'unknown'} | status=200 OK`);
+              console.log(`[SmartVault] ${ts} | INFO  | SESSION | Session started | user=${user.username ?? 'unknown'} | role=${user.role} | result=LOGIN_SUCCESS\n`);
+              await MockDataService.addActivityLog({
+                id: Date.now().toString(),
+                status: 'success',
+                eventType: 'vault_unlock',
+                title: 'BIOMETRIC LOGIN',
+                description: `Biometric authentication successful. Session started for ${user.firstName ?? user.username ?? 'user'}.`,
+                timestamp: 'Just now',
+                user: {
+                  initials: `${user.firstName?.[0] ?? ''}${user.lastName?.[0] ?? ''}`.toUpperCase() || 'U',
+                  name: `${user.firstName ?? ''} ${user.lastName ?? ''}`.trim() || user.username || 'User',
+                },
+              });
+              setAuthState({
+                isAuthenticated: true,
+                isLoading: false,
+                user: user,
+              });
+              return;
+            }
+          } catch (userError) {
+            console.error('Failed to fetch user info after biometric login:', userError);
+            await AuthService.clearToken();
+          }
+        }
+
         setAuthState({
           isAuthenticated: false,
           isLoading: false,

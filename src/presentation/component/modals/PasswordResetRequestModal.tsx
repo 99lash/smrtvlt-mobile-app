@@ -29,7 +29,7 @@ const PasswordResetRequestModal: React.FC<PasswordResetRequestModalProps> = ({
     setError('');
 
     try {
-      const url = `${API_CONFIG.BASE_URL}${API_CONFIG.ENDPOINTS.USERS.REQUEST_PASSWORD_RESET}`;
+      const url = `${API_CONFIG.BASE_URL}${API_CONFIG.ENDPOINTS.AUTH.REQUEST_PASSWORD_RESET}`;
       
       if (__DEV__) {
         console.log('PasswordResetRequestModal - Making request to:', url);

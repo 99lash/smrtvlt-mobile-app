@@ -1,5 +1,7 @@
 import { ApiService } from './ApiService';
 import { API_CONFIG } from '../config/api';
+import { UserService } from './UserService';
+import { VaultMembersResponse } from '../types/UserTypes';
 
 // Types for vault invitations
 export interface InvitationData {
@@ -32,13 +34,6 @@ export interface ValidationResponse {
   expires_at?: string;
 }
 
-export interface AdminCheckResponse {
-  is_admin: boolean;
-  data?: {
-    is_admin: boolean;
-  };
-}
-
 export interface ApiResponse<T> {
   success: boolean;
   data: T;
@@ -51,13 +46,21 @@ export class VaultInvitationService {
    */
   static async checkVaultAdmin(vaultId: number, token: string): Promise<boolean> {
     try {
-      const response = await ApiService.get<AdminCheckResponse>(
-        API_CONFIG.ENDPOINTS.VAULT_MEMBERSHIPS.ADMIN_CHECK(vaultId),
+      const currentUser = await UserService.getCurrentUser();
+      if (!currentUser) {
+        return false;
+      }
+
+      const membersResponse = await ApiService.get<VaultMembersResponse>(
+        API_CONFIG.ENDPOINTS.VAULTS.MEMBERS(vaultId),
         token
       );
-      
-      // Handle both old format (is_admin at root) and new format (is_admin in data)
-      return response.is_admin || (response.data && response.data.is_admin) || false;
+
+      const members = Array.isArray(membersResponse)
+        ? membersResponse
+        : (membersResponse.data || []);
+      const member = members.find(m => m.user_id === currentUser.id);
+      return member?.role === 'admin';
     } catch (error: any) {
       if (error.status === 403) {
         return false;

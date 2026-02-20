@@ -2,6 +2,8 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { User, VaultMembersResponse, VaultMembershipResponse } from '../types/UserTypes';
 import { API_CONFIG } from '../config/api';
 import { ApiService } from './ApiService';
+import { MOCK_MODE } from '../config/env';
+import { MockDataService } from './MockDataService';
 
 /**
  * User Data Service
@@ -16,6 +18,12 @@ export class UserDataService {
    * @returns Promise<User | null>
    */
   static async getCurrentUser(): Promise<User | null> {
+    if (MOCK_MODE) {
+      const user = await MockDataService.getUser();
+      if (__DEV__) console.log('UserDataService - [MOCK] Returning mock user:', user?.username);
+      return user;
+    }
+
     try {
       const token = await this.getStoredToken();
       if (!token) {
@@ -100,27 +108,10 @@ export class UserDataService {
    */
   static async fetchUsers(): Promise<User[]> {
     if (__DEV__) {
-      console.log('UserDataService - Fetching users');
+      console.warn('UserDataService - fetchUsers is not supported; no backend endpoint exists.');
     }
 
-    try {
-      const token = await this.getStoredToken();
-      if (!token) {
-        throw new Error('No authentication token found');
-      }
-
-      const users = await ApiService.get<User[]>('/users', token);
-
-      if (__DEV__) {
-        console.log('UserDataService - Successfully fetched users:', users.length);
-      }
-
-      return users;
-
-    } catch (error) {
-      this.logError('fetchUsers', error);
-      throw new Error(`Failed to fetch users: ${error instanceof Error ? error.message : 'Unknown error'}`);
-    }
+    return [];
   }
 
   /**
@@ -129,15 +120,16 @@ export class UserDataService {
    */
   private static async fetchUserVaults(token: string): Promise<VaultMembershipResponse[]> {
     const vaultsData = await ApiService.get<VaultMembersResponse>(
-      '/vault-memberships/user/vaults',
+      API_CONFIG.ENDPOINTS.VAULTS.LIST,
       token
     );
+    const vaultsList = Array.isArray(vaultsData) ? vaultsData : (vaultsData.data || []);
 
     if (__DEV__) {
-      console.log('UserDataService - User vaults count:', vaultsData.data?.length || 0);
+      console.log('UserDataService - User vaults count:', vaultsList.length);
     }
 
-    return vaultsData.data || [];
+    return vaultsList as VaultMembershipResponse[];
   }
 
   /**
@@ -183,7 +175,7 @@ export class UserDataService {
 
     try {
       // Use direct fetch instead of ApiService to handle the response format better
-      const membersUrl = `${API_CONFIG.BASE_URL}/vault-memberships/vault/${vaultId}`;
+      const membersUrl = `${API_CONFIG.BASE_URL}${API_CONFIG.ENDPOINTS.VAULTS.MEMBERS(vaultId)}`;
       console.log('UserDataService - Making direct fetch to:', membersUrl);
 
       const response = await fetch(membersUrl, {

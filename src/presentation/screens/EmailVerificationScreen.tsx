@@ -12,7 +12,6 @@ import { Mail, ArrowLeft, RefreshCw, CheckCircle } from 'lucide-react-native';
 import { useAuthContext } from '../context/AuthContext';
 import ButtonPrimary from '../component/buttons/ButtonPrimary';
 import { API_CONFIG } from '../../config/api';
-import { UserService } from '../../service/UserService';
 
 interface EmailVerificationScreenProps {
   username: string;
@@ -73,7 +72,7 @@ const EmailVerificationScreen: React.FC<EmailVerificationScreenProps> = ({
         console.log('EmailVerificationScreen - Base URL:', API_CONFIG.BASE_URL);
       }
 
-      const url = `${API_CONFIG.BASE_URL}${API_CONFIG.ENDPOINTS.USERS.VERIFY_EMAIL}?username=${username}&verification_code=${verificationCode}`;
+      const url = `${API_CONFIG.BASE_URL}${API_CONFIG.ENDPOINTS.AUTH.VERIFY_OTP}?username=${username}&verification_code=${verificationCode}`;
       
       if (__DEV__) {
         console.log('EmailVerificationScreen - Making verification request to:', url);
@@ -146,7 +145,7 @@ const EmailVerificationScreen: React.FC<EmailVerificationScreenProps> = ({
         console.log('EmailVerificationScreen - Base URL:', API_CONFIG.BASE_URL);
       }
 
-      const url = `${API_CONFIG.BASE_URL}${API_CONFIG.ENDPOINTS.USERS.RESEND_VERIFICATION}?username=${username}`;
+      const url = `${API_CONFIG.BASE_URL}${API_CONFIG.ENDPOINTS.AUTH.REQUEST_OTP}?username=${username}`;
       
       if (__DEV__) {
         console.log('EmailVerificationScreen - Making resend request to:', url);

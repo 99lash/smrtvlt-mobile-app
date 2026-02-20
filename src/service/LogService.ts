@@ -31,7 +31,7 @@ export class LogService extends ApiService {
     limit = API_CONFIG.DEFAULTS.LOG_LIMIT,
     token,
   }: GetLogsParams): Promise<LogEntry[]> {
-    const endpoint = API_CONFIG.ENDPOINTS.LOGS.FILTERED(vaultId);
+    const endpoint = API_CONFIG.ENDPOINTS.VAULTS.ACTIVITY(vaultId);
     const queryParams = {
       prefixes: prefixes.join(','),
       offset: offset.toString(),

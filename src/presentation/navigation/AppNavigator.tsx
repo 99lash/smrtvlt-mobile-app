@@ -3,6 +3,7 @@ import { ActivityIndicator, View } from 'react-native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import BottomTabNavigator from './BottomTabNavigator';
 import LoginScreen from '../screens/LoginScreen';
+import PasswordResetScreen from '../screens/PasswordResetScreen';
 import { useAuthContext } from '../context/AuthContext';
 
 const Stack = createNativeStackNavigator();
@@ -23,7 +24,10 @@ const AppNavigator = () => {
       {isAuthenticated ? (
         <Stack.Screen name="Main" component={BottomTabNavigator} />
       ) : (
-        <Stack.Screen name="Login" component={LoginScreen} />
+        <>
+          <Stack.Screen name="Login" component={LoginScreen} />
+          <Stack.Screen name="PasswordReset" component={PasswordResetScreen} />
+        </>
       )}
     </Stack.Navigator>
   );

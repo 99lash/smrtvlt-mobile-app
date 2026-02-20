@@ -1,8 +1,10 @@
 import { UserService } from './UserService';
 import { API_CONFIG } from '../config/api';
 import { ApiService } from './ApiService';
+import { ApiError } from './ApiService';
 import { VaultMembersResponse } from '../types/UserTypes';
 import { AccessLimits, AccessLimitsResponse } from '../types/AccessLimits';
+import { ActivityLog } from '../types/ActivityTypes';
 
 export interface VaultMembership {
   vault_id: number;
@@ -35,13 +37,6 @@ export interface ApiResponse<T> {
   detail?: string;
 }
 
-export interface AdminCheckResponse {
-  success: boolean;
-  data: {
-    is_admin: boolean;
-  };
-}
-
 export type TransferType = 'full_transfer' | 'shared_access';
 
 export interface TransferInitiateRequest {
@@ -59,6 +54,17 @@ export interface TransferInitiateResponse {
     transfer_type: string;
   };
   detail: string;
+}
+
+/** Shape of a single entry returned by GET /api/v1/vaults/{id}/activity */
+export interface ActivityLogEntry {
+  id: string;
+  vault_id: string;
+  user_id: string | null;
+  action: string;
+  method: string;
+  metadata: Record<string, unknown> | null;
+  created_at: string;
 }
 
 export class VaultService {
@@ -79,53 +85,64 @@ export class VaultService {
 
   static async getUserVaults(token?: string): Promise<VaultMembership[]> {
     try {
-      console.log('🔍 VaultService: Making API call to /vault-memberships/user/vaults');
-      const data = await ApiService.get<VaultMembersResponse>('/vault-memberships/user/vaults', token);
-      console.log('🔍 VaultService: Raw API response:', data);
+      console.log('VaultService: Making API call to vault list endpoint');
+      const data = await ApiService.get<VaultMembersResponse>(API_CONFIG.ENDPOINTS.VAULTS.LIST, token);
+      console.log('VaultService: Raw API response:', data);
 
-      if (!data.success) {
-        console.error('❌ VaultService: API call failed:', data);
+      if (!Array.isArray(data) && !data.success) {
+        console.error('VaultService: API call failed:', data);
         throw new Error(data.detail || 'Failed to load accessible vaults');
       }
 
-      console.log('✅ VaultService: API call successful, processing data...');
+      console.log('VaultService: API call successful, processing data...');
 
-      // Transform API response to match VaultMembership interface
-      const transformedData = data.data.map(item => ({
-        vault_id: item.vault_id,
-        vault_name: item.vault_name,
-        vault_device_id: item.vault_device_id,
-        vault_location: item.vault_location,
-        role: item.role as 'admin' | 'member' | 'guest',
-        created_at: item.created_at,
-        last_accessed_at: item.last_access || null
+      const vaultItems = Array.isArray(data) ? data : data.data;
+      const transformedData = (vaultItems || []).map(item => ({
+        vault_id: item.vault_id ?? item.id,
+        vault_name: item.vault_name ?? item.name ?? null,
+        vault_device_id: item.vault_device_id ?? item.device_id ?? null,
+        vault_location: item.vault_location ?? item.location ?? null,
+        role: (item.role as 'admin' | 'member' | 'guest') || 'member',
+        created_at: item.created_at || new Date().toISOString(),
+        last_accessed_at: item.last_access || item.last_accessed_at || null
       }));
 
-      console.log('🔍 VaultService - API Response:', data.data);
-      console.log('🔍 VaultService - Transformed Data:', transformedData);
+      console.log('VaultService - API Response:', Array.isArray(data) ? data : data.data);
+      console.log('VaultService - Transformed Data:', transformedData);
 
       return transformedData;
     } catch (error) {
-      console.error('❌ VaultService: Error loading user vaults:', error);
-      console.error('❌ Error details:', {
+      console.error('VaultService: Error loading user vaults:', error);
+      console.error('VaultService: Error details:', {
         message: error instanceof Error ? error.message : 'Unknown error',
         stack: error instanceof Error ? error.stack : undefined,
         type: typeof error
       });
 
-      // Re-throw with more context
       if (error instanceof Error) {
         throw error;
-      } else {
-        throw new Error(`Network error: ${String(error)}`);
       }
+      throw new Error(`Network error: ${String(error)}`);
     }
   }
 
   static async checkAdminAccess(vaultId: number, token?: string): Promise<boolean> {
     try {
-      const data = await ApiService.get<AdminCheckResponse>(`/vault-memberships/vaults/${vaultId}/admin-check`, token);
-      return data.success && data.data.is_admin;
+      const currentUser = await UserService.getCurrentUser();
+      if (!currentUser) {
+        return false;
+      }
+
+      const membersResponse = await ApiService.get<VaultMembersResponse>(
+        API_CONFIG.ENDPOINTS.VAULTS.MEMBERS(vaultId),
+        token
+      );
+
+      const members = Array.isArray(membersResponse)
+        ? membersResponse
+        : (membersResponse.data || []);
+      const member = members.find(m => m.user_id === currentUser.id);
+      return member?.role === 'admin';
     } catch (error) {
       console.error('Admin check error:', error);
       throw error;
@@ -156,7 +173,7 @@ export class VaultService {
     try {
       console.log('🔍 VaultService: Fetching access limits for vault', vaultId);
       const response = await ApiService.get<AccessLimitsResponse>(
-        `/vault-memberships/vaults/${vaultId}/access-limits`,
+        `/api/v1/vaults/${vaultId}/access-limits`,
         token
       );
 
@@ -183,7 +200,7 @@ export class VaultService {
       console.log('🔍 VaultService: Creating vault with data:', vaultData);
 
       const response = await ApiService.post<ApiResponse<VaultCreationResult>>(
-        API_CONFIG.ENDPOINTS.VAULTS.CREATE,
+        API_CONFIG.ENDPOINTS.VAULTS.PROVISION,
         vaultData,
         token
       );
@@ -330,6 +347,92 @@ export class VaultService {
   }
 
   /**
+   * Unlock a vault using a PIN.
+   * POST /api/v1/vaults/{vault_id}/unlock/pin
+   */
+  static async unlockWithPin(
+    vaultId: string,
+    pin: string
+  ): Promise<{ result: string; attempts_remaining: number }> {
+    try {
+      console.log('VaultService: unlockWithPin called for vault', vaultId);
+      const response = await ApiService.post<{
+        vault_id: string;
+        result: string;
+        attempts_remaining: number;
+      }>(
+        API_CONFIG.ENDPOINTS.VAULTS.PIN_UNLOCK(vaultId),
+        { pin }
+      );
+      console.log('VaultService: unlockWithPin response:', response);
+      return { result: response.result, attempts_remaining: response.attempts_remaining };
+    } catch (error) {
+      if (error instanceof ApiError) {
+        if (error.status === 401) throw new Error('Wrong PIN. ' + (error.message || 'Please try again.'));
+        if (error.status === 423) throw new Error('Vault is locked out due to too many failed attempts.');
+        if (error.status === 409) throw new Error('No PIN has been set for this vault.');
+        if (error.status === 403) throw new Error('You do not have access to this vault.');
+        if (error.status === 404) throw new Error('Vault not found.');
+      }
+      console.error('VaultService: unlockWithPin error:', error);
+      throw error instanceof Error ? error : new Error(String(error));
+    }
+  }
+
+  /**
+   * Send a remote unlock command to a vault (WebSocket-based).
+   * POST /api/v1/vaults/{vault_id}/unlock
+   */
+  static async sendUnlockCommand(
+    vaultId: string
+  ): Promise<{ sent: boolean; command_id: string }> {
+    try {
+      console.log('VaultService: sendUnlockCommand called for vault', vaultId);
+      const response = await ApiService.post<{
+        command_id: string;
+        vault_id: string;
+        expires_at: string;
+        sent: boolean;
+      }>(
+        API_CONFIG.ENDPOINTS.VAULTS.UNLOCK(vaultId),
+        {}
+      );
+      console.log('VaultService: sendUnlockCommand response:', response);
+      return { sent: response.sent, command_id: response.command_id };
+    } catch (error) {
+      if (error instanceof ApiError) {
+        if (error.status === 503) throw new Error('Vault is offline and cannot receive unlock commands.');
+        if (error.status === 403) throw new Error('You do not have access to this vault.');
+        if (error.status === 404) throw new Error('Vault not found.');
+      }
+      console.error('VaultService: sendUnlockCommand error:', error);
+      throw error instanceof Error ? error : new Error(String(error));
+    }
+  }
+
+  /**
+   * Get activity log entries for a vault.
+   * GET /api/v1/vaults/{vault_id}/activity?limit={limit}
+   */
+  static async getVaultActivity(vaultId: string, limit: number = 20): Promise<ActivityLogEntry[]> {
+    try {
+      console.log('VaultService: getVaultActivity called for vault', vaultId, 'limit', limit);
+      const response = await ApiService.get<{
+        vault_id: string;
+        entries: ActivityLogEntry[];
+        count: number;
+      }>(
+        `${API_CONFIG.ENDPOINTS.VAULTS.ACTIVITY(vaultId)}?limit=${limit}`
+      );
+      console.log('VaultService: getVaultActivity received', response?.entries?.length ?? 0, 'entries');
+      return response?.entries ?? [];
+    } catch (error) {
+      console.error('VaultService: getVaultActivity error:', error);
+      throw error instanceof Error ? error : new Error(String(error));
+    }
+  }
+
+  /**
    * Validate ownership transfer invitation code
    */
   static async validateOwnershipTransfer(
@@ -351,7 +454,7 @@ export class VaultService {
         expires_at?: string;
         vault_name?: string;
       }>>(
-        `/vaults/transfer/validate/${invitationCode}`
+        API_CONFIG.ENDPOINTS.VAULTS.TRANSFER_VALIDATE(invitationCode)
       );
 
       if (response.success && response.data.valid) {
@@ -375,4 +478,67 @@ export class VaultService {
       };
     }
   }
+}
+
+// ─── Activity Log Transform ───────────────────────────────────────────────────
+
+/**
+ * Transform a backend ActivityLogEntry into the frontend ActivityLog shape.
+ * Backend action values (from access_log.py):
+ *   VAULT_UNLOCKED, VAULT_UNLOCK_FAILED, VAULT_STATE_CHANGED,
+ *   UNLOCK_COMMAND_SENT, PIN_SET, MEMBER_ADDED, MEMBER_REMOVED
+ * Backend method values: PIN, BIOMETRIC, COMMAND, SYSTEM
+ */
+export function transformActivity(entry: ActivityLogEntry): ActivityLog {
+  type MappedAction = {
+    title: string;
+    eventType: ActivityLog['eventType'];
+    status: ActivityLog['status'];
+  };
+
+  const actionMap: Record<string, MappedAction> = {
+    VAULT_UNLOCKED: { title: 'VAULT ACCESS', eventType: 'vault_unlock', status: 'success' },
+    VAULT_UNLOCK_FAILED: { title: 'AUTH FAILURE', eventType: 'failed_unlock', status: 'failed' },
+    VAULT_STATE_CHANGED: { title: 'STATE CHANGE', eventType: 'settings_updated', status: 'success' },
+    UNLOCK_COMMAND_SENT: { title: 'REMOTE UNLOCK', eventType: 'remote_unlock', status: 'success' },
+    PIN_SET: { title: 'PIN UPDATED', eventType: 'settings_updated', status: 'success' },
+    MEMBER_ADDED: { title: 'MEMBER ADDED', eventType: 'user_added', status: 'success' },
+    MEMBER_REMOVED: { title: 'MEMBER REMOVED', eventType: 'user_added', status: 'success' },
+  };
+
+  const mapped: MappedAction = actionMap[entry.action] ?? {
+    title: (entry.action ?? 'EVENT').toUpperCase().replace(/_/g, ' '),
+    eventType: 'settings_updated' as ActivityLog['eventType'],
+    status: (entry.action?.toLowerCase().includes('fail') ? 'failed' : 'success') as ActivityLog['status'],
+  };
+
+  // Format relative timestamp
+  const createdAt = new Date(entry.created_at);
+  const diffMs = Date.now() - createdAt.getTime();
+  const diffMin = Math.floor(diffMs / 60000);
+  const timestamp =
+    diffMin < 1
+      ? 'Just now'
+      : diffMin < 60
+        ? `${diffMin}m ago`
+        : diffMin < 1440
+          ? `${Math.floor(diffMin / 60)}h ago`
+          : `${Math.floor(diffMin / 1440)}d ago`;
+
+  // Build description from method + metadata
+  const metaPart = entry.metadata ? JSON.stringify(entry.metadata) : null;
+  const description =
+    [entry.method, metaPart].filter(Boolean).join(' · ') || mapped.title;
+
+  return {
+    id: entry.id,
+    status: mapped.status,
+    eventType: mapped.eventType,
+    title: mapped.title,
+    description,
+    timestamp,
+    user: entry.user_id
+      ? { initials: '??', name: `UID:${String(entry.user_id).slice(0, 8)}` }
+      : { initials: 'SV', name: 'SMARTVAULT' },
+  };
 }

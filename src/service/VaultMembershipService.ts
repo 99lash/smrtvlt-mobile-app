@@ -1,5 +1,6 @@
 import { ApiService } from './ApiService';
 import { VaultMembershipResponse } from '../types/UserTypes';
+import { API_CONFIG } from '../config/api';
 
 /**
  * VaultMembershipService handles interactions related to vault members.
@@ -10,8 +11,7 @@ export class VaultMembershipService {
    * @param vaultId - The ID of the vault to fetch members for.
    */
   static async fetchVaultMembers(vaultId: number): Promise<VaultMembershipResponse[]> {
-    // Updated endpoint to match backend route definitions
-    const endpoint = `/vault-memberships/vault/${vaultId}`;
+    const endpoint = API_CONFIG.ENDPOINTS.VAULTS.MEMBERS(vaultId);
     try {
       const response: any = await ApiService.get(endpoint);
       // Some ApiService implementations return only the data object instead of a response with "ok"
@@ -36,8 +36,7 @@ export class VaultMembershipService {
    * @param userId - The ID of the user to remove.
    */
   static async removeUserFromVault(vaultId: number, userId: number): Promise<void> {
-    // Endpoint matches backend route: DELETE /vault-memberships/{user_id}/vault/{vault_id}
-    const endpoint = `/vault-memberships/${userId}/vault/${vaultId}`;
+    const endpoint = API_CONFIG.ENDPOINTS.VAULTS.REMOVE_MEMBER(vaultId, userId);
     try {
       const response: any = await ApiService.delete(endpoint);
       // ApiService.delete returns parsed JSON. Check for success field from backend Response schema
@@ -47,6 +46,42 @@ export class VaultMembershipService {
     } catch (error: any) {
       // Re-throw with better error message
       const message = error?.message || `Failed to remove user ${userId} from vault ${vaultId}`;
+      throw new Error(message);
+    }
+  }
+
+  /**
+   * Add a user to a vault with a specific role.
+   * @param vaultId - The ID of the vault.
+   * @param userId - The user_id of the user to add.
+   * @param role - The role to grant: 'ADMIN' | 'MEMBER' | 'VIEWER'
+   */
+  static async addMember(vaultId: string, userId: string, role: 'ADMIN' | 'MEMBER' | 'VIEWER'): Promise<void> {
+    const endpoint = API_CONFIG.ENDPOINTS.VAULTS.ADD_MEMBER(vaultId);
+    try {
+      await ApiService.post(endpoint, { user_id: userId, role });
+    } catch (error: any) {
+      const message = error?.message || `Failed to add user ${userId} to vault ${vaultId}`;
+      throw new Error(message);
+    }
+  }
+
+  /**
+   * Search for a user by email address.
+   * @param email - The email address to search for.
+   * @returns The matched user or null if not found.
+   */
+  static async searchUserByEmail(email: string): Promise<{ user_id: string; email: string; full_name: string | null } | null> {
+    const endpoint = API_CONFIG.ENDPOINTS.USERS.SEARCH(email);
+    try {
+      const data: any = await ApiService.get(endpoint);
+      return data ?? null;
+    } catch (error: any) {
+      // Return null on 404 (user not found)
+      if (error?.status === 404) {
+        return null;
+      }
+      const message = error?.message || `Failed to search for user with email ${email}`;
       throw new Error(message);
     }
   }

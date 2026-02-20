@@ -15,6 +15,8 @@ interface TabContentProps {
   onVaultSelect: (vaultId: number) => void;
   onRefresh: () => Promise<void>;
   onTransferOwnership?: (user: User) => void;
+  onDeleteUser?: (userId: string) => void;
+  onArchiveUser?: (userId: string) => void;
   scrollEnabled?: boolean;
 }
 
@@ -26,6 +28,8 @@ export const TabContent: React.FC<TabContentProps> = ({
   onVaultSelect,
   onRefresh,
   onTransferOwnership,
+  onDeleteUser,
+  onArchiveUser,
   scrollEnabled = true,
 }) => {
   return (
@@ -36,6 +40,8 @@ export const TabContent: React.FC<TabContentProps> = ({
           onUserPress={onUserPress}
           onRefresh={onRefresh}
           onTransferOwnership={onTransferOwnership}
+          onDeleteUser={onDeleteUser}
+          onArchiveUser={onArchiveUser}
           scrollEnabled={scrollEnabled}
         />
       ) : (

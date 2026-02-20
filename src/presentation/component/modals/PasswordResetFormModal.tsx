@@ -52,48 +52,8 @@ const PasswordResetFormModal: React.FC<PasswordResetFormModalProps> = ({
     setIsValidating(true);
     setError('');
 
-    try {
-      const url = `${API_CONFIG.BASE_URL}${API_CONFIG.ENDPOINTS.USERS.VALIDATE_RESET_TOKEN}`;
-      
-      if (__DEV__) {
-        console.log('PasswordResetFormModal - Validating token...');
-      }
-
-      const response = await fetch(url, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ token }),
-      });
-
-      if (__DEV__) {
-        console.log('PasswordResetFormModal - Validation response status:', response.status);
-      }
-
-      const data = await response.json();
-
-      if (response.ok && data.valid) {
-        setIsValidToken(true);
-      } else {
-        setIsValidToken(false);
-        setError(data.detail || 'Invalid or expired reset token');
-      }
-    } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Network error. Please try again.';
-      setError(errorMessage);
-      setIsValidToken(false);
-      console.error('Token validation error:', error);
-      
-      if (__DEV__) {
-        console.error('PasswordResetFormModal - Token validation error:', {
-          message: errorMessage,
-          token,
-        });
-      }
-    } finally {
-      setIsValidating(false);
-    }
+    setIsValidToken(true);
+    setIsValidating(false);
   };
 
   const handleResetPassword = async () => {
@@ -122,7 +82,7 @@ const PasswordResetFormModal: React.FC<PasswordResetFormModalProps> = ({
     setError('');
 
     try {
-      const url = `${API_CONFIG.BASE_URL}${API_CONFIG.ENDPOINTS.USERS.RESET_PASSWORD}`;
+      const url = `${API_CONFIG.BASE_URL}${API_CONFIG.ENDPOINTS.AUTH.CONFIRM_PASSWORD_RESET}`;
       
       if (__DEV__) {
         console.log('PasswordResetFormModal - Making reset request...');

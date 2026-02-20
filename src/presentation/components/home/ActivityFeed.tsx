@@ -7,13 +7,19 @@ import {
   ChevronRight
 } from 'lucide-react-native';
 
+interface ActivityUser {
+  initials: string;
+  name: string;
+}
+
 interface RecentActivity {
-  id: number;
+  id: number | string;
   type: 'success' | 'failed' | 'info';
+  status?: string;
   title: string;
   description: string;
   timestamp: string;
-  user?: string;
+  user?: ActivityUser | string;
 }
 
 interface ActivityFeedProps {
@@ -49,7 +55,7 @@ const ActivityItem = ({ activity }: { activity: RecentActivity }) => {
 
         {activity.user && (
           <Text className="text-zinc-700 text-[8px] font-black uppercase tracking-widest">
-            AUTH: {activity.user}
+            AUTH: {typeof activity.user === 'object' ? activity.user.name : activity.user}
           </Text>
         )}
       </View>
