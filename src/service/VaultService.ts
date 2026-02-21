@@ -7,7 +7,7 @@ import { AccessLimits, AccessLimitsResponse } from '../types/AccessLimits';
 import { ActivityLog } from '../types/ActivityTypes';
 
 export interface VaultMembership {
-  vault_id: number;
+  vault_id: string | number;
   vault_name?: string | null;
   vault_device_id?: string | null;
   vault_location?: string | null;

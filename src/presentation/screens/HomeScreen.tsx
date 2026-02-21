@@ -55,7 +55,7 @@ export default function HomeScreen({
     try {
       const vaults = await VaultService.getUserVaults();
       const mappedVaults = vaults.map(v => ({
-        vault_id: parseInt(String(v.vault_id), 10) || 0,
+        vault_id: v.vault_id,
         vault_name: v.vault_name ?? `UNIT-${v.vault_id}`,
         vault_device_id: null,
         vault_location: null,
@@ -133,6 +133,7 @@ export default function HomeScreen({
       last_accessed_at: null,
     };
     setVaults(prev => [...prev, mockVault]);
+    MockDataService.addVault(mockVault);
     setAddVaultModalVisible(false);
     setNewVaultName('');
   };

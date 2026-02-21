@@ -79,7 +79,7 @@ export default function UsersScreen({ navigation }: any) {
     try {
       const rawVaults = await VaultService.getUserVaults();
       const mappedVaults = rawVaults.map(item => ({
-        vault_id: parseInt(String(item.vault_id), 10) || 0,
+        vault_id: item.vault_id,
         vault_name: item.vault_name ?? `UNIT-${item.vault_id}`,
         vault_device_id: null,
         vault_location: null,
@@ -87,11 +87,15 @@ export default function UsersScreen({ navigation }: any) {
         created_at: new Date().toISOString(),
         last_accessed_at: (item as any).last_seen_at ?? null,
       }));
-      setVaults(mappedVaults);
+      let finalVaults = mappedVaults;
+      if (finalVaults.length === 0) {
+        finalVaults = await MockDataService.getVaults();
+      }
+      setVaults(finalVaults);
 
-      if (mappedVaults.length > 0) {
+      if (finalVaults.length > 0) {
         const allMemberArrays = await Promise.all(
-          mappedVaults.map(v =>
+          finalVaults.map(v =>
             VaultMembershipService.fetchVaultMembers(v.vault_id).catch(() => [])
           )
         );

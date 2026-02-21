@@ -10,7 +10,7 @@ export class VaultMembershipService {
    * Fetch all members of a specified vault.
    * @param vaultId - The ID of the vault to fetch members for.
    */
-  static async fetchVaultMembers(vaultId: number): Promise<VaultMembershipResponse[]> {
+  static async fetchVaultMembers(vaultId: string | number): Promise<VaultMembershipResponse[]> {
     const endpoint = API_CONFIG.ENDPOINTS.VAULTS.MEMBERS(vaultId);
     try {
       const response: any = await ApiService.get(endpoint);
@@ -35,7 +35,7 @@ export class VaultMembershipService {
    * @param vaultId - The ID of the vault.
    * @param userId - The ID of the user to remove.
    */
-  static async removeUserFromVault(vaultId: number, userId: number): Promise<void> {
+  static async removeUserFromVault(vaultId: string | number, userId: number): Promise<void> {
     const endpoint = API_CONFIG.ENDPOINTS.VAULTS.REMOVE_MEMBER(vaultId, userId);
     try {
       const response: any = await ApiService.delete(endpoint);

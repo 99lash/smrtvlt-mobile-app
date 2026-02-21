@@ -271,6 +271,15 @@ export class MockDataService {
     }
   }
 
+  static async addVault(vault: VaultMembership): Promise<void> {
+    try {
+      const current = await this.getVaults();
+      await AsyncStorage.setItem(KEYS.VAULTS, JSON.stringify([...current, vault]));
+    } catch (error) {
+      if (__DEV__) console.error('MockDataService - addVault failed:', error);
+    }
+  }
+
   /** Get activity log list from AsyncStorage. */
   static async getActivityLogs(): Promise<ActivityLog[]> {
     try {

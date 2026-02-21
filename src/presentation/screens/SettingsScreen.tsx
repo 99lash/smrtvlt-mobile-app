@@ -37,7 +37,7 @@ const SettingsScreen = () => {
     try {
       const raw = await VaultService.getUserVaults();
       const v = raw.map(item => ({
-        vault_id: parseInt(String(item.vault_id), 10) || 0,
+        vault_id: item.vault_id,
         vault_name: item.vault_name ?? `UNIT-${item.vault_id}`,
         vault_device_id: null,
         vault_location: null,
