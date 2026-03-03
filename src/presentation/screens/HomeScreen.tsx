@@ -5,7 +5,6 @@ import { Shield } from 'lucide-react-native';
 
 // Import existing UI components
 import { VaultGrid } from '../components/home/VaultGrid';
-import { AnalyticsCards } from '../components/home/AnalyticsCards';
 import { ActivityFeed } from '../components/home/ActivityFeed';
 import { QuickActions } from '../components/home/QuickActions';
 import { DateFilterDropdown, DATE_FILTER_OPTIONS } from '../components/home/DateFilterDropdown';
@@ -36,7 +35,6 @@ export default function HomeScreen({
   const [addVaultModalVisible, setAddVaultModalVisible] = useState(false);
   const [newVaultName, setNewVaultName] = useState('');
 
-  const [metrics, setMetrics] = useState<any>(null);
   const [vaults, setVaults] = useState<VaultMembership[]>([]);
   const [activity, setActivity] = useState<ActivityLog[]>([]);
 
@@ -46,7 +44,6 @@ export default function HomeScreen({
         MockDataService.getVaults(),
         MockDataService.getActivityLogs(),
       ]);
-      setMetrics(MockDataService.getMetrics());
       setVaults(v);
       setActivity(a.slice(0, 3));
       return;
@@ -64,7 +61,6 @@ export default function HomeScreen({
         last_accessed_at: (v as any).last_seen_at ?? null,
       }));
       setVaults(mappedVaults);
-      setMetrics({ totalVaults: mappedVaults.length, todayAccessCount: 0, successRate: 0, failedAttempts: 0, lastActivity: null, isLoading: false, error: null });
 
       if (mappedVaults.length > 0) {
         try {
@@ -162,15 +158,6 @@ export default function HomeScreen({
                 {isConnected ? 'Network: Active' : 'Network: Offline'}
             </Text>
         </View>
-      </View>
-
-      {/* Primary Metrics */}
-      <View className="mb-12">
-        <AnalyticsCards
-            metrics={metrics ?? { totalVaults: 0, todayAccessCount: 0, successRate: 0, failedAttempts: 0, lastActivity: null, isLoading: !metrics, error: null }}
-            onRefresh={refreshData}
-            isRefreshing={isRefreshing}
-        />
       </View>
 
       {/* Vault Units */}

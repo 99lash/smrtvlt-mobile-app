@@ -1,12 +1,11 @@
 import React from 'react';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
-import { House, Users, Activity, Settings } from 'lucide-react-native';
+import { House, Activity, Settings } from 'lucide-react-native';
 import { Pressable, Text, View, StyleSheet } from 'react-native';
 import { useTheme } from '@react-navigation/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import type { BottomTabBarProps } from '@react-navigation/bottom-tabs';
 import HomeScreen from '../screens/HomeScreen';
-import UsersScreen from '../screens/UsersScreen';
 import ActivityScreen from '../screens/ActivityScreen';
 import SettingsScreen from '../screens/SettingsScreen';
 
@@ -21,14 +20,6 @@ const HomeScreenWithHeader = () => (
     />
   </View>
 );
-
-const UsersScreenWithHeader = () => {
-  return (
-    <View className="flex-1 bg-bg-default">
-      <UsersScreen />
-    </View>
-  );
-};
 
 const ActivityScreenWithHeader = () => {
   return (
@@ -84,7 +75,6 @@ function MyTabBar({ state, descriptors, navigation }: BottomTabBarProps) {
             };
             
             let Icon = House;
-            if (route.name === 'Users') Icon = Users;
             if (route.name === 'Activity') Icon = Activity;
             if (route.name === 'Settings') Icon = Settings;
             
@@ -144,7 +134,6 @@ const BottomTabNavigator = () => {
       }}
     >
       <Tab.Screen name="Home" component={HomeScreenWithHeader} />
-      <Tab.Screen name="Users" component={UsersScreenWithHeader} />
       <Tab.Screen name="Activity" component={ActivityScreenWithHeader} />
       <Tab.Screen name="Settings" component={SettingsScreenWithHeader} />
     </Tab.Navigator>

@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useState } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, Alert, TextInput } from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity, Alert } from 'react-native';
 import { ChevronDown, ChevronUp, Vault, LogOut } from 'lucide-react-native';
 import ButtonSecondary from '../component/buttons/ButtonSecondary';
 import CustomModal from '../component/modals/CustomModal';
@@ -9,8 +9,6 @@ import { useBiometric } from '../hooks/useBiometric';
 import { MockDataService } from '../../service/MockDataService';
 import { VaultMembership, VaultService } from '../../service/VaultService';
 import { MOCK_MODE } from '../../config/env';
-import { MockPinManager } from './settings/MockPinManager';
-import { MockNFCManager } from './settings/MockNFCManager';
 import { WaitingForVaultModal } from './settings/WaitingForVaultModal';
 
 
@@ -21,9 +19,6 @@ const SettingsScreen = () => {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
   const [vaultBiometricEnabled, setVaultBiometricEnabled] = useState(false);
-  const [vaultPinModalVisible, setVaultPinModalVisible] = useState(false);
-  const [vaultPin, setVaultPin] = useState('');
-  const [isSavingVaultPin, setIsSavingVaultPin] = useState(false);
   const [enrollmentModalVisible, setEnrollmentModalVisible] = useState(false);
   const [provisioningModalVisible, setProvisioningModalVisible] = useState(false);
 
@@ -139,30 +134,7 @@ const SettingsScreen = () => {
         );
       });
     } else {
-      setVaultPin('');
-      setVaultPinModalVisible(true);
-    }
-  };
-
-  const handleEnableVaultBiometric = async () => {
-    if (!vaultPin.trim()) {
-      Alert.alert('PIN required', 'Enter your vault PIN to enable biometric unlock.');
-      return;
-    }
-
-    setIsSavingVaultPin(true);
-    try {
-      await enableVaultBiometric(currentVault!.vault_id, vaultPin.trim());
-      setVaultBiometricEnabled(true);
-      setVaultPinModalVisible(false);
-      setVaultPin('');
-    } catch (error) {
-      Alert.alert(
-        'Biometric update failed',
-        error instanceof Error ? error.message : 'Please try again.'
-      );
-    } finally {
-      setIsSavingVaultPin(false);
+      Alert.alert('Not available', 'Vault biometric unlock setup is not yet available.');
     }
   };
 
@@ -272,10 +244,6 @@ const SettingsScreen = () => {
             </View>
           </TouchableOpacity>
 
-          <MockPinManager />
-
-          <MockNFCManager />
-
           {currentVault?.role === 'admin' && (
             <View className="bg-zinc-950 p-6 rounded-[32px] border border-zinc-800 mb-6">
               <Text className="text-white font-black text-xl uppercase tracking-tighter">User Archive</Text>
@@ -321,36 +289,6 @@ const SettingsScreen = () => {
           </TouchableOpacity>
         </View>
       </ScrollView>
-
-      <CustomModal
-        visible={vaultPinModalVisible}
-        onClose={() => setVaultPinModalVisible(false)}
-        title="Enable Biometric Unlock"
-        primaryAction={{
-          label: isSavingVaultPin ? 'Enabling...' : 'Enable',
-          onPress: handleEnableVaultBiometric,
-          disabled: isSavingVaultPin || !vaultPin.trim(),
-          loading: isSavingVaultPin,
-        }}
-      >
-        <View className="mb-4">
-          <Text className="text-white font-black uppercase tracking-[2px] text-[10px] mb-2">
-            Vault PIN
-          </Text>
-          <TextInput
-            value={vaultPin}
-            onChangeText={setVaultPin}
-            placeholder="Enter vault PIN"
-            placeholderTextColor="#52525B"
-            secureTextEntry={true}
-            keyboardType="number-pad"
-            className="bg-zinc-900 text-white px-4 py-4 rounded-2xl border border-zinc-800"
-          />
-          <Text className="text-zinc-500 text-[10px] font-bold uppercase tracking-[2px] mt-3">
-            This PIN will be stored securely and require {biometricLabel} to access.
-          </Text>
-        </View>
-      </CustomModal>
 
       <WaitingForVaultModal
         visible={enrollmentModalVisible}
