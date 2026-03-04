@@ -1,10 +1,8 @@
 import React from 'react';
 import { View, Text } from 'react-native';
 import { AlertCircle } from 'lucide-react-native';
-import { BLEScanError } from '../../../types/ble.types';
-
 interface ProvisioningErrorProps {
-  error?: BLEScanError | null;
+  error?: { message: string } | null;
   permissionGranted?: boolean | null;
 }
 

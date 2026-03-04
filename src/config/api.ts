@@ -30,8 +30,11 @@ export const API_CONFIG = {
       ACCEPT: (code: string) => `/api/v1/vault-invitations/${code}/accept`,
       BY_VAULT: (vaultId: number) => `/api/v1/vault-invitations/vault/${vaultId}`,
     },
+    DEVICES: {
+      REGISTER: '/api/v1/devices/register',
+    },
     VAULTS: {
-      PROVISION: '/api/v1/vaults/provision',
+      PROVISIONING_TOKEN: '/api/v1/vaults/provisioning-token',
       LIST: '/api/v1/vaults',
       STATUS: (vaultId: string | number) => `/api/v1/vaults/${vaultId}/status`,
       UNLOCK: (vaultId: string | number) => `/api/v1/vaults/${vaultId}/unlock`,

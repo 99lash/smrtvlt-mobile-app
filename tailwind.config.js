@@ -35,6 +35,16 @@ module.exports = {
           default: '#71717A', // Zinc-400
           dark: '#71717A',
         },
+        accent: {
+          default: '#22D3EE', // cyan-400
+          dim: '#0891B2',     // cyan-600
+        },
+        status: {
+          success: '#22C55E', // green-500
+          warning: '#F59E0B', // amber-500
+          danger: '#EF4444',  // red-500
+          neutral: '#71717A', // zinc-500
+        },
         surface:{
           default: '#18181B',
           active: '#27272A',

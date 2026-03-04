@@ -16,19 +16,8 @@ export interface VaultMembership {
   last_accessed_at?: string | null; // Timestamp of user's last successful access to this vault
 }
 
-export interface VaultCreateData {
-  device_id: string;
-  name: string;
-  location?: string;
-}
-
-export interface VaultCreationResult {
-  id: string;
-  device_id: string;
-  name: string;
-  location?: string;
-  status: string;
-  created_at: string;
+export interface ProvisioningTokenResponse {
+  provisioning_token: string;
 }
 
 export interface ApiResponse<T> {
@@ -190,31 +179,17 @@ export class VaultService {
   }
 
   /**
-   * Create a new vault
+   * Fetch a 6-digit provisioning token from the backend.
+   * Token is stored in Redis with a 5-minute TTL.
+   * The ESP32 captive portal form requires this token to register the device.
    */
-  static async createVault(
-    vaultData: VaultCreateData,
-    token?: string
-  ): Promise<VaultCreationResult> {
-    try {
-      console.log('🔍 VaultService: Creating vault with data:', vaultData);
-
-      const response = await ApiService.post<ApiResponse<VaultCreationResult>>(
-        API_CONFIG.ENDPOINTS.VAULTS.PROVISION,
-        vaultData,
-        token
-      );
-
-      if (!response.success) {
-        throw new Error(response.detail || 'Failed to create vault');
-      }
-
-      console.log('✅ VaultService: Vault created successfully:', response.data);
-      return response.data;
-    } catch (error) {
-      console.error('❌ VaultService: Error creating vault:', error);
-      throw error;
-    }
+  static async fetchProvisioningToken(token?: string): Promise<string> {
+    const response = await ApiService.post<ProvisioningTokenResponse>(
+      API_CONFIG.ENDPOINTS.VAULTS.PROVISIONING_TOKEN,
+      {},
+      token
+    );
+    return response.provisioning_token;
   }
 
   /**

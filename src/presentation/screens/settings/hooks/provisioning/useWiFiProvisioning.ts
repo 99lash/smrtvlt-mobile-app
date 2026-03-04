@@ -1,179 +1,90 @@
-import { useState, useEffect, useCallback } from 'react';
-import { useWiFiScanning } from './useWiFiScanning';
-import { useProvisioning } from './useProvisioning';
-import { PROVISIONING_CONSTANTS } from '../../../../../utils/provisioningConstants';
-import type { ProvisioningError } from '../../../../../types/ProvisioningTypes';
+import { useState, useCallback, useRef } from 'react';
+import { VaultService } from '../../../../../service/VaultService';
+import type { VaultMembership } from '../../../../../service/VaultService';
 
-/**
- * Custom hook for WiFi provisioning logic
- * Handles WiFi network selection, credential management, and provisioning flow
- */
+export type ProvisioningStep =
+  | 'idle'
+  | 'fetching_token'
+  | 'showing_token'
+  | 'polling'
+  | 'done'
+  | 'error';
+
 export const useWiFiProvisioning = () => {
-  const { provisionDevice, selectedDevice } = useProvisioning();
-  const {
-    wifiNetworks,
-    scanning,
-    error: wifiScanError,
-    startScan,
-  } = useWiFiScanning();
+  const [step, setStep] = useState<ProvisioningStep>('idle');
+  const [token, setToken] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [foundVault, setFoundVault] = useState<VaultMembership | null>(null);
 
-  // WiFi provisioning state
-  const [selectedSSID, setSelectedSSID] = useState<string | null>(null);
-  const [wifiPassword, setWifiPassword] = useState('');
-  const [showPassword, setShowPassword] = useState(false);
-  const [provisioningError, setProvisioningError] =
-    useState<ProvisioningError | null>(null);
-  const [isProvisioning, setIsProvisioning] = useState(false);
+  const pollIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const knownVaultIdsRef = useRef<Set<string | number>>(new Set());
 
-  // Reset form when SSID changes
-  useEffect(() => {
-    setWifiPassword('');
-    setShowPassword(false);
-    setProvisioningError(null);
-  }, [selectedSSID]);
-
-  // Auto-start WiFi scan when needed
-  const startWiFiScan = useCallback(() => {
-    setProvisioningError(null);
-    startScan();
-  }, [startScan]);
-
-  // Handle WiFi network selection
-  const handleNetworkSelect = useCallback((ssid: string) => {
-    setSelectedSSID(ssid);
-    setProvisioningError(null);
-  }, []);
-
-  // Handle password visibility toggle
-  const togglePasswordVisibility = useCallback(() => {
-    setShowPassword(prev => !prev);
-  }, []);
-
-  // Handle WiFi provisioning
-  const handleProvisionWiFi = useCallback(async () => {
-    if (!selectedDevice) {
-      setProvisioningError({
-        message: 'No device selected. Please select a device first.',
-        code: 'NO_DEVICE_SELECTED',
-      });
-      return;
-    }
-
-    if (!selectedSSID || !wifiPassword) {
-      setProvisioningError({
-        message: 'Please select a WiFi network and enter the password',
-        code: 'MISSING_CREDENTIALS',
-      });
-      return;
-    }
-
-    // Basic password validation
-    if (
-      wifiPassword.length <
-      PROVISIONING_CONSTANTS.VALIDATION.MIN_PASSWORD_LENGTH
-    ) {
-      setProvisioningError({
-        message: `Password must be at least ${PROVISIONING_CONSTANTS.VALIDATION.MIN_PASSWORD_LENGTH} characters long`,
-        code: 'INVALID_PASSWORD',
-      });
-      return;
-    }
-
-    setIsProvisioning(true);
-    setProvisioningError(null);
+  const fetchToken = useCallback(async () => {
+    setStep('fetching_token');
+    setError(null);
+    setToken(null);
+    setFoundVault(null);
 
     try {
-      // Use the POP key from constants - must match ESP32 firmware
-      const devicePassword = PROVISIONING_CONSTANTS.ESP32.PROOF_OF_POSSESSION;
+      const t = await VaultService.fetchProvisioningToken();
+      setToken(t);
 
-      // Prepare custom data in the format expected by ESP32 firmware
-      const customData = `vault_id:2;endpoint:ws://192.168.1.8:8000/logs/ws;ssid:${selectedSSID};password:${wifiPassword};`;
+      // Snapshot existing vault IDs so we can detect the newly registered one
+      const vaults = await VaultService.getUserVaults();
+      knownVaultIdsRef.current = new Set(vaults.map(v => v.vault_id));
 
-      console.log('=== CUSTOM DATA DEBUG ===');
-      console.log('Custom data to send:', customData);
-      console.log('SSID:', selectedSSID);
-      console.log('Password length:', wifiPassword.length);
-      console.log('Device password:', devicePassword);
-      console.log('=======================');
-
-      // Use WiFi provisioning with custom data
-      await provisionDevice(selectedSSID, wifiPassword, devicePassword, {
-        customData: customData
-      });
-
-      // Set success indicator
-      setProvisioningError({
-        message: 'WiFi provisioning completed successfully',
-        code: 'PROVISIONING_SUCCESS',
-      });
-
-      // Reset form on success
-      setSelectedSSID(null);
-      setWifiPassword('');
-      setShowPassword(false);
-    } catch (error) {
-      console.error('WiFi provisioning failed:', error);
-      setProvisioningError({
-        message: 'Failed to provision device. Please try again.',
-        code: 'PROVISIONING_FAILED',
-        details: error,
-      });
-    } finally {
-      setIsProvisioning(false);
+      setStep('showing_token');
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to fetch provisioning token');
+      setStep('error');
     }
-  }, [selectedSSID, wifiPassword, provisionDevice, selectedDevice]);
-
-  // Reset all WiFi provisioning state
-  const resetProvisioning = useCallback(() => {
-    console.log('=== RESETTING WIFI PROVISIONING STATE ===');
-    setSelectedSSID(null);
-    setWifiPassword('');
-    setShowPassword(false);
-    setProvisioningError(null);
-    setIsProvisioning(false);
-    console.log('=== WIFI PROVISIONING STATE RESET ===');
   }, []);
 
-  // Validate form - simplified for debugging
-  const hasDevice = Boolean(selectedDevice);
-  const hasSSID = Boolean(selectedSSID);
-  const hasValidPassword =
-    wifiPassword.length >=
-    PROVISIONING_CONSTANTS.VALIDATION.MIN_PASSWORD_LENGTH;
-  const isFormValid = hasDevice && hasSSID && hasValidPassword;
+  const startPolling = useCallback(() => {
+    if (pollIntervalRef.current) return; // already polling
 
-  // Debug logging for form validation
-  console.log('=== FORM VALIDATION DEBUG ===');
-  console.log('Individual checks:', {
-    hasDevice,
-    hasSSID,
-    hasValidPassword,
-    passwordLength: wifiPassword.length,
-    minPasswordLength: PROVISIONING_CONSTANTS.VALIDATION.MIN_PASSWORD_LENGTH,
-  });
-  console.log('Final result:', { isFormValid });
-  console.log('============================');
+    setStep('polling');
+
+    pollIntervalRef.current = setInterval(async () => {
+      try {
+        const vaults = await VaultService.getUserVaults();
+        const newVault = vaults.find(v => !knownVaultIdsRef.current.has(v.vault_id));
+        if (newVault) {
+          clearInterval(pollIntervalRef.current!);
+          pollIntervalRef.current = null;
+          setFoundVault(newVault);
+          setStep('done');
+        }
+      } catch {
+        // Ignore transient polling errors
+      }
+    }, 3000);
+  }, []);
+
+  const stopPolling = useCallback(() => {
+    if (pollIntervalRef.current) {
+      clearInterval(pollIntervalRef.current);
+      pollIntervalRef.current = null;
+    }
+  }, []);
+
+  const reset = useCallback(() => {
+    stopPolling();
+    setStep('idle');
+    setToken(null);
+    setError(null);
+    setFoundVault(null);
+    knownVaultIdsRef.current = new Set();
+  }, [stopPolling]);
 
   return {
-    // State
-    selectedSSID,
-    wifiPassword,
-    showPassword,
-    isProvisioning,
-    provisioningError,
-    wifiNetworks,
-    scanning,
-    wifiScanError,
-
-    // Actions
-    setWifiPassword,
-    handleNetworkSelect,
-    togglePasswordVisibility,
-    handleProvisionWiFi,
-    startWiFiScan,
-    resetProvisioning,
-
-    // Computed
-    isFormValid,
+    step,
+    token,
+    error,
+    foundVault,
+    fetchToken,
+    startPolling,
+    stopPolling,
+    reset,
   };
 };

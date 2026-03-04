@@ -1,44 +1,11 @@
-import { useState, useCallback } from 'react';
-import { VaultService, VaultCreateData, VaultCreationResult } from '../../../../../service/VaultService';
-import { useErrorHandler } from '../../../../hooks/common/useErrorHandler';
-
+// Vault creation is now handled by the ESP32 firmware via POST /devices/register.
+// This hook is kept as a no-op to avoid breaking imports until
+// VaultConfigurationModal is updated or removed.
 export const useVaultCreation = () => {
-  const [isCreating, setIsCreating] = useState(false);
-  const [creationError, setCreationError] = useState<string | null>(null);
-  const { handleAPIError } = useErrorHandler();
-
-  const createVault = useCallback(async (vaultData: VaultCreateData): Promise<VaultCreationResult | null> => {
-    setIsCreating(true);
-    setCreationError(null);
-
-    try {
-      const result = await VaultService.createVault(vaultData);
-      return result;
-    } catch (err) {
-      const errorMessage = handleAPIError(err, {
-        action: 'Create vault',
-        context: `Device ID: ${vaultData.device_id}, Name: ${vaultData.name}`
-      }, {
-        showAlert: true,
-        logError: true,
-        fallbackMessage: 'Failed to create vault'
-      });
-      setCreationError(errorMessage);
-      return null;
-    } finally {
-      setIsCreating(false);
-    }
-  }, [handleAPIError]);
-
-  const resetCreation = useCallback(() => {
-    setIsCreating(false);
-    setCreationError(null);
-  }, []);
-
   return {
-    createVault,
-    isCreating,
-    creationError,
-    resetCreation,
+    createVault: async (_data: unknown) => null,
+    isCreating: false,
+    creationError: null,
+    resetCreation: () => {},
   };
 };

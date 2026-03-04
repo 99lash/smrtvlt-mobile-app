@@ -9,31 +9,6 @@ import HomeScreen from '../screens/HomeScreen';
 import ActivityScreen from '../screens/ActivityScreen';
 import SettingsScreen from '../screens/SettingsScreen';
 
-const HomeScreenWithHeader = () => (
-  <View className="flex-1 bg-bg-default">
-    <HomeScreen
-      isConnected={true}
-      vaultStatus="locked"
-      setVaultStatus={() => {}}
-      hasActiveAlarm={false}
-      setHasActiveAlarm={() => {}}
-    />
-  </View>
-);
-
-const ActivityScreenWithHeader = () => {
-  return (
-    <View className="flex-1 bg-bg-default">
-      <ActivityScreen />
-    </View>
-  );
-};
-
-const SettingsScreenWithHeader = () => (
-  <View className="flex-1 bg-bg-default">
-    <SettingsScreen />
-  </View>
-);
 
 const Tab = createBottomTabNavigator();
 
@@ -133,9 +108,9 @@ const BottomTabNavigator = () => {
         tabBarStyle: { display: 'none' } 
       }}
     >
-      <Tab.Screen name="Home" component={HomeScreenWithHeader} />
-      <Tab.Screen name="Activity" component={ActivityScreenWithHeader} />
-      <Tab.Screen name="Settings" component={SettingsScreenWithHeader} />
+      <Tab.Screen name="Home" component={HomeScreen} />
+      <Tab.Screen name="Activity" component={ActivityScreen} />
+      <Tab.Screen name="Settings" component={SettingsScreen} />
     </Tab.Navigator>
   );
 };
