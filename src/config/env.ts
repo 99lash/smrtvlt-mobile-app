@@ -53,7 +53,7 @@ function getEnvArray(key: string, fallback: string[]): string[] {
  * Environment configuration object
  */
 export const ENV_CONFIG: EnvConfig = {
-  BASE_URL: getEnvVar('EXPO_PUBLIC_BASE_URL', 'http://10.42.0.1:8000'),
+  BASE_URL: getEnvVar('EXPO_PUBLIC_BASE_URL', 'https://inscriptional-myrtie-oversecurely.ngrok-free.dev'),
   DEFAULT_VAULT_ID: getEnvNumber('EXPO_PUBLIC_DEFAULT_VAULT_ID', 2),
   DEFAULT_PREFIXES: getEnvArray('EXPO_PUBLIC_DEFAULT_PREFIXES', ['Locked', 'Tamper', 'DUAL', 'Failure', 'NFC']),
   EVENT_WS_URL: process.env.EXPO_PUBLIC_EVENT_WS_URL,
