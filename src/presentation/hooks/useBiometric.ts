@@ -6,6 +6,7 @@ export const useBiometric = () => {
   const [hasHardware, setHasHardware] = useState(false);
   const [isEnrolled, setIsEnrolled] = useState(false);
   const [supportedTypes, setSupportedTypes] = useState<number[]>([]);
+  const [enrolledLevel, setEnrolledLevel] = useState(0);
   const [isLoginEnabled, setIsLoginEnabled] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -20,6 +21,7 @@ export const useBiometric = () => {
       setHasHardware(capabilities.hasHardware);
       setIsEnrolled(capabilities.isEnrolled);
       setSupportedTypes(capabilities.supportedTypes);
+      setEnrolledLevel(capabilities.enrolledLevel);
 
       const enabled = await BiometricService.isBiometricLoginEnabled();
       setIsLoginEnabled(enabled);
@@ -110,7 +112,10 @@ export const useBiometric = () => {
     return await BiometricService.getVaultPinWithBiometrics(vaultId);
   }, []);
 
-  const biometricLabel = useMemo(() => BiometricService.getBiometricLabel(supportedTypes as any), [supportedTypes]);
+  const biometricLabel = useMemo(
+    () => BiometricService.getBiometricLabel(supportedTypes as any, enrolledLevel),
+    [supportedTypes, enrolledLevel]
+  );
   const isAvailable = isSecureStoreAvailable && hasHardware;
   const canPromptBiometrics = isAvailable && isEnrolled;
 

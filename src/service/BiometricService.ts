@@ -19,6 +19,7 @@ export interface BiometricCapabilities {
   hasHardware: boolean;
   isEnrolled: boolean;
   supportedTypes: LocalAuthentication.AuthenticationType[];
+  enrolledLevel: number;
 }
 
 export class BiometricService {
@@ -37,18 +38,33 @@ export class BiometricService {
     try {
       const hasHardware = await LocalAuthentication.hasHardwareAsync();
       const isEnrolled = hasHardware ? await LocalAuthentication.isEnrolledAsync() : false;
+      const enrolledLevel = hasHardware ? await LocalAuthentication.getEnrolledLevelAsync() : 0;
       const supportedTypes = hasHardware
         ? await LocalAuthentication.supportedAuthenticationTypesAsync()
         : [];
+
+      // Android: face recognition is Class 2 (BIOMETRIC_WEAK) and is NOT returned by
+      // supportedAuthenticationTypesAsync() which only reports Class 3 (BIOMETRIC_STRONG).
+      // If enrolledLevel is BIOMETRIC_WEAK (2) and no strong biometrics are reported,
+      // face recognition is the only enrolled biometric — surface it explicitly.
+      const hasFaceOnlyEnrolled =
+        enrolledLevel === 2 &&
+        !supportedTypes.includes(LocalAuthentication.AuthenticationType.FINGERPRINT) &&
+        !supportedTypes.includes(LocalAuthentication.AuthenticationType.FACIAL_RECOGNITION);
+
+      const effectiveTypes = hasFaceOnlyEnrolled
+        ? [...supportedTypes, LocalAuthentication.AuthenticationType.FACIAL_RECOGNITION]
+        : supportedTypes;
 
       await log.debug('Biometric', 'Capabilities checked', {
         isSecureStoreAvailable,
         hasHardware,
         isEnrolled,
-        supportedTypes,
+        enrolledLevel,
+        supportedTypes: effectiveTypes,
       });
 
-      return { isSecureStoreAvailable, hasHardware, isEnrolled, supportedTypes };
+      return { isSecureStoreAvailable, hasHardware, isEnrolled, supportedTypes: effectiveTypes, enrolledLevel };
     } catch (error) {
       await log.error('Biometric', 'Failed to check capabilities', error);
       return {
@@ -56,6 +72,7 @@ export class BiometricService {
         hasHardware: false,
         isEnrolled: false,
         supportedTypes: [],
+        enrolledLevel: 0,
       };
     }
   }
@@ -326,16 +343,20 @@ export class BiometricService {
     await SecureStore.deleteItemAsync(BIOMETRIC_KEYS.VAULT_JWT).catch(() => {});
   }
 
-  static getBiometricLabel(types: LocalAuthentication.AuthenticationType[]): string {
-    if (types.includes(LocalAuthentication.AuthenticationType.FACIAL_RECOGNITION)) {
-      return 'Face ID';
-    }
-    if (types.includes(LocalAuthentication.AuthenticationType.FINGERPRINT)) {
-      return 'Fingerprint';
-    }
-    if (types.includes(LocalAuthentication.AuthenticationType.IRIS)) {
-      return 'Iris';
-    }
-    return 'Biometric';
+  static getBiometricLabel(
+    types: LocalAuthentication.AuthenticationType[],
+    enrolledLevel?: number
+  ): string {
+    const hasFace = types.includes(LocalAuthentication.AuthenticationType.FACIAL_RECOGNITION);
+    const hasFingerprint = types.includes(LocalAuthentication.AuthenticationType.FINGERPRINT);
+
+    if (hasFace && hasFingerprint) return 'Face / Fingerprint';
+    if (hasFace) return 'Face Recognition';
+    // enrolledLevel 3 + fingerprint: Android face (Class 2) may also be enrolled
+    // but is undetectable via supportedAuthenticationTypesAsync — use combined label.
+    if (hasFingerprint && enrolledLevel === 3) return 'Face / Fingerprint';
+    if (hasFingerprint) return 'Fingerprint';
+    if (types.includes(LocalAuthentication.AuthenticationType.IRIS)) return 'Iris';
+    return 'Biometrics';
   }
 }
