@@ -12,6 +12,7 @@ const BIOMETRIC_KEYS = {
   VAULT_PIN_PREFIX: 'biometric_vault_pin_',
   VAULT_USER_ID: 'vault_user_id',
   VAULT_JWT: 'vault_jwt',
+  FACE_ENROLLED: 'face_recognition_enrolled',
 };
 
 export interface BiometricCapabilities {
@@ -333,6 +334,84 @@ export class BiometricService {
       throw error;
     }
   }
+
+  // ─── Server-side face recognition ────────────────────────────────────────
+
+  /**
+   * Returns true if the user has enrolled their face on the backend.
+   * Uses a local SecureStore flag set after successful enrollment.
+   */
+  static async isFaceEnrolled(): Promise<boolean> {
+    try {
+      const val = await SecureStore.getItemAsync(BIOMETRIC_KEYS.FACE_ENROLLED);
+      return val === 'true';
+    } catch {
+      return false;
+    }
+  }
+
+  /**
+   * Send a photo to POST /biometrics/enroll-face.
+   * Sets a local flag on success so isFaceEnrolled() returns true.
+   */
+  static async enrollFace(imageUri: string): Promise<{ enrolled: boolean }> {
+    const accessToken = await StorageService.getAccessToken();
+    if (!accessToken) throw new Error('No access token available');
+
+    const formData = new FormData();
+    formData.append('image', {
+      uri: imageUri,
+      name: 'face.jpg',
+      type: 'image/jpeg',
+    } as any);
+
+    const result = await ApiService.postFormAuth<{ enrolled: boolean }>(
+      API_CONFIG.ENDPOINTS.BIOMETRICS.FACE_ENROLL,
+      formData,
+      accessToken,
+    );
+
+    await SecureStore.setItemAsync(BIOMETRIC_KEYS.FACE_ENROLLED, 'true');
+    await log.info('Biometric', 'Face enrollment complete');
+    return result;
+  }
+
+  /**
+   * Send a photo to POST /biometrics/verify-face.
+   * If vaultId is provided the backend will send an unlock command on match.
+   */
+  static async verifyFace(
+    imageUri: string,
+    vaultId?: string,
+  ): Promise<{ success: boolean; unlock_sent?: boolean; vault_offline?: boolean }> {
+    const accessToken = await StorageService.getAccessToken();
+    if (!accessToken) throw new Error('No access token available');
+
+    const formData = new FormData();
+    formData.append('image', {
+      uri: imageUri,
+      name: 'face.jpg',
+      type: 'image/jpeg',
+    } as any);
+    if (vaultId) {
+      formData.append('vault_id', vaultId);
+    }
+
+    const result = await ApiService.postFormAuth<{
+      success: boolean;
+      unlock_sent?: boolean;
+      vault_offline?: boolean;
+    }>(
+      API_CONFIG.ENDPOINTS.BIOMETRICS.FACE_VERIFY,
+      formData,
+      accessToken,
+    );
+
+    await log.info('Biometric', 'Face verification complete', { vaultId });
+    return result;
+  }
+
+  // ─────────────────────────────────────────────────────────────────────────
 
   /**
    * Clear biometric session credentials (vault_user_id + vault_jwt).

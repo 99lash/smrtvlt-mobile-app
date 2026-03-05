@@ -287,6 +287,26 @@ export class ApiService {
   }
 
   /**
+   * POST multipart/form-data with authentication (for file uploads)
+   */
+  public static async postFormAuth<T>(
+    endpoint: string,
+    formData: FormData,
+    token?: string
+  ): Promise<T> {
+    const authToken = token || await StorageService.getAccessToken();
+    if (!authToken) {
+      throw new Error('No access token available for API call');
+    }
+    // Do NOT set Content-Type — fetch will set it with the multipart boundary
+    return this.request<T>(endpoint, {
+      method: 'POST',
+      headers: { 'Authorization': `Bearer ${authToken}` },
+      body: formData,
+    }, 'API POST FORM AUTH');
+  }
+
+  /**
    * GET request without authentication (for public endpoints)
    */
   public static async getPublic<T>(

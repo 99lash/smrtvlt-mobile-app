@@ -1,7 +1,9 @@
 import React, { useEffect, useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, Alert } from 'react-native';
 import CustomModal from '../modals/CustomModal';
+import FaceCaptureModal from '../biometrics/FaceCaptureModal';
 import { VaultMembership } from '../../../service/VaultService';
+import { BiometricService } from '../../../service/BiometricService';
 import { useBiometric } from '../../hooks/useBiometric';
 import { useThemeColors } from '../../context/ThemeContext';
 
@@ -22,6 +24,9 @@ const VaultUnlockModal: React.FC<VaultUnlockModalProps> = ({
   const [isUnlocking, setIsUnlocking] = useState(false);
   const [vaultBiometricEnabled, setVaultBiometricEnabled] = useState(false);
   const [enableBiometricNextTime, setEnableBiometricNextTime] = useState(false);
+  const [faceEnrolled, setFaceEnrolled] = useState(false);
+  const [faceCaptureVisible, setFaceCaptureVisible] = useState(false);
+  const [faceMode, setFaceMode] = useState<'enroll' | 'verify'>('verify');
 
   const {
     canPromptBiometrics,
@@ -34,12 +39,18 @@ const VaultUnlockModal: React.FC<VaultUnlockModalProps> = ({
   useEffect(() => {
     if (!vault) return;
     let isMounted = true;
-    isVaultBiometricEnabled(vault.vault_id).then(enabled => {
+
+    Promise.all([
+      isVaultBiometricEnabled(vault.vault_id),
+      BiometricService.isFaceEnrolled(),
+    ]).then(([biometricEnabled, faceIsEnrolled]) => {
       if (isMounted) {
-        setVaultBiometricEnabled(enabled);
+        setVaultBiometricEnabled(biometricEnabled);
+        setFaceEnrolled(faceIsEnrolled);
         setEnableBiometricNextTime(false);
       }
     });
+
     return () => {
       isMounted = false;
     };
@@ -50,6 +61,7 @@ const VaultUnlockModal: React.FC<VaultUnlockModalProps> = ({
       setPin('');
       setIsUnlocking(false);
       setEnableBiometricNextTime(false);
+      setFaceCaptureVisible(false);
     }
   }, [visible]);
 
@@ -110,11 +122,38 @@ const VaultUnlockModal: React.FC<VaultUnlockModalProps> = ({
     }
   };
 
+  const handleFaceUnlock = () => {
+    setFaceMode('verify');
+    setFaceCaptureVisible(true);
+  };
+
+  const handleFaceEnroll = () => {
+    setFaceMode('enroll');
+    setFaceCaptureVisible(true);
+  };
+
+  const handleFaceCaptureSuccess = () => {
+    setFaceCaptureVisible(false);
+    if (faceMode === 'enroll') {
+      setFaceEnrolled(true);
+    } else {
+      onClose();
+    }
+  };
+
   const colors = useThemeColors();
 
   if (!vault) return null;
 
   return (
+    <>
+    <FaceCaptureModal
+      visible={faceCaptureVisible}
+      mode={faceMode}
+      vaultId={faceMode === 'verify' ? String(vault.vault_id) : undefined}
+      onSuccess={handleFaceCaptureSuccess}
+      onClose={() => setFaceCaptureVisible(false)}
+    />
     <CustomModal
       visible={visible}
       onClose={onClose}
@@ -175,7 +214,33 @@ const VaultUnlockModal: React.FC<VaultUnlockModalProps> = ({
           </Text>
         </TouchableOpacity>
       )}
+
+      {/* Face recognition unlock */}
+      {faceEnrolled && (
+        <TouchableOpacity
+          onPress={handleFaceUnlock}
+          style={{ backgroundColor: colors.cards.default, borderWidth: 1, borderColor: colors.border.default, borderRadius: 16, paddingHorizontal: 16, paddingVertical: 16, marginTop: 8 }}
+          activeOpacity={0.7}
+        >
+          <Text style={{ color: colors.text.default, textAlign: 'center', fontWeight: '900', textTransform: 'uppercase', letterSpacing: 2, fontSize: 10 }}>
+            Unlock with Face Recognition
+          </Text>
+        </TouchableOpacity>
+      )}
+
+      {!faceEnrolled && (
+        <TouchableOpacity
+          onPress={handleFaceEnroll}
+          style={{ paddingHorizontal: 16, paddingVertical: 12, marginTop: 4 }}
+          activeOpacity={0.7}
+        >
+          <Text style={{ color: colors.muted.default, textAlign: 'center', fontSize: 10, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 2 }}>
+            Set up Face Recognition
+          </Text>
+        </TouchableOpacity>
+      )}
     </CustomModal>
+    </>
   );
 };
 
