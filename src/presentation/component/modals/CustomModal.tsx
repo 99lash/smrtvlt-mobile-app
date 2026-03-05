@@ -4,6 +4,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { X } from 'lucide-react-native';
 import ButtonPrimary from '../buttons/ButtonPrimary';
 import ButtonSecondary from '../buttons/ButtonSecondary';
+import { useThemeColors } from '../context/ThemeContext';
 
 type CustomModalProps = {
   visible: boolean;
@@ -34,6 +35,7 @@ const CustomModal: React.FC<CustomModalProps> = ({
   icon,
   iconPosition = 'left',
 }) => {
+  const colors = useThemeColors();
   return (
     <Modal
       visible={visible}
@@ -42,23 +44,25 @@ const CustomModal: React.FC<CustomModalProps> = ({
       onRequestClose={onClose}
     >
       <View className="flex-1 bg-black/90 justify-center px-4">
-        <SafeAreaView className="max-h-[85%] bg-zinc-950 border border-zinc-800 rounded-[40px] overflow-hidden">
+        <SafeAreaView
+          style={{ backgroundColor: colors.cards.default, borderColor: colors.border.default, borderWidth: 1, borderRadius: 32, overflow: 'hidden', maxHeight: '85%' }}
+        >
             {/* Header */}
-            <View className="flex-row items-center justify-between p-8 border-b border-zinc-900">
-                <View className="flex-row items-center">
-                {icon && iconPosition === 'left' && <View className="mr-3">{icon}</View>}
-                <Text className="text-2xl font-black text-white uppercase tracking-tighter">{title}</Text>
+            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 24, paddingVertical: 20, borderBottomWidth: 1, borderBottomColor: colors.border.default }}>
+                <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1, marginRight: 12 }}>
+                {icon && iconPosition === 'left' && <View style={{ marginRight: 12 }}>{icon}</View>}
+                <Text style={{ fontSize: 20, fontWeight: '900', color: colors.text.default, textTransform: 'uppercase', letterSpacing: -0.5, flex: 1 }} numberOfLines={2}>{title}</Text>
                 </View>
-                <TouchableOpacity 
-                    onPress={onClose} 
-                    className="bg-zinc-900 p-2 rounded-full border border-zinc-800"
+                <TouchableOpacity
+                    onPress={onClose}
+                    style={{ backgroundColor: colors.surface.default, padding: 8, borderRadius: 999, borderWidth: 1, borderColor: colors.border.default }}
                 >
-                <X size={20} color="#FFFFFF" strokeWidth={3} />
+                <X size={20} color={colors.text.default} strokeWidth={3} />
                 </TouchableOpacity>
             </View>
 
             {/* Content */}
-            <ScrollView 
+            <ScrollView
                 contentContainerStyle={{ padding: 24 }}
                 showsVerticalScrollIndicator={false}
             >
@@ -67,8 +71,8 @@ const CustomModal: React.FC<CustomModalProps> = ({
 
             {/* Footer */}
             {(primaryAction || secondaryAction) && (
-                <View className="p-8 border-t border-zinc-900 bg-black">
-                <View className="gap-4">
+                <View style={{ padding: 32, borderTopWidth: 1, borderTopColor: colors.border.default, backgroundColor: colors.bg.default }}>
+                <View style={{ gap: 16 }}>
                     {primaryAction && (
                     <ButtonPrimary
                         title={primaryAction.label}
@@ -80,7 +84,6 @@ const CustomModal: React.FC<CustomModalProps> = ({
                     <ButtonSecondary
                     title={secondaryAction?.label ?? 'DISMISS'}
                     onPress={secondaryAction?.onPress ?? onClose}
-                    className="border-zinc-800"
                     />
                 </View>
                 </View>

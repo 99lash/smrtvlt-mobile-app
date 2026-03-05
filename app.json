@@ -19,6 +19,11 @@
         "backgroundColor": "#ffffff"
       },
       "package": "com.gablane.smartvaultapp"
+    },
+    "extra": {
+      "eas": {
+        "projectId": "611f750e-a85c-4ef7-8aec-1408fc16ad8f"
+      }
     }
   }
 }

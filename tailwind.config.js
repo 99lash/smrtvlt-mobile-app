@@ -5,50 +5,54 @@ module.exports = {
     extend: {
       colors: {
         primary: {
-          default: '#FFFFFF', // Pure White
+          default: '#FFFFFF',
         },
         secondary: {
-          default: '#333333' // Dark Gray
+          default: '#333333',
         },
         text: {
-          default: '#FFFFFF', 
+          default: '#f5f5f5',
           light: '#FFFFFF',
-          dark: '#000000'
-        },
-        icons:{
-          default: '#FFFFFF',
           dark: '#000000',
-          light: '#A1A1AA'
         },
-        bg:{
-          default: '#000000' // Absolute Black
+        icons: {
+          default: '#f5f5f5',
+          dark: '#000000',
+          light: '#a3a3a3',
         },
-        cards:{
-          default: '#18181B', // Zinc-900
-          dark: '#09090B'
+        bg: {
+          default: '#0a0a0a',
         },
-        border:{
-          default:'#27272A', // Zinc-800
-          dark:'#52525B',
-        }, 
-        muted:{
-          default: '#71717A', // Zinc-400
-          dark: '#71717A',
+        cards: {
+          default: '#141414',
+          dark: '#0f0f0f',
+        },
+        border: {
+          default: '#2a2a2a',
+          dark: '#3a3a3a',
+        },
+        muted: {
+          default: '#a3a3a3',
+          dark: '#a3a3a3',
         },
         accent: {
-          default: '#22D3EE', // cyan-400
-          dim: '#0891B2',     // cyan-600
+          default: '#BFFF00',
+          dim: '#8fbf00',
+        },
+        accent2: {
+          default: '#34d399',
+          dim: '#059669',
         },
         status: {
-          success: '#22C55E', // green-500
-          warning: '#F59E0B', // amber-500
-          danger: '#EF4444',  // red-500
-          neutral: '#71717A', // zinc-500
+          success: '#34d399',
+          warning: '#fbbf24',
+          danger: '#EF4444',
+          neutral: '#71717A',
         },
-        surface:{
-          default: '#18181B',
-          active: '#27272A',
-          dark: '#000000',
+        surface: {
+          default: '#141414',
+          active: '#1b1b1b',
+          dark: '#0a0a0a',
         },
         success: {
           default: '#FFFFFF',

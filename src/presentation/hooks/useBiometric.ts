@@ -40,6 +40,12 @@ export const useBiometric = () => {
 
     try {
       await BiometricService.enableBiometricLogin();
+      // Also enroll for /biometrics/verify flow (best-effort — non-fatal)
+      try {
+        await BiometricService.enrollBiometric();
+      } catch {
+        // enrollment failure is non-fatal
+      }
       setIsLoginEnabled(true);
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Failed to enable biometric login';

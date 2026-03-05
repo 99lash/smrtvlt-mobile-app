@@ -1,6 +1,8 @@
 import * as LocalAuthentication from 'expo-local-authentication';
 import * as SecureStore from 'expo-secure-store';
 import { StorageService } from './StorageService';
+import { ApiService } from './ApiService';
+import { API_CONFIG } from '../config/api';
 import { log } from '../utils/logger';
 
 const BIOMETRIC_KEYS = {
@@ -8,6 +10,8 @@ const BIOMETRIC_KEYS = {
   LOGIN_REFRESH_TOKEN: 'biometric_login_refresh_token',
   VAULT_ENABLED_PREFIX: 'biometric_vault_enabled_',
   VAULT_PIN_PREFIX: 'biometric_vault_pin_',
+  VAULT_USER_ID: 'vault_user_id',
+  VAULT_JWT: 'vault_jwt',
 };
 
 export interface BiometricCapabilities {
@@ -203,6 +207,123 @@ export class BiometricService {
       await log.warn('Biometric', 'Failed to retrieve vault PIN', error);
       return null;
     }
+  }
+
+  /**
+   * Enrollment — store userId + accessToken in biometric-gated SecureStore,
+   * then record the enrollment on the backend.
+   * Call after a successful login when the user opts into biometrics.
+   * Reads credentials from StorageService — no parameters required.
+   */
+  static async enrollBiometric(): Promise<void> {
+    const canUse = await this.canUseBiometrics();
+    if (!canUse) {
+      throw new Error('Biometric authentication is not available on this device');
+    }
+
+    const accessToken = await StorageService.getAccessToken();
+    if (!accessToken) {
+      throw new Error('No access token available — login first');
+    }
+
+    const userId = await StorageService.getCurrentUserId();
+    if (!userId) {
+      throw new Error('Could not determine user ID from token');
+    }
+
+    try {
+      await SecureStore.setItemAsync(BIOMETRIC_KEYS.VAULT_USER_ID, String(userId), {
+        requireAuthentication: true,
+      });
+      await SecureStore.setItemAsync(BIOMETRIC_KEYS.VAULT_JWT, accessToken, {
+        requireAuthentication: true,
+      });
+
+      // Record enrollment on backend (best-effort — non-fatal if offline)
+      try {
+        await ApiService.post(API_CONFIG.ENDPOINTS.BIOMETRICS.ENROLL, {}, accessToken);
+      } catch (e) {
+        await log.warn('Biometric', 'Failed to record enrollment on backend', e);
+      }
+
+      await log.info('Biometric', 'Biometric enrollment complete', { userId });
+    } catch (error) {
+      await log.error('Biometric', 'Failed to enroll biometric', error);
+      throw new Error('Failed to enroll biometric');
+    }
+  }
+
+  /**
+   * Verify biometric session — prompts Face ID / Fingerprint, retrieves stored
+   * credentials, and calls POST /biometrics/verify.
+   * Returns the user's vault list on success.
+   * Throws 're_enroll' if SecureStore credentials are missing.
+   * Throws 'jwt_expired' if the backend returns 401.
+   * Throws 'user_cancel' | 'lockout' | 'not_enrolled' on prompt failure.
+   */
+  static async verifyBiometricSession(vaultId?: string): Promise<{
+    success: boolean;
+    vaults: unknown[];
+    unlock_sent?: boolean;
+    vault_offline?: boolean;
+  }> {
+    const authResult = await LocalAuthentication.authenticateAsync({
+      promptMessage: vaultId ? 'Unlock Vault' : 'Open SmartVault',
+      disableDeviceFallback: true,
+      cancelLabel: 'Cancel',
+    });
+
+    if (!authResult.success) {
+      throw new Error(authResult.error ?? 'auth_failed');
+    }
+
+    const userId = await SecureStore.getItemAsync(BIOMETRIC_KEYS.VAULT_USER_ID, {
+      requireAuthentication: true,
+    });
+    const jwt = await SecureStore.getItemAsync(BIOMETRIC_KEYS.VAULT_JWT, {
+      requireAuthentication: true,
+    });
+
+    if (!userId || !jwt) {
+      await log.warn('Biometric', 'Biometric credentials missing from SecureStore — re-enroll required');
+      throw new Error('re_enroll');
+    }
+
+    try {
+      const body: { user_id: string; vault_id?: string } = { user_id: userId };
+      if (vaultId) body.vault_id = vaultId;
+
+      const response = await ApiService.post<{
+        success: boolean;
+        vaults: unknown[];
+        unlock_sent?: boolean;
+        vault_offline?: boolean;
+      }>(
+        API_CONFIG.ENDPOINTS.BIOMETRICS.VERIFY,
+        body,
+        jwt
+      );
+      await log.info('Biometric', 'Biometric session verified', { userId });
+      return response;
+    } catch (error: unknown) {
+      const status = (error as { status?: number })?.status;
+      if (status === 401) {
+        // JWT expired — clear stored credentials and force re-enroll
+        await SecureStore.deleteItemAsync(BIOMETRIC_KEYS.VAULT_USER_ID).catch(() => {});
+        await SecureStore.deleteItemAsync(BIOMETRIC_KEYS.VAULT_JWT).catch(() => {});
+        throw new Error('jwt_expired');
+      }
+      throw error;
+    }
+  }
+
+  /**
+   * Clear biometric session credentials (vault_user_id + vault_jwt).
+   * Called on logout or forced re-enroll.
+   */
+  static async clearBiometricSession(): Promise<void> {
+    await SecureStore.deleteItemAsync(BIOMETRIC_KEYS.VAULT_USER_ID).catch(() => {});
+    await SecureStore.deleteItemAsync(BIOMETRIC_KEYS.VAULT_JWT).catch(() => {});
   }
 
   static getBiometricLabel(types: LocalAuthentication.AuthenticationType[]): string {

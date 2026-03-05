@@ -1,5 +1,6 @@
 import { Text, TouchableOpacity, ActivityIndicator, View } from "react-native";
 import React, { ReactElement } from "react";
+import { useThemeColors } from "../../context/ThemeContext";
 
 type ButtonPrimaryProps = {
   title: string;
@@ -22,11 +23,13 @@ const ButtonPrimary: React.FC<ButtonPrimaryProps> = ({
   icon,
   iconPosition = "left",
 }) => {
+  const colors = useThemeColors();
+
   const styledIcon =
     icon &&
     React.cloneElement(icon, {
-      color: '#EEEEEE', 
-      size: icon.props.size ?? 20, 
+      color: '#000000',
+      size: icon.props.size ?? 20,
     });
 
   return (
@@ -34,12 +37,18 @@ const ButtonPrimary: React.FC<ButtonPrimaryProps> = ({
       onPress={!disabled && !loading ? onPress : undefined}
       activeOpacity={0.7}
       disabled={disabled || loading}
-      className={`bg-white rounded-2xl px-4 py-4 flex-row items-center justify-center w-full
+      className={`rounded-2xl px-4 py-4 flex-row items-center justify-center w-full
         ${disabled ? "opacity-30" : ""}
         ${className}`}
       style={{
+        backgroundColor: colors.accent.default,
         borderWidth: 1,
         borderColor: 'rgba(0, 0, 0, 0.1)',
+        shadowColor: colors.accent.default,
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: disabled ? 0 : 0.2,
+        shadowRadius: 10,
+        elevation: disabled ? 0 : 5,
       }}
     >
       {loading ? (

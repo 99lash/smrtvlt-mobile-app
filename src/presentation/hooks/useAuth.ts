@@ -4,6 +4,7 @@ import { UserDataService } from '../../service/UserDataService';
 import { StorageService } from '../../service/StorageService';
 import { BiometricService } from '../../service/BiometricService';
 import { MockDataService } from '../../service/MockDataService';
+import { NotificationService } from '../../service/NotificationService';
 
 export interface AuthState {
   isAuthenticated: boolean;
@@ -39,6 +40,7 @@ export const useAuth = () => {
               isLoading: false,
               user: user,
             });
+            NotificationService.initialize().catch(() => {});
           } else {
             // Token exists but user fetch failed, clear token
             await AuthService.clearToken();
@@ -96,6 +98,7 @@ export const useAuth = () => {
                 isLoading: false,
                 user: user,
               });
+              NotificationService.initialize().catch(() => {});
               return;
             }
           } catch (userError) {

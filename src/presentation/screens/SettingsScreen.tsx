@@ -1,10 +1,12 @@
-import React, { useCallback, useEffect, useState } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, Alert } from 'react-native';
-import { ChevronDown, ChevronUp, Vault, LogOut } from 'lucide-react-native';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import { View, Text, ScrollView, TouchableOpacity, Alert, StyleSheet } from 'react-native';
+import { ChevronDown, ChevronUp, Vault, LogOut, Fingerprint, Shield, Cpu, Moon } from 'lucide-react-native';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 
 import ButtonSecondary from '../component/buttons/ButtonSecondary';
 import CustomModal from '../component/modals/CustomModal';
+import { useTheme } from '../context/ThemeContext';
+import { ThemeColors } from '../../theme/colors';
 import BorderedList from '../component/lists/BorderedList';
 import { useAuthContext } from '../context/AuthContext';
 import { useBiometric } from '../hooks/useBiometric';
@@ -12,8 +14,23 @@ import { VaultMembership, VaultService } from '../../service/VaultService';
 import Provisioning from '../component/provisioning/Provisioning';
 import SetPinModal from '../component/vault_access/SetPinModal';
 
+function getInitials(user: any): string {
+  if (!user) return '??';
+  const name: string = user.first_name
+    ? `${user.first_name} ${user.last_name ?? ''}`
+    : user.name ?? user.username ?? '';
+  return name
+    .trim()
+    .split(/\s+/)
+    .slice(0, 2)
+    .map((w: string) => w[0]?.toUpperCase() ?? '')
+    .join('') || '??';
+}
+
 const SettingsScreen = () => {
-  const { logout } = useAuthContext();
+  const { isDark, toggle, colors } = useTheme();
+  const styles = useMemo(() => makeStyles(colors), [colors]);
+  const { logout, user } = useAuthContext();
   const [vaults, setVaults] = useState<VaultMembership[]>([]);
   const [currentVault, setCurrentVault] = useState<VaultMembership | null>(null);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
@@ -29,7 +46,7 @@ const SettingsScreen = () => {
       setVaults(raw);
       if (raw.length > 0 && !currentVault) setCurrentVault(raw[0]);
     } catch (e) {
-      console.error('SettingsScreen: loadVaults failed', e);
+      // silently fail — vaults are non-critical for settings layout
     }
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -71,7 +88,7 @@ const SettingsScreen = () => {
         style: 'destructive',
         onPress: async () => {
           setIsLoggingOut(true);
-          try { await logout(); } catch (e) { console.error('Logout failed:', e); } finally { setIsLoggingOut(false); }
+          try { await logout(); } catch (e) { /* handled */ } finally { setIsLoggingOut(false); }
         },
       },
     ]);
@@ -104,164 +121,234 @@ const SettingsScreen = () => {
     }
   };
 
+  const initials = getInitials(user);
+  const displayName: string = user?.first_name
+    ? `${user.first_name} ${user.last_name ?? ''}`.trim()
+    : user?.name ?? user?.username ?? 'User';
+  const email: string = user?.email ?? '';
+
   return (
-    <View className="flex-1 bg-bg-default">
+    <View style={styles.screen}>
       <ScrollView
-        className="flex-1"
-        contentContainerStyle={{ paddingBottom: 140, paddingTop: 20 }}
+        style={{ flex: 1 }}
+        contentContainerStyle={{ paddingBottom: 120, paddingTop: 0 }}
         showsVerticalScrollIndicator={false}
       >
-        {/* Header */}
-        <Animated.View entering={FadeInDown.delay(0).springify()} className="px-6 pt-10 mb-10">
-          <Text className="text-white text-4xl font-black uppercase tracking-tighter">SETTINGS</Text>
-          <Text className="text-zinc-500 text-[10px] font-black uppercase tracking-[3px] mt-1">Global Configuration</Text>
-        </Animated.View>
-
-        {/* Vault Selector */}
-        <Animated.View entering={FadeInDown.delay(50).springify()} className="px-6 mb-10">
-          <Text className="text-zinc-600 text-[10px] font-black uppercase tracking-[4px] mb-3">Active Vault</Text>
-          <ButtonSecondary
-            title={currentVault
-              ? `${currentVault.vault_name ?? `UNIT-${currentVault.vault_id}`}  ·  ${(currentVault.role as string).toUpperCase()}`
-              : 'Select Vault'
-            }
-            onPress={() => setIsDropdownOpen(true)}
-            icon={isDropdownOpen ? <ChevronUp size={20} color="#FFFFFF" /> : <ChevronDown size={20} color="#FFFFFF" />}
-            iconPosition="right"
-            className="w-full bg-black border-2 border-zinc-800 rounded-[24px] py-6"
-            textClassName="text-left flex-1 text-white font-black uppercase tracking-tighter text-lg"
-          />
-
-          <CustomModal
-            visible={isDropdownOpen}
-            onClose={() => setIsDropdownOpen(false)}
-            title="SELECT UNIT"
-          >
-            <BorderedList
-              data={vaults}
-              keyExtractor={(vault: any) => vault.vault_id.toString()}
-              selectedId={currentVault?.vault_id?.toString() ?? ''}
-              getId={(vault: any) => vault.vault_id.toString()}
-              onItemPress={(vault: any) => {
-                setCurrentVault(vault);
-                setIsDropdownOpen(false);
-              }}
-              iconExtractor={() => <Vault size={20} color="#FFFFFF" strokeWidth={2.5} />}
-              renderItem={(vault: any) => (
-                <View className="flex-1">
-                  <Text className="text-text-default font-black uppercase tracking-tight text-lg">
-                    {vault.vault_name ?? `UNIT-${vault.vault_id}`}
-                  </Text>
-                  <Text className="text-muted-default text-[10px] font-bold uppercase tracking-widest mt-1">
-                    {(vault.role as string).toUpperCase()}
-                  </Text>
-                </View>
-              )}
-              scrollEnabled={false}
-            />
-          </CustomModal>
-        </Animated.View>
-
-        {/* Security */}
-        <Animated.View entering={FadeInDown.delay(100).springify()} className="px-6 mb-10">
-          <Text className="text-zinc-600 text-[10px] font-black uppercase tracking-[4px] mb-3">Security</Text>
-
-          <View className="bg-zinc-950 p-6 rounded-[32px] border border-zinc-900 mb-4">
-            <Text className="text-white font-black text-xl uppercase tracking-tighter">Biometric Login</Text>
-            <Text className="text-zinc-500 text-[10px] font-black uppercase tracking-[2px] mt-2">
-              Use {biometricLabel} to sign in faster
-            </Text>
-            <TouchableOpacity
-              onPress={handleToggleBiometricLogin}
-              className={`mt-4 px-4 py-3 rounded-2xl border ${isLoginEnabled ? 'bg-white border-white' : 'bg-black border-zinc-800'}`}
-              activeOpacity={0.7}
-            >
-              <Text className={`text-[10px] font-black uppercase tracking-[2px] ${isLoginEnabled ? 'text-black' : 'text-white'}`}>
-                {isLoginEnabled ? 'Enabled' : 'Disabled'}
-              </Text>
-            </TouchableOpacity>
+        {/* ── Profile Card ── */}
+        <Animated.View entering={FadeInDown.delay(0).springify()} style={styles.profileCard}>
+          <View style={styles.avatar}>
+            <Text style={styles.avatarText}>{initials}</Text>
           </View>
-
-          <View className="bg-zinc-950 p-6 rounded-[32px] border border-zinc-900 mb-4">
-            <Text className="text-white font-black text-xl uppercase tracking-tighter">Vault PIN</Text>
-            <Text className="text-zinc-500 text-[10px] font-black uppercase tracking-[2px] mt-2">
-              {pinStatus?.is_set
-                ? `PIN SET — updated ${pinStatus.pin_set_at ? new Date(pinStatus.pin_set_at).toLocaleDateString() : ''}`
-                : 'NOT SET'}
-            </Text>
-            <TouchableOpacity
-              onPress={() => setSetPinModalVisible(true)}
-              disabled={!currentVault}
-              className="mt-4 px-4 py-3 rounded-2xl border bg-black border-zinc-800"
-              activeOpacity={0.7}
-            >
-              <Text className="text-[10px] font-black uppercase tracking-[2px] text-white">
-                Set PIN
-              </Text>
-            </TouchableOpacity>
-          </View>
-
-          <View className="bg-zinc-950 p-6 rounded-[32px] border border-zinc-900">
-            <Text className="text-white font-black text-xl uppercase tracking-tighter">Vault Unlock Biometric</Text>
-            <Text className="text-zinc-500 text-[10px] font-black uppercase tracking-[2px] mt-2">
-              Unlock {currentVault?.vault_name ?? 'vault'} with {biometricLabel}
-            </Text>
-            <TouchableOpacity
-              onPress={handleToggleVaultBiometric}
-              className={`mt-4 px-4 py-3 rounded-2xl border ${vaultBiometricEnabled ? 'bg-white border-white' : 'bg-black border-zinc-800'}`}
-              activeOpacity={0.7}
-            >
-              <Text className={`text-[10px] font-black uppercase tracking-[2px] ${vaultBiometricEnabled ? 'text-black' : 'text-white'}`}>
-                {vaultBiometricEnabled ? 'Enabled' : 'Disabled'}
-              </Text>
-            </TouchableOpacity>
+          <View style={{ flex: 1 }}>
+            <Text style={styles.profileName} numberOfLines={1}>{displayName}</Text>
+            {!!email && (
+              <Text style={styles.profileEmail} numberOfLines={1}>{email}</Text>
+            )}
           </View>
         </Animated.View>
 
-        {/* Device Management */}
-        <Animated.View entering={FadeInDown.delay(150).springify()} className="px-6 mb-10">
-          <Text className="text-zinc-600 text-[10px] font-black uppercase tracking-[4px] mb-3">Device Management</Text>
+        {/* ── Section: Appearance ── */}
+        <Animated.View entering={FadeInDown.delay(50).springify()} style={styles.section}>
+          <Text style={styles.sectionLabel}>Appearance</Text>
+          <View style={styles.sectionCard}>
+            <View style={styles.settingRow}>
+              <View style={styles.settingIcon}>
+                <Moon size={18} color={colors.muted.default} strokeWidth={2} />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.settingTitle}>Dark Mode</Text>
+                <Text style={styles.settingDesc}>Switch between light and dark theme</Text>
+              </View>
+              <TouchableOpacity
+                onPress={toggle}
+                style={[styles.toggle, isDark && styles.toggleActive]}
+                activeOpacity={0.7}
+              >
+                <Text style={[styles.toggleText, isDark && styles.toggleTextActive]}>
+                  {isDark ? 'On' : 'Off'}
+                </Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </Animated.View>
 
-          <TouchableOpacity
-            onPress={() => setProvisioningModalVisible(true)}
-            activeOpacity={0.8}
-            className="bg-zinc-950 p-6 rounded-[32px] border border-zinc-800"
-          >
-            <View className="flex-row items-center justify-between">
-              <View>
-                <Text className="text-white font-black text-xl uppercase tracking-tighter">Provision New Device</Text>
-                <Text className="text-zinc-500 text-[10px] font-black uppercase tracking-[2px] mt-1">
-                  Configure vault hardware
+        {/* ── Section: Security ── */}
+        <Animated.View entering={FadeInDown.delay(100).springify()} style={styles.section}>
+          <Text style={styles.sectionLabel}>Security</Text>
+          <View style={styles.sectionCard}>
+
+            {/* Biometric login row */}
+            <View style={styles.settingRow}>
+              <View style={styles.settingIcon}>
+                <Fingerprint size={18} color={colors.muted.default} strokeWidth={2} />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.settingTitle}>Biometric Login</Text>
+                <Text style={styles.settingDesc}>Use {biometricLabel} to sign in</Text>
+              </View>
+              <TouchableOpacity
+                onPress={handleToggleBiometricLogin}
+                style={[styles.toggle, isLoginEnabled && styles.toggleActive]}
+                activeOpacity={0.7}
+              >
+                <Text style={[styles.toggleText, isLoginEnabled && styles.toggleTextActive]}>
+                  {isLoginEnabled ? 'On' : 'Off'}
+                </Text>
+              </TouchableOpacity>
+            </View>
+
+            <View style={styles.rowDivider} />
+
+            {/* Set PIN row */}
+            <View style={styles.settingRow}>
+              <View style={styles.settingIcon}>
+                <Shield size={18} color={colors.muted.default} strokeWidth={2} />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.settingTitle}>Vault PIN</Text>
+                <Text style={styles.settingDesc}>
+                  {pinStatus?.is_set ? 'PIN configured' : 'Not set'}
                 </Text>
               </View>
-              <Text className="text-accent-default text-xs font-black uppercase tracking-widest">START</Text>
+              <TouchableOpacity
+                onPress={() => setSetPinModalVisible(true)}
+                disabled={!currentVault}
+                style={styles.settingAction}
+                activeOpacity={0.7}
+              >
+                <Text style={styles.settingActionText}>Set PIN</Text>
+              </TouchableOpacity>
             </View>
-          </TouchableOpacity>
-        </Animated.View>
 
-        {/* Danger Zone */}
-        <Animated.View entering={FadeInDown.delay(200).springify()} className="px-6 mb-6">
-          <Text className="text-zinc-600 text-[10px] font-black uppercase tracking-[4px] mb-3">Danger Zone</Text>
-          <TouchableOpacity
-            onPress={handleLogout}
-            disabled={isLoggingOut}
-            className="bg-red-900/30 p-6 rounded-[32px] border border-red-800"
-            activeOpacity={0.7}
-          >
-            <View className="flex-row items-center gap-4">
-              <LogOut size={24} color="#EF4444" strokeWidth={2.5} />
-              <View>
-                <Text className="text-red-500 font-black text-xl uppercase tracking-tighter">
-                  {isLoggingOut ? 'Logging out...' : 'Logout'}
-                </Text>
-                <Text className="text-red-500/50 text-[10px] font-bold uppercase tracking-[2px] mt-1">
-                  End current session
+            <View style={styles.rowDivider} />
+
+            {/* Vault biometric row */}
+            <View style={styles.settingRow}>
+              <View style={styles.settingIcon}>
+                <Fingerprint size={18} color={colors.muted.default} strokeWidth={2} />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.settingTitle}>Vault Biometric</Text>
+                <Text style={styles.settingDesc}>
+                  Unlock {currentVault?.vault_name ?? 'vault'} with {biometricLabel}
                 </Text>
               </View>
+              <TouchableOpacity
+                onPress={handleToggleVaultBiometric}
+                style={[styles.toggle, vaultBiometricEnabled && styles.toggleActive]}
+                activeOpacity={0.7}
+              >
+                <Text style={[styles.toggleText, vaultBiometricEnabled && styles.toggleTextActive]}>
+                  {vaultBiometricEnabled ? 'On' : 'Off'}
+                </Text>
+              </TouchableOpacity>
             </View>
-          </TouchableOpacity>
+          </View>
+        </Animated.View>
+
+        {/* ── Section: Vault ── */}
+        <Animated.View entering={FadeInDown.delay(150).springify()} style={styles.section}>
+          <Text style={styles.sectionLabel}>Vault</Text>
+          <View style={styles.sectionCard}>
+
+            {/* Vault selector */}
+            <View style={styles.settingRow}>
+              <View style={styles.settingIcon}>
+                <Vault size={18} color={colors.muted.default} strokeWidth={2} />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.settingTitle}>
+                  {currentVault
+                    ? (currentVault.vault_name ?? `UNIT-${currentVault.vault_id}`)
+                    : 'Select Vault'}
+                </Text>
+                {currentVault && (
+                  <Text style={styles.settingDesc}>
+                    {(currentVault.role as string).charAt(0).toUpperCase() +
+                     (currentVault.role as string).slice(1)}
+                  </Text>
+                )}
+              </View>
+              <TouchableOpacity
+                onPress={() => setIsDropdownOpen(true)}
+                style={styles.settingAction}
+                activeOpacity={0.7}
+              >
+                {isDropdownOpen
+                  ? <ChevronUp size={16} color={colors.accent.default} strokeWidth={2} />
+                  : <ChevronDown size={16} color={colors.accent.default} strokeWidth={2} />}
+              </TouchableOpacity>
+            </View>
+
+            <View style={styles.rowDivider} />
+
+            {/* Provisioning */}
+            <TouchableOpacity
+              onPress={() => setProvisioningModalVisible(true)}
+              style={styles.settingRow}
+              activeOpacity={0.8}
+            >
+              <View style={styles.settingIcon}>
+                <Cpu size={18} color={colors.muted.default} strokeWidth={2} />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.settingTitle}>Provision Device</Text>
+                <Text style={styles.settingDesc}>Configure vault hardware</Text>
+              </View>
+              <Text style={styles.accentLabel}>Start</Text>
+            </TouchableOpacity>
+          </View>
+        </Animated.View>
+
+        {/* ── Section: Account ── */}
+        <Animated.View entering={FadeInDown.delay(200).springify()} style={styles.section}>
+          <Text style={styles.sectionLabel}>Account</Text>
+          <View style={styles.sectionCard}>
+            <TouchableOpacity
+              onPress={handleLogout}
+              disabled={isLoggingOut}
+              style={styles.logoutRow}
+              activeOpacity={0.7}
+            >
+              <LogOut size={18} color={colors.status.danger} strokeWidth={2} />
+              <Text style={styles.logoutText}>
+                {isLoggingOut ? 'Signing out…' : 'Sign out'}
+              </Text>
+            </TouchableOpacity>
+          </View>
         </Animated.View>
       </ScrollView>
+
+      {/* Vault selector modal */}
+      <CustomModal
+        visible={isDropdownOpen}
+        onClose={() => setIsDropdownOpen(false)}
+        title="SELECT UNIT"
+      >
+        <BorderedList
+          data={vaults}
+          keyExtractor={(vault: any) => vault.vault_id.toString()}
+          selectedId={currentVault?.vault_id?.toString() ?? ''}
+          getId={(vault: any) => vault.vault_id.toString()}
+          onItemPress={(vault: any) => {
+            setCurrentVault(vault);
+            setIsDropdownOpen(false);
+          }}
+          iconExtractor={() => <Vault size={20} color={colors.text.light} strokeWidth={2.5} />}
+          renderItem={(vault: any) => (
+            <View style={{ flex: 1 }}>
+              <Text style={styles.modalItemName} numberOfLines={2}>
+                {vault.vault_name ?? `UNIT-${vault.vault_id}`}
+              </Text>
+              <Text style={styles.modalItemRole}>
+                {(vault.role as string).toUpperCase()}
+              </Text>
+            </View>
+          )}
+          itemHeight={72}
+          scrollEnabled={false}
+        />
+      </CustomModal>
 
       <Provisioning
         visible={provisioningModalVisible}
@@ -273,18 +360,16 @@ const SettingsScreen = () => {
         vault={currentVault}
         onClose={() => setSetPinModalVisible(false)}
         onSuccess={async (pin) => {
-          // Reload PIN status after setting
           if (currentVault?.vault_id) {
             VaultService.getPinStatus(String(currentVault.vault_id))
               .then(setPinStatus)
               .catch(() => {});
-            // If biometric was not enabled and canPromptBiometrics, enable it
             if (!vaultBiometricEnabled && canPromptBiometrics) {
               try {
                 await enableVaultBiometric(currentVault.vault_id, pin);
                 setVaultBiometricEnabled(true);
               } catch {
-                // biometric enable failure is non-fatal here
+                // non-fatal
               }
             }
           }
@@ -293,5 +378,168 @@ const SettingsScreen = () => {
     </View>
   );
 };
+
+const makeStyles = (c: ThemeColors) => StyleSheet.create({
+  screen: {
+    flex: 1,
+    backgroundColor: c.bg.default,
+  },
+  profileCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: c.cards.default,
+    marginHorizontal: 20,
+    marginTop: 64,
+    marginBottom: 8,
+    borderRadius: 20,
+    padding: 20,
+    borderWidth: 1,
+    borderColor: c.border.default,
+    gap: 14,
+  },
+  avatar: {
+    width: 52,
+    height: 52,
+    borderRadius: 26,
+    backgroundColor: c.accent.default,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  avatarText: {
+    color: '#000000',
+    fontSize: 18,
+    fontWeight: '900',
+    letterSpacing: 0.5,
+  },
+  profileName: {
+    color: c.text.default,
+    fontSize: 16,
+    fontWeight: '700',
+    letterSpacing: 0.1,
+  },
+  profileEmail: {
+    color: c.muted.default,
+    fontSize: 12,
+    fontWeight: '400',
+    marginTop: 2,
+  },
+  section: {
+    marginHorizontal: 20,
+    marginTop: 20,
+  },
+  sectionLabel: {
+    color: c.muted.default,
+    fontSize: 10,
+    fontWeight: '900',
+    letterSpacing: 3,
+    textTransform: 'uppercase',
+    marginBottom: 8,
+    marginLeft: 4,
+  },
+  sectionCard: {
+    backgroundColor: c.cards.default,
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: c.border.default,
+    overflow: 'hidden',
+  },
+  settingRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 14,
+    paddingHorizontal: 16,
+    gap: 12,
+  },
+  settingIcon: {
+    width: 32,
+    height: 32,
+    borderRadius: 8,
+    backgroundColor: c.surface.default,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  settingTitle: {
+    color: c.text.default,
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  settingDesc: {
+    color: c.muted.default,
+    fontSize: 11,
+    fontWeight: '400',
+    marginTop: 1,
+  },
+  settingAction: {
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 8,
+    backgroundColor: c.surface.default,
+    borderWidth: 1,
+    borderColor: c.border.default,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  settingActionText: {
+    color: c.text.default,
+    fontSize: 12,
+    fontWeight: '600',
+  },
+  toggle: {
+    paddingHorizontal: 14,
+    paddingVertical: 6,
+    borderRadius: 20,
+    backgroundColor: c.surface.default,
+    borderWidth: 1,
+    borderColor: c.border.default,
+  },
+  toggleActive: {
+    backgroundColor: `${c.status.success}1A`,
+    borderColor: c.status.success,
+  },
+  toggleText: {
+    color: c.muted.default,
+    fontSize: 12,
+    fontWeight: '700',
+  },
+  toggleTextActive: {
+    color: c.status.success,
+  },
+  rowDivider: {
+    height: 1,
+    backgroundColor: c.border.default,
+    marginLeft: 60,
+  },
+  accentLabel: {
+    color: c.accent.default,
+    fontSize: 12,
+    fontWeight: '700',
+    letterSpacing: 0.5,
+  },
+  logoutRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 16,
+    paddingHorizontal: 16,
+    gap: 12,
+  },
+  logoutText: {
+    color: c.status.danger,
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  modalItemName: {
+    color: c.text.default,
+    fontSize: 15,
+    fontWeight: '700',
+    letterSpacing: 0.1,
+  },
+  modalItemRole: {
+    color: c.muted.default,
+    fontSize: 10,
+    fontWeight: '700',
+    letterSpacing: 2,
+    marginTop: 2,
+  },
+});
 
 export default SettingsScreen;

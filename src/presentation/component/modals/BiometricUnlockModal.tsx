@@ -3,17 +3,16 @@ import {
   Modal,
   View,
   Text,
+  TextInput,
   TouchableOpacity,
   Alert,
   ActivityIndicator,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { X, ScanFace, Fingerprint } from 'lucide-react-native';
+import { X, Fingerprint } from 'lucide-react-native';
 import * as LocalAuthentication from 'expo-local-authentication';
-import * as ImagePicker from 'expo-image-picker';
-import { MockDataService } from '../../../service/MockDataService';
+import { BiometricService } from '../../../service/BiometricService';
 import { VaultService } from '../../../service/VaultService';
-import { MOCK_MODE } from '../../../config/env';
 
 interface BiometricUnlockModalProps {
   visible: boolean;
@@ -22,154 +21,111 @@ interface BiometricUnlockModalProps {
   vaultId?: string;
 }
 
-type BiometricOption = 'face' | 'fingerprint';
-
-interface SupportedOptions {
-  hasFace: boolean;
-  hasFingerprint: boolean;
-  checked: boolean;
-}
-
 const BiometricUnlockModal: React.FC<BiometricUnlockModalProps> = ({
   visible,
   onClose,
   vaultName = 'Vault',
   vaultId,
 }) => {
-  const [authenticating, setAuthenticating] = useState<BiometricOption | null>(null);
-  const [supported, setSupported] = useState<SupportedOptions>({
-    hasFace: false,
-    hasFingerprint: false,
-    checked: false,
-  });
+  const [isCheckingEnabled, setIsCheckingEnabled] = useState(true);
+  const [isEnabled, setIsEnabled] = useState(false);
+  const [mode, setMode] = useState<'unlock' | 'enable'>('enable');
+  const [pinInput, setPinInput] = useState('');
+  const [isProcessing, setIsProcessing] = useState(false);
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
-  // Detect which biometric types this device actually has enrolled
   useEffect(() => {
     if (!visible) return;
+    setIsCheckingEnabled(true);
+    setErrorMsg(null);
+    setPinInput('');
     (async () => {
       try {
-        const hasHardware = await LocalAuthentication.hasHardwareAsync();
-        const isEnrolled = await LocalAuthentication.isEnrolledAsync();
-        if (!hasHardware || !isEnrolled) {
-          setSupported({ hasFace: false, hasFingerprint: false, checked: true });
-          return;
-        }
-        const types = await LocalAuthentication.supportedAuthenticationTypesAsync();
-        setSupported({
-          hasFace: types.includes(LocalAuthentication.AuthenticationType.FACIAL_RECOGNITION),
-          hasFingerprint: types.includes(LocalAuthentication.AuthenticationType.FINGERPRINT),
-          checked: true,
-        });
+        const enabled = await BiometricService.isVaultBiometricEnabled(Number(vaultId));
+        setIsEnabled(enabled);
+        setMode(enabled ? 'unlock' : 'enable');
       } catch {
-        setSupported({ hasFace: false, hasFingerprint: false, checked: true });
+        setMode('enable');
+      } finally {
+        setIsCheckingEnabled(false);
       }
     })();
-  }, [visible]);
+  }, [visible, vaultId]);
 
-  const authenticateWithFace = async () => {
-    setAuthenticating('face');
+  const handleEnable = async () => {
+    if (pinInput.length !== 6) {
+      setErrorMsg('Enter a 6-digit PIN');
+      return;
+    }
+    setIsProcessing(true);
+    setErrorMsg(null);
     try {
-      const permission = await ImagePicker.requestCameraPermissionsAsync();
-      if (!permission.granted) {
-        Alert.alert('Permission Denied', 'Camera access is required for face unlock.');
-        return;
-      }
-
-      const result = await ImagePicker.launchCameraAsync({
-        allowsEditing: false,
-        quality: 0.1,       // lowest quality — we discard the image anyway
-        cameraType: ImagePicker.CameraType.front,
-      });
-
-      if (!result.canceled && result.assets?.length > 0) {
-        // Photo taken — discard it, treat as successful scan
-        const ts = new Date().toISOString();
-        console.log(`\n[SmartVault] ${ts} | INFO  | AUTH  | POST /api/v1/auth/biometric-login | method=FACIAL_RECOGNITION | user=johng | status=200 OK`);
-        console.log(`[SmartVault] ${ts} | INFO  | VAULT | POST /api/v1/vaults/unlock | target=${vaultName} | method=FACE_SCAN | status=200 OK | result=ACCESS_GRANTED\n`);
-        if (!MOCK_MODE) {
-          try {
-            await VaultService.sendUnlockCommand(vaultId ?? '');
-          } catch (e) {
-            Alert.alert('Vault Offline', e instanceof Error ? e.message : 'Could not reach vault.');
-            return;
-          }
-        }
-        await MockDataService.addActivityLog({
-          id: Date.now().toString(),
-          status: 'success',
-          eventType: 'vault_unlock',
-          title: 'FACE UNLOCK',
-          description: `Face recognition successful. ${vaultName} access granted.`,
-          timestamp: 'Just now',
-          user: { initials: 'JG', name: 'J. GABRIELLE' },
-        });
-        onClose();
-        Alert.alert('Access Granted', `${vaultName} has been unlocked successfully.`);
-      }
-      // If canceled, do nothing — modal stays open
-    } catch {
-      Alert.alert('Error', 'Camera is not available on this device.');
+      await VaultService.setPinForVault(vaultId ?? '', pinInput);
+      await BiometricService.enableVaultBiometric(Number(vaultId), pinInput);
+      setIsEnabled(true);
+      setMode('unlock');
+      setPinInput('');
+    } catch (e) {
+      setErrorMsg(e instanceof Error ? e.message : 'Failed to enable biometric unlock');
     } finally {
-      setAuthenticating(null);
+      setIsProcessing(false);
     }
   };
 
-  const authenticateWithFingerprint = async () => {
-    setAuthenticating('fingerprint');
+  const handleUnlock = async () => {
+    setIsProcessing(true);
+    setErrorMsg(null);
     try {
-      const result = await LocalAuthentication.authenticateAsync({
-        promptMessage: `Place your finger to unlock ${vaultName}`,
+      const authResult = await LocalAuthentication.authenticateAsync({
+        promptMessage: `Unlock ${vaultName}`,
         disableDeviceFallback: true,
         cancelLabel: 'Cancel',
       });
 
-      if (result.success) {
-        const ts = new Date().toISOString();
-        console.log(`\n[SmartVault] ${ts} | INFO  | AUTH  | POST /api/v1/auth/biometric-login | method=FINGERPRINT | user=johng | status=200 OK`);
-        console.log(`[SmartVault] ${ts} | INFO  | VAULT | POST /api/v1/vaults/unlock | target=${vaultName} | method=FINGERPRINT | status=200 OK | result=ACCESS_GRANTED\n`);
-        if (!MOCK_MODE) {
-          try {
-            await VaultService.sendUnlockCommand(vaultId ?? '');
-          } catch (e) {
-            Alert.alert('Vault Offline', e instanceof Error ? e.message : 'Could not reach vault.');
-            return;
-          }
+      if (!authResult.success) {
+        if (authResult.error === 'user_cancel') {
+          // No alert — just reset silently
+          setIsProcessing(false);
+          return;
         }
-        await MockDataService.addActivityLog({
-          id: Date.now().toString(),
-          status: 'success',
-          eventType: 'vault_unlock',
-          title: 'FINGERPRINT UNLOCK',
-          description: `Fingerprint verified. ${vaultName} access granted.`,
-          timestamp: 'Just now',
-          user: { initials: 'JG', name: 'J. GABRIELLE' },
-        });
-        onClose();
-        Alert.alert('Access Granted', `${vaultName} has been unlocked successfully.`);
-      } else {
-        const reason =
-          result.error === 'user_cancel'
-            ? 'Cancelled.'
-            : 'Authentication failed. Please try again.';
-        Alert.alert('Access Denied', reason);
+        if (authResult.error === 'lockout' || authResult.error === 'lockout_permanent') {
+          setErrorMsg('Too many attempts. Use PIN to unlock.');
+        } else if (authResult.error === 'not_enrolled') {
+          setErrorMsg('Set up Face ID or Fingerprint in device Settings.');
+        } else {
+          setErrorMsg('Authentication failed. Try again.');
+        }
+        setIsProcessing(false);
+        return;
       }
-    } catch {
-      Alert.alert('Error', 'Fingerprint authentication is not available on this device.');
-    } finally {
-      setAuthenticating(null);
+
+      const pin = await BiometricService.getVaultPinWithBiometrics(Number(vaultId));
+      if (!pin) {
+        setErrorMsg('Biometric unavailable. Enter your PIN manually.');
+        setIsProcessing(false);
+        return;
+      }
+
+      await VaultService.unlockWithPin(vaultId ?? '', pin);
+      setIsProcessing(false);
+      onClose();
+      Alert.alert('Access Granted', `${vaultName} has been unlocked successfully.`);
+    } catch (e) {
+      setErrorMsg(e instanceof Error ? e.message : 'Failed to unlock vault');
+      setIsProcessing(false);
     }
   };
 
-  // Face unlock always available (uses camera). Fingerprint depends on hardware.
-  const noneAvailable = supported.checked && !supported.hasFingerprint;
+  const handleReset = async () => {
+    await BiometricService.disableVaultBiometric(Number(vaultId));
+    setIsEnabled(false);
+    setMode('enable');
+    setErrorMsg(null);
+    setPinInput('');
+  };
 
   return (
-    <Modal
-      visible={visible}
-      transparent
-      animationType="slide"
-      onRequestClose={onClose}
-    >
+    <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
       <View className="flex-1 bg-black/90 justify-end">
         <SafeAreaView className="bg-zinc-950 border-t border-zinc-800 rounded-t-[40px] overflow-hidden">
           {/* Handle bar */}
@@ -184,7 +140,7 @@ const BiometricUnlockModal: React.FC<BiometricUnlockModalProps> = ({
                 Remote Unlock
               </Text>
               <Text className="text-white text-3xl font-black uppercase tracking-tighter mt-1">
-                Verify Identity
+                {mode === 'enable' ? 'Enable Biometrics' : 'Verify Identity'}
               </Text>
             </View>
             <TouchableOpacity
@@ -196,7 +152,7 @@ const BiometricUnlockModal: React.FC<BiometricUnlockModalProps> = ({
             </TouchableOpacity>
           </View>
 
-          {/* Vault target */}
+          {/* Vault target chip */}
           <View className="mx-8 mb-6 px-4 py-3 bg-zinc-900 border border-zinc-800 rounded-2xl flex-row items-center gap-3">
             <View className="w-2 h-2 rounded-full bg-white" />
             <Text className="text-white text-[11px] font-black uppercase tracking-[2px]">
@@ -206,78 +162,102 @@ const BiometricUnlockModal: React.FC<BiometricUnlockModalProps> = ({
 
           {/* Content */}
           <View className="px-8 pb-8 gap-4">
-            {/* Loading state while checking capabilities */}
-            {!supported.checked && (
+            {isCheckingEnabled ? (
               <View className="items-center py-10">
                 <ActivityIndicator color="#FFFFFF" size="large" />
                 <Text className="text-zinc-500 text-[10px] font-black uppercase tracking-[2px] mt-4">
                   Checking biometrics...
                 </Text>
               </View>
-            )}
-
-            {/* No biometrics enrolled on this device */}
-            {noneAvailable && (
-              <View className="bg-zinc-900 border border-zinc-800 rounded-[28px] p-8 items-center mb-4">
-                <Text className="text-white text-lg font-black uppercase tracking-tighter">
-                  Not Available
+            ) : mode === 'enable' ? (
+              <>
+                <Text className="text-zinc-400 text-[10px] font-black uppercase tracking-[2px]">
+                  Set a 6-digit PIN to enable biometric unlock for this vault.
                 </Text>
-                <Text className="text-zinc-500 text-[10px] font-black uppercase tracking-[2px] mt-2 text-center">
-                  No biometrics enrolled on this device. Set up Face ID or Fingerprint in your device settings.
-                </Text>
-              </View>
-            )}
 
-            {/* Face Unlock — always shown, opens camera */}
-            <TouchableOpacity
-              onPress={authenticateWithFace}
-              disabled={authenticating !== null}
-              activeOpacity={0.75}
-              className="bg-white rounded-[28px] p-6 flex-row items-center gap-5"
-              style={{ opacity: authenticating !== null && authenticating !== 'face' ? 0.35 : 1 }}
-            >
-              <View className="w-16 h-16 bg-black rounded-[20px] items-center justify-center">
-                {authenticating === 'face' ? (
-                  <ActivityIndicator color="#FFFFFF" size="small" />
-                ) : (
-                  <ScanFace size={32} color="#FFFFFF" strokeWidth={2} />
+                {errorMsg && (
+                  <View className="bg-red-950 border border-red-800 rounded-2xl p-3">
+                    <Text className="text-red-400 text-[11px] font-black uppercase tracking-[2px] text-center">
+                      {errorMsg}
+                    </Text>
+                  </View>
                 )}
-              </View>
-              <View className="flex-1">
-                <Text className="text-black text-xl font-black uppercase tracking-tighter">
-                  {authenticating === 'face' ? 'Scanning...' : 'Face Unlock'}
-                </Text>
-                <Text className="text-zinc-500 text-[10px] font-black uppercase tracking-[2px] mt-1">
-                  Facial Recognition
-                </Text>
-              </View>
-            </TouchableOpacity>
 
-            {/* Fingerprint — only shown if device supports fingerprint */}
-            {supported.hasFingerprint && (
-              <TouchableOpacity
-                onPress={authenticateWithFingerprint}
-                disabled={authenticating !== null}
-                activeOpacity={0.75}
-                className="bg-zinc-900 border border-zinc-800 rounded-[28px] p-6 flex-row items-center gap-5"
-                style={{ opacity: authenticating !== null && authenticating !== 'fingerprint' ? 0.35 : 1 }}
-              >
-                <View className="w-16 h-16 bg-zinc-800 border border-zinc-700 rounded-[20px] items-center justify-center">
-                  {authenticating === 'fingerprint' ? (
-                    <ActivityIndicator color="#FFFFFF" size="small" />
+                <View className="border border-zinc-700 rounded-2xl px-4 py-4 bg-zinc-900">
+                  <TextInput
+                    className="text-white text-2xl tracking-[8px] font-black text-center"
+                    placeholder="——————"
+                    placeholderTextColor="#52525B"
+                    value={pinInput}
+                    onChangeText={setPinInput}
+                    keyboardType="number-pad"
+                    maxLength={6}
+                    secureTextEntry
+                    editable={!isProcessing}
+                  />
+                </View>
+
+                <TouchableOpacity
+                  onPress={handleEnable}
+                  disabled={pinInput.length !== 6 || isProcessing}
+                  activeOpacity={0.75}
+                  className="bg-white rounded-[28px] p-6 items-center"
+                  style={{ opacity: pinInput.length !== 6 || isProcessing ? 0.4 : 1 }}
+                >
+                  {isProcessing ? (
+                    <ActivityIndicator color="#000000" size="small" />
                   ) : (
-                    <Fingerprint size={32} color="#FFFFFF" strokeWidth={2} />
+                    <Text className="text-black text-sm font-black uppercase tracking-[3px]">
+                      Enable Biometric Unlock
+                    </Text>
                   )}
-                </View>
-                <View className="flex-1">
-                  <Text className="text-white text-xl font-black uppercase tracking-tighter">
-                    {authenticating === 'fingerprint' ? 'Scanning...' : 'Fingerprint'}
+                </TouchableOpacity>
+              </>
+            ) : (
+              <>
+                {errorMsg && (
+                  <View className="bg-red-950 border border-red-800 rounded-2xl p-4 items-center">
+                    <Text className="text-red-400 text-[11px] font-black uppercase tracking-[2px] text-center">
+                      {errorMsg}
+                    </Text>
+                  </View>
+                )}
+
+                <TouchableOpacity
+                  onPress={handleUnlock}
+                  disabled={isProcessing}
+                  activeOpacity={0.75}
+                  className="bg-white rounded-[28px] p-6 flex-row items-center gap-5"
+                  style={{ opacity: isProcessing ? 0.5 : 1 }}
+                >
+                  <View className="w-16 h-16 bg-black rounded-[20px] items-center justify-center">
+                    {isProcessing ? (
+                      <ActivityIndicator color="#FFFFFF" size="small" />
+                    ) : (
+                      <Fingerprint size={32} color="#FFFFFF" strokeWidth={2} />
+                    )}
+                  </View>
+                  <View className="flex-1">
+                    <Text className="text-black text-xl font-black uppercase tracking-tighter">
+                      {isProcessing ? 'Verifying...' : 'Biometric Unlock'}
+                    </Text>
+                    <Text className="text-zinc-500 text-[10px] font-black uppercase tracking-[2px] mt-1">
+                      Face ID / Fingerprint
+                    </Text>
+                  </View>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  onPress={handleReset}
+                  disabled={isProcessing}
+                  activeOpacity={0.7}
+                  className="items-center py-2"
+                >
+                  <Text className="text-zinc-500 text-[10px] font-black uppercase tracking-[2px]">
+                    Reset Biometric Unlock
                   </Text>
-                  <Text className="text-zinc-500 text-[10px] font-black uppercase tracking-[2px] mt-1">
-                    Touch Sensor
-                  </Text>
-                </View>
-              </TouchableOpacity>
+                </TouchableOpacity>
+              </>
             )}
           </View>
         </SafeAreaView>

@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useMemo } from 'react';
 import {
   View,
   Text,
@@ -7,39 +7,53 @@ import {
   Alert,
   TouchableOpacity,
   Pressable,
+  StyleSheet,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import Animated, { FadeInDown, FadeInRight } from 'react-native-reanimated';
-import { Shield, ChevronRight, AlertTriangle, RefreshCw } from 'lucide-react-native';
+import { ChevronRight, AlertTriangle, RefreshCw } from 'lucide-react-native';
 
 import VaultUnlockModal from '../component/vault_access/VaultUnlockModal';
 import { VaultMembership, VaultService, ActivityLogEntry, transformActivity } from '../../service/VaultService';
 import { ActivityLog } from '../../types/ActivityTypes';
 import { useVaultManagement } from '../hooks/VaultContext';
+import { useAuthContext } from '../context/AuthContext';
+import { useThemeColors } from '../context/ThemeContext';
+import { ThemeColors } from '../../theme/colors';
 
-// ─── Status helpers ──────────────────────────────────────────────────────────
+// ─── Helpers ─────────────────────────────────────────────────────────────────
 
-function getStatusDot(status: string) {
-  switch (status) {
-    case 'success': return 'bg-status-success';
-    case 'failed':
-    case 'danger': return 'bg-status-danger';
-    case 'warning': return 'bg-status-warning';
-    default: return 'bg-status-neutral';
-  }
+function getStatusBorderColor(vault: VaultMembership, c: ThemeColors): string {
+  if (!vault.last_accessed_at) return c.border.dark;
+  const diffMin = (Date.now() - new Date(vault.last_accessed_at).getTime()) / 60000;
+  if (diffMin < 60) return c.accent2.default;
+  return c.border.dark;
 }
 
-function getVaultStatusBadge(vault: VaultMembership): {
-  label: string;
-  textClass: string;
-  borderClass: string;
-} {
-  // Derive a display status from last_accessed_at or role
-  // Since the API doesn't return vault status directly, we show role/activity state
-  const isAdmin = (vault.role as string).toLowerCase() === 'admin';
-  return isAdmin
-    ? { label: 'ADMIN', textClass: 'text-accent-default', borderClass: 'border-accent-dim' }
-    : { label: 'MEMBER', textClass: 'text-zinc-500', borderClass: 'border-zinc-700' };
+function deriveVaultStats(vaults: VaultMembership[]) {
+  let online = 0;
+  let locked = 0;
+  let offline = 0;
+  for (const v of vaults) {
+    if (!v.last_accessed_at) {
+      offline++;
+    } else {
+      const diffMin = (Date.now() - new Date(v.last_accessed_at).getTime()) / 60000;
+      if (diffMin < 60) online++;
+      else locked++;
+    }
+  }
+  return { online, locked, offline };
+}
+
+function getActivityBorderColor(status: string, c: ThemeColors): string {
+  switch (status) {
+    case 'success': return c.status.success;
+    case 'failed':
+    case 'danger': return c.status.danger;
+    case 'warning': return c.status.warning;
+    default: return c.muted.default;
+  }
 }
 
 function formatRelative(isoOrNull: string | null | undefined): string {
@@ -52,15 +66,24 @@ function formatRelative(isoOrNull: string | null | undefined): string {
   return `${Math.floor(diffMin / 1440)}d ago`;
 }
 
+function getGreeting(): string {
+  const h = new Date().getHours();
+  if (h < 12) return 'Good morning';
+  if (h < 17) return 'Good afternoon';
+  return 'Good evening';
+}
+
 // ─── Skeleton ────────────────────────────────────────────────────────────────
 
-const SkeletonCard = ({ delay }: { delay: number }) => (
-  <Animated.View
-    entering={FadeInDown.delay(delay).springify()}
-    className="bg-zinc-900 rounded-[24px] h-28 border border-zinc-800 mr-3"
-    style={{ width: 160 }}
-  />
-);
+const SkeletonCard = ({ delay }: { delay: number }) => {
+  const colors = useThemeColors();
+  return (
+    <Animated.View
+      entering={FadeInDown.delay(delay).springify()}
+      style={{ width: 170, backgroundColor: colors.cards.dark, borderRadius: 24, height: 112, borderWidth: 1, borderColor: colors.border.default, marginRight: 12 }}
+    />
+  );
+};
 
 // ─── Vault Card ──────────────────────────────────────────────────────────────
 
@@ -73,32 +96,39 @@ const VaultCard = ({
   onPress: () => void;
   delay: number;
 }) => {
-  const badge = getVaultStatusBadge(vault);
+  const colors = useThemeColors();
   const name = vault.vault_name ?? `UNIT-${vault.vault_id}`;
   const lastSeen = formatRelative(vault.last_accessed_at);
+  const borderColor = getStatusBorderColor(vault, colors);
+  const isActive = borderColor === colors.accent2.default;
 
   return (
     <Animated.View entering={FadeInDown.delay(delay).springify()}>
       <Pressable
         onPress={onPress}
-        className="bg-zinc-950 rounded-[24px] border border-zinc-800 p-5 mr-3"
-        style={{ width: 160 }}
-        android_ripple={{ color: 'rgba(34,211,238,0.1)' }}
+        style={[
+          styles.vaultCard,
+          { backgroundColor: colors.cards.default, borderColor: colors.border.default, borderLeftColor: borderColor, borderLeftWidth: 3, borderWidth: 1, borderRadius: 20, padding: 16, marginRight: 12 },
+        ]}
+        android_ripple={{ color: `${colors.accent.default}1A` }}
       >
         <Text
-          className="text-white text-base font-black tracking-tight uppercase"
+          style={{ color: colors.text.default, fontSize: 14, fontWeight: '900', letterSpacing: -0.3 }}
           numberOfLines={1}
         >
           {name}
         </Text>
-        <View
-          className={`mt-2 self-start px-2 py-1 rounded-lg border ${badge.borderClass}`}
-        >
-          <Text className={`text-[9px] font-black uppercase tracking-widest ${badge.textClass}`}>
-            {badge.label}
+        <View style={{ marginTop: 8, flexDirection: 'row', alignItems: 'center' }}>
+          <View
+            style={[styles.statusDot, { backgroundColor: isActive ? colors.accent2.default : colors.muted.default }]}
+          />
+          <Text
+            style={{ fontSize: 10, fontWeight: '700', letterSpacing: 2, marginLeft: 6, color: isActive ? colors.accent2.default : colors.muted.default }}
+          >
+            {isActive ? 'ONLINE' : 'LOCKED'}
           </Text>
         </View>
-        <Text className="text-zinc-600 text-[10px] font-medium mt-3">{lastSeen}</Text>
+        <Text style={{ color: colors.muted.default, fontSize: 10, fontWeight: '500', marginTop: 12 }}>{lastSeen}</Text>
       </Pressable>
     </Animated.View>
   );
@@ -106,28 +136,34 @@ const VaultCard = ({
 
 // ─── Activity Row ────────────────────────────────────────────────────────────
 
-const ActivityRow = ({ log, index }: { log: ActivityLog; index: number }) => (
-  <Animated.View
-    entering={FadeInRight.delay(index * 50).springify()}
-    className="flex-row items-center py-3 border-b border-zinc-900"
-  >
-    <View className={`w-2 h-2 rounded-full mr-3 ${getStatusDot(log.status)}`} />
-    <View className="flex-1">
-      <Text className="text-white text-sm font-black tracking-tight uppercase">
-        {log.title}
-      </Text>
-      <Text className="text-zinc-500 text-[10px] font-medium mt-0.5" numberOfLines={1}>
-        {log.description}
-      </Text>
-    </View>
-    <Text className="text-zinc-600 text-[10px] font-medium ml-2">{log.timestamp}</Text>
-  </Animated.View>
-);
+const ActivityRow = ({ log, index }: { log: ActivityLog; index: number }) => {
+  const colors = useThemeColors();
+  const borderColor = getActivityBorderColor(log.status, colors);
+  return (
+    <Animated.View
+      entering={FadeInRight.delay(index * 50).springify()}
+      style={{ flexDirection: 'row', alignItems: 'stretch', paddingVertical: 12, borderLeftWidth: 3, borderLeftColor: borderColor, paddingLeft: 12, marginBottom: 2 }}
+    >
+      <View style={{ flex: 1 }}>
+        <Text style={{ color: colors.text.default, fontSize: 14, fontWeight: '700', letterSpacing: -0.3 }}>
+          {log.title}
+        </Text>
+        <Text style={{ color: colors.muted.default, fontSize: 10, fontWeight: '500', marginTop: 2 }} numberOfLines={1}>
+          {log.description}
+        </Text>
+      </View>
+      <Text style={{ color: colors.muted.default, fontSize: 10, fontWeight: '500', marginLeft: 12, marginTop: 2 }}>{log.timestamp}</Text>
+    </Animated.View>
+  );
+};
 
 // ─── HomeScreen ──────────────────────────────────────────────────────────────
 
 export default function HomeScreen() {
+  const colors = useThemeColors();
+  const styles = useMemo(() => makeStyles(colors), [colors]);
   const navigation = useNavigation();
+  const { user } = useAuthContext();
   const { availableVaults, loading: vaultLoading, error: vaultError, retryLoadVaults } = useVaultManagement();
 
   const [activity, setActivity] = useState<ActivityLog[]>([]);
@@ -136,6 +172,17 @@ export default function HomeScreen() {
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [selectedVault, setSelectedVault] = useState<VaultMembership | null>(null);
   const [unlockModalVisible, setUnlockModalVisible] = useState(false);
+
+  const firstName: string =
+    user?.first_name ?? user?.name?.split(' ')[0] ?? user?.username ?? '';
+  const greeting = getGreeting();
+  const dateStr = new Date().toLocaleDateString('en-US', {
+    weekday: 'short',
+    month: 'short',
+    day: 'numeric',
+  });
+
+  const stats = deriveVaultStats(availableVaults);
 
   const loadActivity = useCallback(async (vaults: VaultMembership[]) => {
     if (vaults.length === 0) { setActivity([]); return; }
@@ -154,7 +201,6 @@ export default function HomeScreen() {
     }
   }, []);
 
-  // Load activity whenever vaults become available
   React.useEffect(() => {
     if (!vaultLoading && availableVaults.length > 0) {
       loadActivity(availableVaults);
@@ -184,53 +230,60 @@ export default function HomeScreen() {
   };
 
   const renderHeader = () => (
-    <View className="px-6 pt-14 bg-bg-default">
-      {/* ── Header ── */}
-      <Animated.View entering={FadeInDown.delay(0).springify()} className="mb-10">
-        <View className="flex-row items-center justify-between">
-          <View>
-            <Text className="text-zinc-600 text-[10px] font-black uppercase tracking-[5px] mb-1">
-              System.Status.v2
-            </Text>
-            <Text className="text-white text-5xl font-black tracking-tighter leading-[48px]">
-              DASHBOARD
+    <View style={{ paddingHorizontal: 24, paddingTop: 56, backgroundColor: colors.bg.default }}>
+      {/* ── Greeting Header ── */}
+      <Animated.View entering={FadeInDown.delay(0).springify()} style={{ marginBottom: 24 }}>
+        <View style={{ flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between' }}>
+          <View style={{ flex: 1 }}>
+            <Text style={{ color: colors.muted.default, fontSize: 12, fontWeight: '500' }}>{greeting}</Text>
+            <Text style={{ color: colors.text.default, fontSize: 30, fontWeight: '900', letterSpacing: -0.5, lineHeight: 36 }}>
+              {firstName || 'Welcome back'}
             </Text>
           </View>
-          <View className="w-14 h-14 bg-white rounded-[20px] items-center justify-center">
-            <Shield size={28} color="black" strokeWidth={2.5} />
-          </View>
-        </View>
-
-        <View className="flex-row items-center mt-6 p-3 bg-zinc-950 border border-zinc-900 rounded-2xl self-start">
-          <View className="w-2 h-2 rounded-full bg-accent-default mr-2" />
-          <Text className="text-white text-[10px] font-black uppercase tracking-widest">
-            Network: Active
-          </Text>
+          <Text style={{ color: colors.muted.default, fontSize: 12, fontWeight: '500', marginTop: 4 }}>{dateStr}</Text>
         </View>
       </Animated.View>
 
-      {/* ── Vault Units ── */}
-      <Animated.View entering={FadeInDown.delay(50).springify()} className="mb-10">
-        <Text className="text-zinc-600 text-[10px] font-black uppercase tracking-[4px] mb-4">
-          Vault Units
+      {/* ── Stat Chips ── */}
+      {!vaultLoading && availableVaults.length > 0 && (
+        <Animated.View entering={FadeInDown.delay(30).springify()} style={{ flexDirection: 'row', gap: 8, marginBottom: 24 }}>
+          <View style={styles.statChip}>
+            <View style={[styles.statDot, { backgroundColor: colors.status.success }]} />
+            <Text style={styles.statText}>{stats.online} Online</Text>
+          </View>
+          <View style={styles.statChip}>
+            <View style={[styles.statDot, { backgroundColor: colors.accent.default }]} />
+            <Text style={styles.statText}>{stats.locked} Locked</Text>
+          </View>
+          <View style={styles.statChip}>
+            <View style={[styles.statDot, { backgroundColor: colors.muted.default }]} />
+            <Text style={styles.statText}>{stats.offline} Offline</Text>
+          </View>
+        </Animated.View>
+      )}
+
+      {/* ── Your Vaults ── */}
+      <Animated.View entering={FadeInDown.delay(60).springify()} style={{ marginBottom: 24 }}>
+        <Text style={{ color: colors.muted.default, fontSize: 10, fontWeight: '900', letterSpacing: 3, textTransform: 'uppercase', marginBottom: 12 }}>
+          Your Vaults
         </Text>
 
         {vaultError ? (
-          <View className="bg-zinc-950 border border-zinc-800 rounded-[24px] p-5 flex-row items-center">
-            <AlertTriangle size={16} color="#EF4444" strokeWidth={2.5} />
-            <Text className="text-zinc-400 text-sm font-medium ml-3 flex-1">{vaultError}</Text>
+          <View style={{ backgroundColor: colors.cards.default, borderWidth: 1, borderColor: colors.border.default, borderRadius: 20, padding: 16, flexDirection: 'row', alignItems: 'center' }}>
+            <AlertTriangle size={16} color={colors.status.danger} strokeWidth={2.5} />
+            <Text style={{ color: colors.muted.default, fontSize: 14, fontWeight: '500', marginLeft: 12, flex: 1 }}>{vaultError}</Text>
             <TouchableOpacity onPress={retryLoadVaults}>
-              <RefreshCw size={16} color="#71717A" strokeWidth={2.5} />
+              <RefreshCw size={16} color={colors.muted.default} strokeWidth={2.5} />
             </TouchableOpacity>
           </View>
         ) : vaultLoading ? (
-          <View className="flex-row">
+          <View style={{ flexDirection: 'row' }}>
             <SkeletonCard delay={0} />
             <SkeletonCard delay={80} />
           </View>
         ) : availableVaults.length === 0 ? (
-          <View className="bg-zinc-950 border border-zinc-800 rounded-[24px] p-5">
-            <Text className="text-zinc-500 text-sm font-medium">No vaults found.</Text>
+          <View style={{ backgroundColor: colors.cards.default, borderWidth: 1, borderColor: colors.border.default, borderRadius: 20, padding: 16 }}>
+            <Text style={{ color: colors.muted.default, fontSize: 14, fontWeight: '500' }}>No vaults found.</Text>
           </View>
         ) : (
           <FlatList
@@ -249,97 +302,83 @@ export default function HomeScreen() {
         )}
       </Animated.View>
 
-      {/* ── Actions Strip ── */}
+      {/* ── Quick Actions ── */}
       {!vaultLoading && availableVaults.length > 0 && (
         <Animated.View
-          entering={FadeInDown.delay(100).springify()}
-          className="flex-row gap-3 mb-10"
+          entering={FadeInDown.delay(90).springify()}
+          style={{ flexDirection: 'row', gap: 12, marginBottom: 24 }}
         >
           <TouchableOpacity
             onPress={() => handleVaultPress(availableVaults[0])}
-            className="flex-1 bg-white rounded-[20px] py-4 items-center"
+            style={styles.actionPrimary}
             activeOpacity={0.8}
           >
-            <Text className="text-black text-[11px] font-black uppercase tracking-widest">
-              Unlock
-            </Text>
+            <Text style={styles.actionPrimaryText}>Unlock</Text>
           </TouchableOpacity>
           <TouchableOpacity
             onPress={() => navigation.navigate('Activity' as never)}
-            className="flex-1 bg-zinc-950 border border-zinc-800 rounded-[20px] py-4 items-center"
+            style={styles.actionSecondary}
             activeOpacity={0.8}
           >
-            <Text className="text-zinc-300 text-[11px] font-black uppercase tracking-widest">
-              View Logs
-            </Text>
+            <Text style={styles.actionSecondaryText}>Activity</Text>
           </TouchableOpacity>
         </Animated.View>
       )}
 
       {/* ── Recent Activity ── */}
-      <Animated.View entering={FadeInDown.delay(150).springify()} className="mb-10">
-        <View className="flex-row items-center justify-between mb-4">
-          <Text className="text-zinc-600 text-[10px] font-black uppercase tracking-[4px]">
+      <Animated.View entering={FadeInDown.delay(120).springify()} style={{ marginBottom: 24 }}>
+        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
+          <Text style={{ color: colors.muted.default, fontSize: 10, fontWeight: '900', letterSpacing: 3, textTransform: 'uppercase' }}>
             Recent Activity
           </Text>
           <TouchableOpacity
             onPress={() => navigation.navigate('Activity' as never)}
-            className="flex-row items-center"
+            style={{ flexDirection: 'row', alignItems: 'center' }}
             activeOpacity={0.7}
           >
-            <Text className="text-zinc-500 text-[10px] font-black uppercase tracking-widest mr-1">
-              View All
-            </Text>
-            <ChevronRight size={12} color="#71717A" strokeWidth={2.5} />
+            <Text style={{ color: colors.accent.default, fontSize: 10, fontWeight: '700', marginRight: 4 }}>See all</Text>
+            <ChevronRight size={12} color={colors.accent.default} strokeWidth={2.5} />
           </TouchableOpacity>
         </View>
 
         {activityError ? (
-          <Text className="text-zinc-600 text-sm font-medium">{activityError}</Text>
+          <Text style={{ color: colors.muted.default, fontSize: 14, fontWeight: '500' }}>{activityError}</Text>
         ) : activityLoading ? (
           <>
             {[0, 1, 2].map((i) => (
               <Animated.View
                 key={i}
                 entering={FadeInDown.delay(i * 40).springify()}
-                className="h-12 bg-zinc-900 rounded-2xl mb-2"
+                style={{ height: 48, backgroundColor: colors.cards.default, borderRadius: 16, marginBottom: 8 }}
               />
             ))}
           </>
         ) : activity.length === 0 ? (
-          <Text className="text-zinc-600 text-sm font-medium">No recent activity.</Text>
+          <Text style={{ color: colors.muted.default, fontSize: 14, fontWeight: '500' }}>No recent activity.</Text>
         ) : (
           activity.map((log, i) => (
             <ActivityRow key={log.id} log={log} index={i} />
           ))
         )}
       </Animated.View>
-
-      {/* Footer */}
-      <View className="mb-24 items-center">
-        <View className="w-8 h-[1px] bg-zinc-800 mb-4" />
-        <Text className="text-zinc-700 text-[9px] font-black uppercase tracking-[3px] text-center">
-          Secured via RSA-4096 Protocol • v2.4.0
-        </Text>
-      </View>
     </View>
   );
 
   return (
-    <View className="flex-1 bg-bg-default">
+    <View style={{ flex: 1, backgroundColor: colors.bg.default }}>
       <FlatList
         data={[]}
         renderItem={null}
         ListHeaderComponent={renderHeader}
-        contentContainerStyle={{ paddingBottom: 160 }}
+        contentContainerStyle={{ paddingBottom: 120 }}
         showsVerticalScrollIndicator={false}
         refreshControl={
           <RefreshControl
             refreshing={isRefreshing}
             onRefresh={handleRefresh}
-            colors={['#FFFFFF']}
-            tintColor="#FFFFFF"
-            progressBackgroundColor="#000000"
+            colors={[colors.accent.default]}
+            tintColor={colors.accent.default}
+            progressBackgroundColor={colors.cards.default}
           />
         }
       />
@@ -353,3 +392,68 @@ export default function HomeScreen() {
     </View>
   );
 }
+
+const makeStyles = (c: ThemeColors) => StyleSheet.create({
+  vaultCard: {
+    width: 170,
+  },
+  statusDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+  },
+  statChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: c.cards.default,
+    borderWidth: 1,
+    borderColor: c.border.default,
+    borderRadius: 20,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    gap: 6,
+  },
+  statDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+  },
+  statText: {
+    color: c.text.default,
+    fontSize: 11,
+    fontWeight: '600',
+  },
+  actionPrimary: {
+    flex: 1,
+    backgroundColor: c.status.success,
+    borderRadius: 14,
+    paddingVertical: 13,
+    alignItems: 'center',
+    shadowColor: c.status.success,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 6,
+  },
+  actionPrimaryText: {
+    color: '#000000',
+    fontSize: 13,
+    fontWeight: '900',
+    letterSpacing: 0.5,
+  },
+  actionSecondary: {
+    flex: 1,
+    backgroundColor: c.cards.default,
+    borderRadius: 14,
+    paddingVertical: 13,
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: c.border.default,
+  },
+  actionSecondaryText: {
+    color: c.text.default,
+    fontSize: 13,
+    fontWeight: '700',
+    letterSpacing: 0.5,
+  },
+});

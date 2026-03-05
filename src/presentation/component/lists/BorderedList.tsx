@@ -1,5 +1,6 @@
 import React, { ReactElement } from 'react';
 import { FlatList, View, Text, Pressable, ScrollView } from 'react-native';
+import { useThemeColors } from '../../context/ThemeContext';
 
 type BorderedListProps<T> = {
   data: T[];
@@ -32,6 +33,7 @@ function BorderedList<T>({
   itemGap = 8,
   scrollEnabled = true,
 }: BorderedListProps<T>) {
+  const colors = useThemeColors();
   const maxHeight = maxVisibleItems * itemHeight;
 
   const renderItemContent = (item: T, index: number) => {
@@ -45,17 +47,19 @@ function BorderedList<T>({
         key={keyExtractor(item, index)}
         disabled={!onItemPress}
         onPress={() => onItemPress?.(item, index)}
-        className={`flex-row items-center justify-between px-5 py-4 gap-3 rounded-2xl ${
-          isSelected ? 'bg-primary-default' : 'bg-surface-default'
-        }`}
         style={{
+          flexDirection: 'row',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          paddingHorizontal: 16,
+          paddingVertical: 14,
+          gap: 12,
+          borderRadius: 16,
           minHeight: itemHeight,
           marginBottom: itemGap,
-          shadowColor: '#000',
-          shadowOffset: { width: 0, height: 4 },
-          shadowOpacity: 0.15,
-          shadowRadius: 8,
-          elevation: 6,
+          backgroundColor: isSelected ? colors.surface.active : colors.surface.default,
+          borderWidth: isSelected ? 1 : 0,
+          borderColor: isSelected ? colors.accent.default : 'transparent',
         }}
       >
         <View className="flex-row items-center flex-1">
@@ -64,12 +68,7 @@ function BorderedList<T>({
             renderItem(item, index, isSelected)
           ) : (
             <Text
-              className={`flex-1 ${
-                isSelected
-                  ? 'text-text-default font-semibold'
-                  : 'text-text-default dark:text-text-default'
-              }`}
-              style={{ flexWrap: 'wrap' }}
+              style={{ flex: 1, flexWrap: 'wrap', color: colors.text.default, fontWeight: isSelected ? '600' : '400' }}
             >
               {String(item)}
             </Text>

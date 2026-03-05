@@ -3,6 +3,7 @@ import { View, Text, TextInput, TouchableOpacity, Alert } from 'react-native';
 import CustomModal from '../modals/CustomModal';
 import { VaultMembership } from '../../../service/VaultService';
 import { useBiometric } from '../../hooks/useBiometric';
+import { useThemeColors } from '../../context/ThemeContext';
 
 interface VaultUnlockModalProps {
   visible: boolean;
@@ -109,6 +110,8 @@ const VaultUnlockModal: React.FC<VaultUnlockModalProps> = ({
     }
   };
 
+  const colors = useThemeColors();
+
   if (!vault) return null;
 
   return (
@@ -127,28 +130,28 @@ const VaultUnlockModal: React.FC<VaultUnlockModalProps> = ({
         onPress: onClose,
       }}
     >
-      <View className="mb-6">
-        <Text className="text-white font-black uppercase tracking-[2px] text-[10px] mb-2">
+      <View style={{ marginBottom: 24 }}>
+        <Text style={{ color: colors.text.default, fontWeight: '900', textTransform: 'uppercase', letterSpacing: 2, fontSize: 10, marginBottom: 8 }}>
           Vault PIN
         </Text>
         <TextInput
           value={pin}
           onChangeText={setPin}
           placeholder="Enter vault PIN"
-          placeholderTextColor="#52525B"
+          placeholderTextColor={colors.muted.default}
           secureTextEntry={true}
           keyboardType="number-pad"
-          className="bg-zinc-900 text-white px-4 py-4 rounded-2xl border border-zinc-800"
+          style={{ backgroundColor: colors.surface.default, color: colors.text.default, paddingHorizontal: 16, paddingVertical: 16, borderRadius: 16, borderWidth: 1, borderColor: colors.border.default }}
         />
       </View>
 
       {canPromptBiometrics && vaultBiometricEnabled && (
         <TouchableOpacity
           onPress={handleBiometricUnlock}
-          className="bg-black border border-zinc-800 rounded-2xl px-4 py-4 mb-6"
+          style={{ backgroundColor: colors.cards.default, borderWidth: 1, borderColor: colors.border.default, borderRadius: 16, paddingHorizontal: 16, paddingVertical: 16, marginBottom: 24 }}
           activeOpacity={0.7}
         >
-          <Text className="text-white text-center font-black uppercase tracking-[2px] text-[10px]">
+          <Text style={{ color: colors.text.default, textAlign: 'center', fontWeight: '900', textTransform: 'uppercase', letterSpacing: 2, fontSize: 10 }}>
             Unlock with {biometricLabel}
           </Text>
         </TouchableOpacity>
@@ -157,10 +160,17 @@ const VaultUnlockModal: React.FC<VaultUnlockModalProps> = ({
       {canPromptBiometrics && !vaultBiometricEnabled && (
         <TouchableOpacity
           onPress={() => setEnableBiometricNextTime(prev => !prev)}
-          className={`px-4 py-3 rounded-2xl border ${enableBiometricNextTime ? 'bg-white border-white' : 'bg-black border-zinc-800'}`}
+          style={{
+            paddingHorizontal: 16,
+            paddingVertical: 12,
+            borderRadius: 16,
+            borderWidth: 1,
+            backgroundColor: enableBiometricNextTime ? colors.accent.default : colors.cards.default,
+            borderColor: enableBiometricNextTime ? colors.accent.default : colors.border.default,
+          }}
           activeOpacity={0.7}
         >
-          <Text className={`text-[10px] font-black uppercase tracking-[2px] text-center ${enableBiometricNextTime ? 'text-black' : 'text-white'}`}>
+          <Text style={{ fontSize: 10, fontWeight: '900', textTransform: 'uppercase', letterSpacing: 2, textAlign: 'center', color: enableBiometricNextTime ? '#000000' : colors.text.default }}>
             {enableBiometricNextTime ? `${biometricLabel} enabled for next time` : `Enable ${biometricLabel} for next time`}
           </Text>
         </TouchableOpacity>

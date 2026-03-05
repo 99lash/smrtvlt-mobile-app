@@ -1,18 +1,44 @@
-import React, { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, ScrollView, Dimensions, StyleSheet, ActivityIndicator, Alert } from 'react-native';
+import React, { useState, useMemo } from 'react';
+import {
+  View,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  ScrollView,
+  Dimensions,
+  StyleSheet,
+  ActivityIndicator,
+  Alert,
+} from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { Fingerprint } from 'lucide-react-native';
 import { useLogin } from '../../../hooks/useLogin';
 import { useNavigation } from '@react-navigation/native';
 import { useBiometric } from '../../../hooks/useBiometric';
 import { AuthService } from '../../../../service/AuthService';
+import { BiometricService } from '../../../../service/BiometricService';
 import RegisterModal from '../register/RegisterModal';
+import { useThemeColors } from '../../../context/ThemeContext';
+import { ThemeColors } from '../../../../theme/colors';
 
-const Login = ({ onLoginSuccess, onLoginError, successMessage, onClearSuccessMessage }: { onLoginSuccess?: () => void, onLoginError?: (err: string) => void, successMessage?: string | null, onClearSuccessMessage?: () => void }) => {
+const Login = ({
+  onLoginSuccess,
+  onLoginError,
+  successMessage,
+  onClearSuccessMessage,
+}: {
+  onLoginSuccess?: () => void;
+  onLoginError?: (err: string) => void;
+  successMessage?: string | null;
+  onClearSuccessMessage?: () => void;
+}) => {
   const insets = useSafeAreaInsets();
   const navigation = useNavigation();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
+  const [emailFocused, setEmailFocused] = useState(false);
+  const [passwordFocused, setPasswordFocused] = useState(false);
   const { login, isLoading: loading, error } = useLogin();
   const [biometricLoading, setBiometricLoading] = useState(false);
   const [showRegister, setShowRegister] = useState(false);
@@ -43,7 +69,9 @@ const Login = ({ onLoginSuccess, onLoginError, successMessage, onClearSuccessMes
                   } catch (biometricError) {
                     Alert.alert(
                       'Biometric setup failed',
-                      biometricError instanceof Error ? biometricError.message : 'Unable to enable biometric login.'
+                      biometricError instanceof Error
+                        ? biometricError.message
+                        : 'Unable to enable biometric login.'
                     );
                   }
                 },
@@ -59,339 +87,367 @@ const Login = ({ onLoginSuccess, onLoginError, successMessage, onClearSuccessMes
   };
 
   const handleBiometricLogin = async () => {
+    setBiometricLoading(true);
     try {
-      setBiometricLoading(true);
-      await AuthService.biometricLogin();
+      await BiometricService.verifyBiometricSession();
       onLoginSuccess?.();
     } catch (err: any) {
-      Alert.alert(
-        'Biometric login failed',
-        err instanceof Error ? err.message : 'Please sign in with email and password.'
-      );
+      const code: string = err?.message ?? '';
+      if (code === 're_enroll' || code === 'jwt_expired') {
+        try {
+          await AuthService.biometricLogin();
+          onLoginSuccess?.();
+        } catch (fallbackErr: any) {
+          Alert.alert(
+            'Biometric login failed',
+            fallbackErr instanceof Error
+              ? fallbackErr.message
+              : 'Please sign in with email and password.'
+          );
+        }
+      } else if (code === 'lockout') {
+        Alert.alert('Too many attempts', 'Please sign in with email and password.');
+      } else if (code === 'not_enrolled') {
+        Alert.alert('Biometrics not set up', 'Enable Face ID or Fingerprint in device Settings.');
+      } else if (code !== 'user_cancel') {
+        Alert.alert(
+          'Biometric login failed',
+          err instanceof Error ? err.message : 'Please sign in with email and password.'
+        );
+      }
     } finally {
       setBiometricLoading(false);
     }
   };
 
+  const colors = useThemeColors();
+  const styles = useMemo(() => makeStyles(colors), [colors]);
   const { height } = Dimensions.get('window');
+  const isDisabled = loading || biometricLoading || !email || !password;
 
   return (
     <ScrollView
-      style={styles.container}
+      style={styles.scroll}
       contentContainerStyle={{ flexGrow: 1 }}
       keyboardShouldPersistTaps="handled"
       showsVerticalScrollIndicator={false}
     >
-      <View style={[styles.background, { minHeight: height, paddingTop: insets.top, paddingBottom: insets.bottom }]}>
-        <View style={styles.contentContainer}>
-          
-          {/* Hero Section */}
-          <View style={styles.logoContainer}>
-             <View style={styles.heroBox}>
-                <Text style={styles.heroText}>SV</Text>
-             </View>
-             <Text style={styles.title}>SMARTVAULT</Text>
-             <Text style={styles.subtitle}>SECURE ACCESS PROTOCOL</Text>
+      <View
+        style={[
+          styles.container,
+          { minHeight: height, paddingTop: insets.top + 20, paddingBottom: insets.bottom + 20 },
+        ]}
+      >
+        {/* ── Logo Area ── */}
+        <View style={styles.logoArea}>
+          <Text style={styles.brand}>SmartVault</Text>
+          <View style={styles.brandRule} />
+          <Text style={styles.brandSub}>Secure Access Terminal</Text>
+        </View>
+
+        {/* ── Form ── */}
+        <View style={styles.form}>
+
+          {/* Email */}
+          <View style={styles.fieldGroup}>
+            <Text style={styles.label}>Identifier</Text>
+            <View style={[styles.inputWrap, emailFocused && styles.inputWrapFocused]}>
+              <TextInput
+                style={styles.input}
+                placeholder="Email address"
+                placeholderTextColor={colors.muted.default}
+                value={email}
+                onChangeText={setEmail}
+                onFocus={() => setEmailFocused(true)}
+                onBlur={() => setEmailFocused(false)}
+                autoCapitalize="none"
+                keyboardType="email-address"
+                autoComplete="email"
+              />
+            </View>
           </View>
 
-          {/* Login Card */}
-          <View style={styles.card}>
-            
-            {/* Input Fields */}
-            <View style={styles.inputContainer}>
-              <Text style={styles.label}>IDENTIFIER</Text>
-              <View style={styles.inputWrapper}>
-                <TextInput
-                  style={styles.input}
-                  placeholder="EMAIL"
-                  placeholderTextColor="#52525B"
-                  value={email}
-                  onChangeText={setEmail}
-                  autoCapitalize="none"
-                  keyboardType="email-address"
-                  autoComplete="email"
-                />
-              </View>
+          {/* Password */}
+          <View style={styles.fieldGroup}>
+            <Text style={styles.label}>Access Key</Text>
+            <View style={[styles.inputWrap, passwordFocused && styles.inputWrapFocused]}>
+              <TextInput
+                style={[styles.input, { flex: 1 }]}
+                placeholder="Password"
+                placeholderTextColor={colors.muted.default}
+                value={password}
+                onChangeText={setPassword}
+                onFocus={() => setPasswordFocused(true)}
+                onBlur={() => setPasswordFocused(false)}
+                secureTextEntry={!showPassword}
+                autoCapitalize="none"
+              />
+              <TouchableOpacity onPress={() => setShowPassword(!showPassword)}>
+                <Text style={styles.showHide}>{showPassword ? 'Hide' : 'Show'}</Text>
+              </TouchableOpacity>
             </View>
+          </View>
 
-            <View style={styles.inputContainer}>
-              <Text style={styles.label}>ACCESS KEY</Text>
-              <View style={styles.inputWrapper}>
-                <TextInput
-                  style={styles.input}
-                  placeholder="PASSWORD"
-                  placeholderTextColor="#52525B"
-                  value={password}
-                  onChangeText={setPassword}
-                  secureTextEntry={!showPassword}
-                  autoCapitalize="none"
-                />
-                <TouchableOpacity
-                  onPress={() => setShowPassword(!showPassword)}
-                  style={styles.eyeIcon}
-                >
-                  <Text style={styles.eyeText}>{showPassword ? 'HIDE' : 'SHOW'}</Text>
-                </TouchableOpacity>
-              </View>
+          {/* Success message */}
+          {!!successMessage && (
+            <View style={styles.successBox}>
+              <Text style={styles.successText}>{successMessage}</Text>
+              <TouchableOpacity onPress={onClearSuccessMessage}>
+                <Text style={styles.dismissText}>Dismiss</Text>
+              </TouchableOpacity>
             </View>
+          )}
 
-            {successMessage && (
-              <View style={styles.successContainer}>
-                <Text style={styles.successText}>{successMessage}</Text>
-                <TouchableOpacity onPress={onClearSuccessMessage} style={styles.successDismiss}>
-                  <Text style={styles.successDismissText}>DISMISS</Text>
-                </TouchableOpacity>
-              </View>
+          {/* Error */}
+          {!!error && (
+            <View style={styles.errorBox}>
+              <Text style={styles.errorText}>{error}</Text>
+            </View>
+          )}
+
+          {/* Forgot password */}
+          <TouchableOpacity
+            style={styles.forgotWrap}
+            onPress={() => navigation.navigate('PasswordReset' as never)}
+          >
+            <Text style={styles.forgotText}>Recover access</Text>
+          </TouchableOpacity>
+
+          {/* Authenticate button */}
+          <TouchableOpacity
+            onPress={handleLogin}
+            disabled={isDisabled}
+            style={[styles.authButton, isDisabled && styles.authButtonDisabled]}
+            activeOpacity={0.85}
+          >
+            {loading ? (
+              <ActivityIndicator color="#000000" />
+            ) : (
+              <Text style={styles.authButtonText}>Authenticate</Text>
             )}
+          </TouchableOpacity>
 
-            {error && (
-              <View style={styles.errorContainer}>
-                <Text style={styles.errorText}>{error}</Text>
-              </View>
-            )}
-
-            <TouchableOpacity
-              style={styles.forgotPassword}
-              onPress={() => navigation.navigate('PasswordReset')}
-            >
-              <Text style={styles.linkText}>RECOVER ACCESS</Text>
-            </TouchableOpacity>
-
-            {/* Action Button */}
-            <TouchableOpacity
-                onPress={handleLogin}
-                disabled={loading || biometricLoading || !email || !password}
-                style={[styles.button, (loading || biometricLoading || !email || !password) && styles.buttonDisabled]}
-            >
-                {loading ? (
-                <ActivityIndicator color="black" />
-                ) : (
-                <Text style={styles.buttonText}>AUTHENTICATE</Text>
-                )}
-            </TouchableOpacity>
-
-            {canPromptBiometrics && isLoginEnabled && (
+          {/* Biometric button */}
+          {canPromptBiometrics && isLoginEnabled && (
+            <View style={styles.biometricWrap}>
               <TouchableOpacity
                 onPress={handleBiometricLogin}
                 disabled={biometricLoading || loading}
-                style={[styles.biometricButton, (biometricLoading || loading) && styles.buttonDisabled]}
+                style={[
+                  styles.biometricButton,
+                  (biometricLoading || loading) && styles.biometricButtonDisabled,
+                ]}
+                activeOpacity={0.8}
               >
                 {biometricLoading ? (
-                  <ActivityIndicator color="white" />
+                  <ActivityIndicator color={colors.accent.default} size="small" />
                 ) : (
-                  <Text style={styles.biometricButtonText}>
-                    LOGIN WITH {biometricLabel.toUpperCase()}
-                  </Text>
+                  <Fingerprint size={24} color={colors.accent.default} strokeWidth={1.5} />
                 )}
               </TouchableOpacity>
-            )}
-
-            {/* Signup */}
-            <View style={styles.signupContainer}>
-              <Text style={styles.mutedText}>NO CREDENTIALS? </Text>
-              <TouchableOpacity onPress={() => setShowRegister(true)}>
-                <Text style={styles.linkTextBold}>ENROLL NOW</Text>
-              </TouchableOpacity>
+              <Text style={styles.biometricLabel}>{biometricLabel}</Text>
             </View>
+          )}
+
+          {/* Sign up */}
+          <View style={styles.signupRow}>
+            <Text style={styles.mutedText}>No account? </Text>
+            <TouchableOpacity onPress={() => setShowRegister(true)}>
+              <Text style={styles.signupLink}>Enroll now</Text>
+            </TouchableOpacity>
           </View>
         </View>
       </View>
-      <RegisterModal
-        visible={showRegister}
-        onClose={() => setShowRegister(false)}
-      />
+
+      <RegisterModal visible={showRegister} onClose={() => setShowRegister(false)} />
     </ScrollView>
   );
 };
 
-const styles = StyleSheet.create({
+const makeStyles = (c: ThemeColors) => StyleSheet.create({
+  scroll: {
+    flex: 1,
+    backgroundColor: 'transparent',
+  },
   container: {
-    flex: 1,
-    backgroundColor: '#000000',
-  },
-  background: {
-    flex: 1,
-    backgroundColor: '#000000',
-  },
-  contentContainer: {
     flex: 1,
     justifyContent: 'center',
     paddingHorizontal: 32,
   },
-  logoContainer: {
+  logoArea: {
     alignItems: 'center',
     marginBottom: 48,
   },
-  heroBox: {
-    width: 80,
-    height: 80,
-    backgroundColor: '#FFFFFF',
-    justifyContent: 'center',
-    alignItems: 'center',
-    borderRadius: 24,
-    marginBottom: 20,
-  },
-  heroText: {
+  brand: {
     fontSize: 32,
     fontWeight: '900',
-    color: '#000000',
-  },
-  title: {
-    fontSize: 28,
-    fontWeight: '900',
-    color: '#FFFFFF',
+    color: c.text.default,
     letterSpacing: -1,
   },
-  subtitle: {
+  brandRule: {
+    width: 48,
+    height: 2,
+    backgroundColor: c.accent.default,
+    borderRadius: 1,
+    marginTop: 10,
+    marginBottom: 10,
+  },
+  brandSub: {
     fontSize: 10,
     fontWeight: '700',
-    color: '#71717A',
+    color: c.muted.default,
     letterSpacing: 4,
-    marginTop: 4,
+    textTransform: 'uppercase',
   },
-  card: {
-    backgroundColor: '#000000',
-  },
-  inputContainer: {
-    marginBottom: 24,
+  form: {},
+  fieldGroup: {
+    marginBottom: 20,
   },
   label: {
-    color: '#FFFFFF',
-    fontSize: 10,
-    fontWeight: '900',
-    letterSpacing: 2,
+    color: c.text.default,
+    fontSize: 11,
+    fontWeight: '700',
+    letterSpacing: 1.5,
+    textTransform: 'uppercase',
     marginBottom: 8,
-    marginLeft: 4,
+    marginLeft: 2,
   },
-  inputWrapper: {
+  inputWrap: {
     flexDirection: 'row',
     alignItems: 'center',
-    borderRadius: 16,
-    paddingHorizontal: 20,
-    height: 64,
-    backgroundColor: '#18181B',
-    borderWidth: 1,
-    borderColor: '#27272A',
+    backgroundColor: c.cards.default,
+    borderWidth: 1.5,
+    borderColor: c.border.default,
+    borderRadius: 14,
+    paddingHorizontal: 18,
+    height: 56,
+  },
+  inputWrapFocused: {
+    borderColor: c.accent.default,
   },
   input: {
     flex: 1,
+    color: c.text.default,
     fontSize: 14,
+    fontWeight: '500',
+  },
+  showHide: {
+    color: c.muted.default,
+    fontSize: 11,
     fontWeight: '700',
-    color: '#FFFFFF',
+    letterSpacing: 0.5,
+    marginLeft: 10,
   },
-  eyeIcon: {
-    marginLeft: 12,
-  },
-  eyeText: {
-    color: '#FFFFFF',
-    fontSize: 10,
-    fontWeight: '900',
-  },
-  forgotPassword: {
-    marginBottom: 40,
+  forgotWrap: {
     alignSelf: 'center',
+    marginBottom: 28,
   },
-  linkText: {
-    color: '#71717A',
-    fontSize: 11,
-    fontWeight: '700',
-    letterSpacing: 1,
+  forgotText: {
+    color: c.muted.default,
+    fontSize: 12,
+    fontWeight: '600',
+    letterSpacing: 0.3,
   },
-  linkTextBold: {
-    color: '#FFFFFF',
-    fontSize: 11,
-    fontWeight: '900',
-    letterSpacing: 1,
-    textDecorationLine: 'underline',
-  },
-  button: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 20,
-    height: 64,
+  authButton: {
+    backgroundColor: c.accent.default,
+    borderRadius: 16,
+    height: 58,
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: 32,
-    shadowColor: "#FFFFFF",
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.2,
-    shadowRadius: 10,
-    elevation: 5,
+    marginBottom: 20,
+    shadowColor: c.accent.default,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 12,
+    elevation: 8,
   },
-  buttonDisabled: {
-    backgroundColor: '#27272A',
+  authButtonDisabled: {
+    backgroundColor: c.surface.default,
     shadowOpacity: 0,
+    elevation: 0,
   },
-  buttonText: {
+  authButtonText: {
     color: '#000000',
-    fontSize: 16,
+    fontSize: 15,
     fontWeight: '900',
-    letterSpacing: 1,
+    letterSpacing: 0.5,
+  },
+  biometricWrap: {
+    alignItems: 'center',
+    marginBottom: 24,
+    gap: 8,
   },
   biometricButton: {
-    backgroundColor: '#18181B',
-    borderRadius: 20,
-    height: 56,
+    width: 58,
+    height: 58,
+    borderRadius: 29,
+    backgroundColor: c.cards.default,
+    borderWidth: 1.5,
+    borderColor: c.accent.default,
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: 24,
-    borderWidth: 1,
-    borderColor: '#27272A',
   },
-  biometricButtonText: {
-    color: '#FFFFFF',
-    fontSize: 12,
-    fontWeight: '900',
-    letterSpacing: 1,
+  biometricButtonDisabled: {
+    borderColor: c.border.dark,
+    opacity: 0.5,
   },
-  signupContainer: {
+  biometricLabel: {
+    color: c.muted.default,
+    fontSize: 11,
+    fontWeight: '600',
+    letterSpacing: 0.5,
+  },
+  signupRow: {
     flexDirection: 'row',
     justifyContent: 'center',
     alignItems: 'center',
   },
   mutedText: {
-    color: '#71717A',
-    fontSize: 11,
-    fontWeight: '700',
-  },
-  errorContainer: {
-    backgroundColor: '#2D1215',
-    borderRadius: 12,
-    padding: 12,
-    marginBottom: 16,
-    borderWidth: 1,
-    borderColor: '#5C2328',
-  },
-  errorText: {
-    color: '#F87171',
+    color: c.muted.default,
     fontSize: 12,
-    fontWeight: '600',
-    textAlign: 'center',
+    fontWeight: '500',
   },
-  successContainer: {
-    backgroundColor: '#0F2A1F',
+  signupLink: {
+    color: c.accent.default,
+    fontSize: 12,
+    fontWeight: '700',
+    letterSpacing: 0.3,
+  },
+  successBox: {
+    backgroundColor: `${c.status.success}1A`,
     borderRadius: 12,
     padding: 12,
     marginBottom: 16,
     borderWidth: 1,
-    borderColor: '#1F4D35',
+    borderColor: `${c.status.success}40`,
     alignItems: 'center',
   },
   successText: {
-    color: '#34D399',
+    color: c.status.success,
     fontSize: 12,
     fontWeight: '600',
     textAlign: 'center',
     marginBottom: 8,
   },
-  successDismiss: {
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-  },
-  successDismissText: {
-    color: '#FFFFFF',
+  dismissText: {
+    color: c.text.default,
     fontSize: 10,
-    fontWeight: '900',
+    fontWeight: '700',
     letterSpacing: 1,
+  },
+  errorBox: {
+    backgroundColor: `${c.status.danger}1A`,
+    borderRadius: 12,
+    padding: 12,
+    marginBottom: 16,
+    borderWidth: 1,
+    borderColor: `${c.status.danger}40`,
+  },
+  errorText: {
+    color: c.status.danger,
+    fontSize: 12,
+    fontWeight: '600',
+    textAlign: 'center',
   },
 });
 

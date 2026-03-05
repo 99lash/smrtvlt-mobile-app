@@ -3,6 +3,7 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { NavigationContainer } from '@react-navigation/native';
 import { AuthProvider } from './src/presentation/context/AuthContext';
 import { VaultProvider } from './src/presentation/hooks/VaultContext';
+import { ThemeProvider } from './src/presentation/context/ThemeContext';
 import { AuthService } from './src/service/AuthService';
 import AppNavigator from './src/presentation/navigation/AppNavigator';
 
@@ -12,13 +13,15 @@ AuthService.initialize();
 const App = () => {
   return (
     <SafeAreaProvider>
-      <AuthProvider>
-        <VaultProvider>
-          <NavigationContainer>
-            <AppNavigator />
-          </NavigationContainer>
-        </VaultProvider>
-      </AuthProvider>
+      <ThemeProvider>
+        <AuthProvider>
+          <VaultProvider>
+            <NavigationContainer>
+              <AppNavigator />
+            </NavigationContainer>
+          </VaultProvider>
+        </AuthProvider>
+      </ThemeProvider>
     </SafeAreaProvider>
   );
 };

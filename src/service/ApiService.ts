@@ -278,11 +278,12 @@ export class ApiService {
       ? customHeaders 
       : { 'Content-Type': 'application/x-www-form-urlencoded', ...customHeaders };
 
+    // isRetry=true: form endpoints (login, etc.) never trigger the refresh loop
     return this.request<T>(endpoint, {
       method: 'POST',
       headers,
       body: formData instanceof FormData ? formData : formData.toString(),
-    }, 'API POST FORM');
+    }, 'API POST FORM', true);
   }
 
   /**
@@ -294,10 +295,11 @@ export class ApiService {
   ): Promise<T> {
     const headers = this.getPublicHeaders(customHeaders);
 
+    // isRetry=true: public endpoints never trigger the refresh loop
     return this.request<T>(endpoint, {
       method: 'GET',
       headers,
-    }, 'API GET PUBLIC');
+    }, 'API GET PUBLIC', true);
   }
 
   /**
@@ -310,10 +312,11 @@ export class ApiService {
   ): Promise<T> {
     const headers = this.getPublicHeaders(customHeaders);
 
+    // isRetry=true: public endpoints never trigger the refresh loop
     return this.request<T>(endpoint, {
       method: 'POST',
       headers,
       body: JSON.stringify(body),
-    }, 'API POST PUBLIC');
+    }, 'API POST PUBLIC', true);
   }
 }

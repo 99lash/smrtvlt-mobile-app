@@ -20,6 +20,7 @@ export const API_CONFIG = {
     USERS: {
       ME: '/api/v1/users/me',
       SEARCH: (email: string) => `/api/v1/users/search?email=${encodeURIComponent(email)}`,
+      DEVICE_TOKEN: '/api/v1/users/me/device-token',
     },
     LOGS: {
       WS: '/api/v1/ws/user',
@@ -29,6 +30,10 @@ export const API_CONFIG = {
       VALIDATE: (code: string) => `/api/v1/vault-invitations/${code}`,
       ACCEPT: (code: string) => `/api/v1/vault-invitations/${code}/accept`,
       BY_VAULT: (vaultId: number) => `/api/v1/vault-invitations/vault/${vaultId}`,
+    },
+    BIOMETRICS: {
+      ENROLL: '/api/v1/biometrics/enroll',
+      VERIFY: '/api/v1/biometrics/verify',
     },
     DEVICES: {
       REGISTER: '/api/v1/devices/register',

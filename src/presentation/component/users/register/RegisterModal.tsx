@@ -4,6 +4,8 @@ import { User, Mail, Lock, Eye, EyeOff } from 'lucide-react-native';
 import CustomModal from '../../modals/CustomModal';
 import { ApiService } from '../../../../service/ApiService';
 import { API_CONFIG } from '../../../../config/api';
+import { AuthService } from '../../../../service/AuthService';
+import { BiometricService } from '../../../../service/BiometricService';
 
 type RegisterModalProps = {
   visible: boolean;
@@ -110,16 +112,53 @@ const RegisterModal: React.FC<RegisterModalProps> = ({
         full_name: fullName,
         signup_ticket: signupTicket,
       });
-      Alert.alert('Account Created', 'You can now log in.', [
-        {
-          text: 'OK',
-          onPress: () => {
-            onRegisterSuccess?.();
-            resetForm();
-            onClose();
-          },
-        },
-      ]);
+
+      // Auto-login after signup
+      try {
+        await AuthService.login({ email, password });
+      } catch {
+        // Login failed — registration succeeded, close without biometric prompt
+        onRegisterSuccess?.();
+        resetForm();
+        onClose();
+        return;
+      }
+
+      const canUseBiometrics = await BiometricService.canUseBiometrics();
+      if (canUseBiometrics) {
+        Alert.alert(
+          'Enable Biometric Login?',
+          'Use Face ID or Fingerprint to log in faster next time.',
+          [
+            {
+              text: 'Enable',
+              onPress: async () => {
+                try {
+                  await BiometricService.enableBiometricLogin();
+                } catch {
+                  // Non-fatal — biometric enrollment failed silently
+                }
+                onRegisterSuccess?.();
+                resetForm();
+                onClose();
+              },
+            },
+            {
+              text: 'Not now',
+              style: 'cancel',
+              onPress: () => {
+                onRegisterSuccess?.();
+                resetForm();
+                onClose();
+              },
+            },
+          ]
+        );
+      } else {
+        onRegisterSuccess?.();
+        resetForm();
+        onClose();
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Registration failed. Try again.');
     } finally {

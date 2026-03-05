@@ -1,5 +1,6 @@
 import { Text, TouchableOpacity, ActivityIndicator, View } from "react-native";
 import React, { ReactElement } from "react";
+import { useThemeColors } from "../../context/ThemeContext";
 
 type ButtonSecondaryProps = {
   title: string;
@@ -22,10 +23,10 @@ const ButtonSecondary: React.FC<ButtonSecondaryProps> = ({
   icon,
   iconPosition = "left",
 }) => {
-  // monochrome colors
-  const activeBg = "#27272A"; // Zinc-800
-  const disabledBg = "#18181B"; // Zinc-900
-  const textColor = disabled ? "#52525B" : "#FFFFFF";
+  const colors = useThemeColors();
+  const activeBg = colors.cards.default;
+  const disabledBg = colors.cards.dark;
+  const textColor = disabled ? colors.muted.default : colors.text.default;
 
   const coloredIcon =
     icon &&
@@ -49,7 +50,7 @@ const ButtonSecondary: React.FC<ButtonSecondaryProps> = ({
         paddingVertical: 14,
         paddingHorizontal: 20,
         borderWidth: 1,
-        borderColor: '#3F3F46',
+        borderColor: colors.border.default,
       }}
       className={`flex-row items-center justify-center ${className}`}
     >
