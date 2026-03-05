@@ -107,7 +107,7 @@ const VaultCard = ({
       <Pressable
         onPress={onPress}
         style={[
-          styles.vaultCard,
+          { width: 170 },
           { backgroundColor: colors.cards.default, borderColor: colors.border.default, borderLeftColor: borderColor, borderLeftWidth: 3, borderWidth: 1, borderRadius: 20, padding: 16, marginRight: 12 },
         ]}
         android_ripple={{ color: `${colors.accent.default}1A` }}
@@ -120,7 +120,7 @@ const VaultCard = ({
         </Text>
         <View style={{ marginTop: 8, flexDirection: 'row', alignItems: 'center' }}>
           <View
-            style={[styles.statusDot, { backgroundColor: isActive ? colors.accent2.default : colors.muted.default }]}
+            style={[{ width: 6, height: 6, borderRadius: 3 }, { backgroundColor: isActive ? colors.accent2.default : colors.muted.default }]}
           />
           <Text
             style={{ fontSize: 10, fontWeight: '700', letterSpacing: 2, marginLeft: 6, color: isActive ? colors.accent2.default : colors.muted.default }}

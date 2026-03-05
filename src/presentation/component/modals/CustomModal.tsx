@@ -4,7 +4,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { X } from 'lucide-react-native';
 import ButtonPrimary from '../buttons/ButtonPrimary';
 import ButtonSecondary from '../buttons/ButtonSecondary';
-import { useThemeColors } from '../context/ThemeContext';
+import { useThemeColors } from '../../context/ThemeContext';
 
 type CustomModalProps = {
   visible: boolean;
