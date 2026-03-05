@@ -36,6 +36,7 @@ export const API_CONFIG = {
       VERIFY: '/api/v1/biometrics/verify',
       FACE_ENROLL: '/api/v1/biometrics/enroll-face',
       FACE_VERIFY: '/api/v1/biometrics/verify-face',
+      FACE_DELETE: '/api/v1/biometrics/face',
     },
     DEVICES: {
       REGISTER: '/api/v1/devices/register',

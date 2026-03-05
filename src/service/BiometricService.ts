@@ -12,6 +12,7 @@ const BIOMETRIC_KEYS = {
   VAULT_PIN_PREFIX: 'biometric_vault_pin_',
   VAULT_USER_ID: 'vault_user_id',
   VAULT_JWT: 'vault_jwt',
+  VAULT_CREDENTIALS: 'smartvault_biometric_credentials', // combined key, no requireAuthentication
   FACE_ENROLLED: 'face_recognition_enrolled',
 };
 
@@ -250,6 +251,12 @@ export class BiometricService {
     }
 
     try {
+      // Store combined credentials without requireAuthentication — authenticateAsync() is the gate.
+      // Also write legacy keys so older app versions still work during rollout.
+      await SecureStore.setItemAsync(
+        BIOMETRIC_KEYS.VAULT_CREDENTIALS,
+        JSON.stringify({ userId: String(userId), jwt: accessToken }),
+      );
       await SecureStore.setItemAsync(BIOMETRIC_KEYS.VAULT_USER_ID, String(userId), {
         requireAuthentication: true,
       });
@@ -295,12 +302,38 @@ export class BiometricService {
       throw new Error(authResult.error ?? 'auth_failed');
     }
 
-    const userId = await SecureStore.getItemAsync(BIOMETRIC_KEYS.VAULT_USER_ID, {
-      requireAuthentication: true,
-    });
-    const jwt = await SecureStore.getItemAsync(BIOMETRIC_KEYS.VAULT_JWT, {
-      requireAuthentication: true,
-    });
+    // Try new combined key first (1 prompt total). Fall back to legacy keys and migrate.
+    let userId: string | null = null;
+    let jwt: string | null = null;
+
+    const combined = await SecureStore.getItemAsync(BIOMETRIC_KEYS.VAULT_CREDENTIALS);
+    if (combined) {
+      try {
+        const parsed = JSON.parse(combined) as { userId: string; jwt: string };
+        userId = parsed.userId;
+        jwt = parsed.jwt;
+      } catch {
+        // corrupt — fall through to legacy
+      }
+    }
+
+    if (!userId || !jwt) {
+      // Legacy path: read old keys (triggers 2 more prompts), then migrate to combined key
+      userId = await SecureStore.getItemAsync(BIOMETRIC_KEYS.VAULT_USER_ID, {
+        requireAuthentication: true,
+      });
+      jwt = await SecureStore.getItemAsync(BIOMETRIC_KEYS.VAULT_JWT, {
+        requireAuthentication: true,
+      });
+
+      if (userId && jwt) {
+        // Silently migrate so next verify only needs 1 prompt
+        await SecureStore.setItemAsync(
+          BIOMETRIC_KEYS.VAULT_CREDENTIALS,
+          JSON.stringify({ userId, jwt }),
+        ).catch(() => undefined);
+      }
+    }
 
     if (!userId || !jwt) {
       await log.warn('Biometric', 'Biometric credentials missing from SecureStore — re-enroll required');
@@ -412,6 +445,17 @@ export class BiometricService {
   }
 
   // ─────────────────────────────────────────────────────────────────────────
+
+  /**
+   * Delete the enrolled face from the backend and clear the local flag.
+   */
+  static async deleteFace(): Promise<void> {
+    const accessToken = await StorageService.getAccessToken();
+    if (!accessToken) throw new Error('No access token available');
+    await ApiService.delete(API_CONFIG.ENDPOINTS.BIOMETRICS.FACE_DELETE, accessToken);
+    await SecureStore.deleteItemAsync(BIOMETRIC_KEYS.FACE_ENROLLED).catch(() => undefined);
+    await log.info('Biometric', 'Face deleted');
+  }
 
   /**
    * Clear biometric session credentials (vault_user_id + vault_jwt).

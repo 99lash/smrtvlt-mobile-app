@@ -217,15 +217,52 @@ const VaultUnlockModal: React.FC<VaultUnlockModalProps> = ({
 
       {/* Face recognition unlock */}
       {faceEnrolled && (
-        <TouchableOpacity
-          onPress={handleFaceUnlock}
-          style={{ backgroundColor: colors.cards.default, borderWidth: 1, borderColor: colors.border.default, borderRadius: 16, paddingHorizontal: 16, paddingVertical: 16, marginTop: 8 }}
-          activeOpacity={0.7}
-        >
-          <Text style={{ color: colors.text.default, textAlign: 'center', fontWeight: '900', textTransform: 'uppercase', letterSpacing: 2, fontSize: 10 }}>
-            Unlock with Face Recognition
-          </Text>
-        </TouchableOpacity>
+        <>
+          <TouchableOpacity
+            onPress={handleFaceUnlock}
+            style={{ backgroundColor: colors.cards.default, borderWidth: 1, borderColor: colors.border.default, borderRadius: 16, paddingHorizontal: 16, paddingVertical: 16, marginTop: 8 }}
+            activeOpacity={0.7}
+          >
+            <Text style={{ color: colors.text.default, textAlign: 'center', fontWeight: '900', textTransform: 'uppercase', letterSpacing: 2, fontSize: 10 }}>
+              Unlock with Face Recognition
+            </Text>
+          </TouchableOpacity>
+          <View style={{ flexDirection: 'row', justifyContent: 'center', marginTop: 8, gap: 16 }}>
+            <TouchableOpacity onPress={handleFaceEnroll} activeOpacity={0.7}>
+              <Text style={{ color: colors.muted.default, fontSize: 10, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 2 }}>
+                Re-take photo
+              </Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              onPress={() => {
+                Alert.alert(
+                  'Delete face',
+                  'Remove your enrolled face? You can re-enroll at any time.',
+                  [
+                    { text: 'Cancel', style: 'cancel' },
+                    {
+                      text: 'Delete',
+                      style: 'destructive',
+                      onPress: async () => {
+                        try {
+                          await BiometricService.deleteFace();
+                          setFaceEnrolled(false);
+                        } catch (error) {
+                          Alert.alert('Error', error instanceof Error ? error.message : 'Failed to delete face.');
+                        }
+                      },
+                    },
+                  ]
+                );
+              }}
+              activeOpacity={0.7}
+            >
+              <Text style={{ color: colors.muted.default, fontSize: 10, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 2 }}>
+                Delete face
+              </Text>
+            </TouchableOpacity>
+          </View>
+        </>
       )}
 
       {!faceEnrolled && (
