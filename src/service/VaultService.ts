@@ -355,6 +355,51 @@ export class VaultService {
   }
 
   /**
+   * Set or update the PIN for a vault.
+   * POST /api/v1/vaults/{vault_id}/pin  body: { pin }
+   */
+  static async setPinForVault(
+    vaultId: string,
+    pin: string
+  ): Promise<{ vault_id: string; pin_set_at: string }> {
+    try {
+      const response = await ApiService.post<{ vault_id: string; pin_set_at: string }>(
+        API_CONFIG.ENDPOINTS.VAULTS.PIN_SET(vaultId),
+        { pin }
+      );
+      return response;
+    } catch (error) {
+      if (error instanceof ApiError) {
+        if (error.status === 403) throw new Error('You do not have access to this vault.');
+        if (error.status === 404) throw new Error('Vault not found.');
+        if (error.status === 422) throw new Error('Invalid PIN format. PIN must be 6 digits.');
+      }
+      throw error instanceof Error ? error : new Error(String(error));
+    }
+  }
+
+  /**
+   * Get PIN status for a vault.
+   * GET /api/v1/vaults/{vault_id}/pin/status
+   */
+  static async getPinStatus(
+    vaultId: string
+  ): Promise<{ vault_id: string; is_set: boolean; pin_set_at: string | null }> {
+    try {
+      const response = await ApiService.get<{ vault_id: string; is_set: boolean; pin_set_at: string | null }>(
+        API_CONFIG.ENDPOINTS.VAULTS.PIN_STATUS(vaultId)
+      );
+      return response;
+    } catch (error) {
+      if (error instanceof ApiError) {
+        if (error.status === 403) throw new Error('You do not have access to this vault.');
+        if (error.status === 404) throw new Error('Vault not found.');
+      }
+      throw error instanceof Error ? error : new Error(String(error));
+    }
+  }
+
+  /**
    * Send a remote unlock command to a vault (WebSocket-based).
    * POST /api/v1/vaults/{vault_id}/unlock
    */

@@ -10,6 +10,7 @@ import { useAuthContext } from '../context/AuthContext';
 import { useBiometric } from '../hooks/useBiometric';
 import { VaultMembership, VaultService } from '../../service/VaultService';
 import Provisioning from '../component/provisioning/Provisioning';
+import SetPinModal from '../component/vault_access/SetPinModal';
 
 const SettingsScreen = () => {
   const { logout } = useAuthContext();
@@ -19,6 +20,8 @@ const SettingsScreen = () => {
   const [isLoggingOut, setIsLoggingOut] = useState(false);
   const [vaultBiometricEnabled, setVaultBiometricEnabled] = useState(false);
   const [provisioningModalVisible, setProvisioningModalVisible] = useState(false);
+  const [pinStatus, setPinStatus] = useState<{ is_set: boolean; pin_set_at: string | null } | null>(null);
+  const [setPinModalVisible, setSetPinModalVisible] = useState(false);
 
   const loadVaults = useCallback(async () => {
     try {
@@ -52,6 +55,13 @@ const SettingsScreen = () => {
     }
     return () => { isMounted = false; };
   }, [currentVault, isVaultBiometricEnabled]);
+
+  useEffect(() => {
+    if (!currentVault?.vault_id) return;
+    VaultService.getPinStatus(String(currentVault.vault_id))
+      .then(status => setPinStatus(status))
+      .catch(() => {});
+  }, [currentVault]);
 
   const handleLogout = () => {
     Alert.alert('Logout', 'Are you sure you want to logout?', [
@@ -90,7 +100,7 @@ const SettingsScreen = () => {
         .then(() => setVaultBiometricEnabled(false))
         .catch(error => Alert.alert('Biometric update failed', error instanceof Error ? error.message : 'Please try again.'));
     } else {
-      Alert.alert('Not available', 'Vault biometric unlock setup is not yet available.');
+      setSetPinModalVisible(true);
     }
   };
 
@@ -172,6 +182,25 @@ const SettingsScreen = () => {
             </TouchableOpacity>
           </View>
 
+          <View className="bg-zinc-950 p-6 rounded-[32px] border border-zinc-900 mb-4">
+            <Text className="text-white font-black text-xl uppercase tracking-tighter">Vault PIN</Text>
+            <Text className="text-zinc-500 text-[10px] font-black uppercase tracking-[2px] mt-2">
+              {pinStatus?.is_set
+                ? `PIN SET — updated ${pinStatus.pin_set_at ? new Date(pinStatus.pin_set_at).toLocaleDateString() : ''}`
+                : 'NOT SET'}
+            </Text>
+            <TouchableOpacity
+              onPress={() => setSetPinModalVisible(true)}
+              disabled={!currentVault}
+              className="mt-4 px-4 py-3 rounded-2xl border bg-black border-zinc-800"
+              activeOpacity={0.7}
+            >
+              <Text className="text-[10px] font-black uppercase tracking-[2px] text-white">
+                Set PIN
+              </Text>
+            </TouchableOpacity>
+          </View>
+
           <View className="bg-zinc-950 p-6 rounded-[32px] border border-zinc-900">
             <Text className="text-white font-black text-xl uppercase tracking-tighter">Vault Unlock Biometric</Text>
             <Text className="text-zinc-500 text-[10px] font-black uppercase tracking-[2px] mt-2">
@@ -237,6 +266,29 @@ const SettingsScreen = () => {
       <Provisioning
         visible={provisioningModalVisible}
         onClose={() => setProvisioningModalVisible(false)}
+      />
+
+      <SetPinModal
+        visible={setPinModalVisible}
+        vault={currentVault}
+        onClose={() => setSetPinModalVisible(false)}
+        onSuccess={async (pin) => {
+          // Reload PIN status after setting
+          if (currentVault?.vault_id) {
+            VaultService.getPinStatus(String(currentVault.vault_id))
+              .then(setPinStatus)
+              .catch(() => {});
+            // If biometric was not enabled and canPromptBiometrics, enable it
+            if (!vaultBiometricEnabled && canPromptBiometrics) {
+              try {
+                await enableVaultBiometric(currentVault.vault_id, pin);
+                setVaultBiometricEnabled(true);
+              } catch {
+                // biometric enable failure is non-fatal here
+              }
+            }
+          }
+        }}
       />
     </View>
   );
