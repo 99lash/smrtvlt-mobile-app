@@ -11,8 +11,10 @@
     "ios": {
       "supportsTablet": true,
       "infoPlist": {
-        "NSFaceIDUsageDescription": "Use Face ID to securely access SmartVault."
-      }
+        "NSFaceIDUsageDescription": "Use Face ID to securely access SmartVault.",
+        "ITSAppUsesNonExemptEncryption": false
+      },
+      "bundleIdentifier": "com.gablane.smartvaultapp"
     },
     "android": {
       "adaptiveIcon": {
@@ -22,8 +24,12 @@
     },
     "extra": {
       "eas": {
-        "projectId": "611f750e-a85c-4ef7-8aec-1408fc16ad8f"
+        "projectId": "160d2f07-c3ff-489e-b156-2d47b12be09b"
       }
-    }
+    },
+    "owner": "gablane",
+    "plugins": [
+      "expo-asset"
+    ]
   }
 }
