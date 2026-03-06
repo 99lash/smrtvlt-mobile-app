@@ -24,26 +24,17 @@ import { ThemeColors } from '../../theme/colors';
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
 function getStatusBorderColor(vault: VaultMembership, c: ThemeColors): string {
-  if (!vault.last_accessed_at) return c.border.dark;
-  const diffMin = (Date.now() - new Date(vault.last_accessed_at).getTime()) / 60000;
-  if (diffMin < 60) return c.accent2.default;
-  return c.border.dark;
+  return vault.is_online ? c.accent2.default : c.border.dark;
 }
 
 function deriveVaultStats(vaults: VaultMembership[]) {
   let online = 0;
-  let locked = 0;
   let offline = 0;
   for (const v of vaults) {
-    if (!v.last_accessed_at) {
-      offline++;
-    } else {
-      const diffMin = (Date.now() - new Date(v.last_accessed_at).getTime()) / 60000;
-      if (diffMin < 60) online++;
-      else locked++;
-    }
+    if (v.is_online) online++;
+    else offline++;
   }
-  return { online, locked, offline };
+  return { online, locked: 0, offline };
 }
 
 function getActivityBorderColor(status: string, c: ThemeColors): string {
@@ -99,8 +90,8 @@ const VaultCard = ({
   const colors = useThemeColors();
   const name = vault.vault_name ?? `UNIT-${vault.vault_id}`;
   const lastSeen = formatRelative(vault.last_accessed_at);
-  const borderColor = getStatusBorderColor(vault, colors);
-  const isActive = borderColor === colors.accent2.default;
+  const isActive = vault.is_online;
+  const borderColor = isActive ? colors.accent2.default : colors.border.dark;
 
   return (
     <Animated.View entering={FadeInDown.delay(delay).springify()}>
@@ -125,7 +116,7 @@ const VaultCard = ({
           <Text
             style={{ fontSize: 10, fontWeight: '700', letterSpacing: 2, marginLeft: 6, color: isActive ? colors.accent2.default : colors.muted.default }}
           >
-            {isActive ? 'ONLINE' : 'LOCKED'}
+            {isActive ? 'ONLINE' : 'OFFLINE'}
           </Text>
         </View>
         <Text style={{ color: colors.muted.default, fontSize: 10, fontWeight: '500', marginTop: 12 }}>{lastSeen}</Text>
@@ -296,6 +287,7 @@ export default function HomeScreen() {
                 vault={item}
                 onPress={() => handleVaultPress(item)}
                 delay={index * 50}
+
               />
             )}
           />

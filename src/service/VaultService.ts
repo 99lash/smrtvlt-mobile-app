@@ -14,6 +14,7 @@ export interface VaultMembership {
   role: 'admin' | 'member' | 'guest';
   created_at: string;
   last_accessed_at?: string | null; // Timestamp of user's last successful access to this vault
+  is_online: boolean;
 }
 
 export interface ProvisioningTokenResponse {
@@ -93,7 +94,8 @@ export class VaultService {
         vault_location: item.vault_location ?? item.location ?? null,
         role: (item.role as 'admin' | 'member' | 'guest') || 'member',
         created_at: item.created_at || new Date().toISOString(),
-        last_accessed_at: item.last_access || item.last_accessed_at || null
+        last_accessed_at: item.last_access || item.last_accessed_at || null,
+        is_online: item.is_online ?? false,
       }));
 
       console.log('VaultService - API Response:', Array.isArray(data) ? data : data.data);
@@ -450,6 +452,14 @@ export class VaultService {
       console.error('VaultService: getVaultActivity error:', error);
       throw error instanceof Error ? error : new Error(String(error));
     }
+  }
+
+  /**
+   * Permanently delete a vault. Owner only.
+   * DELETE /api/v1/vaults/{vault_id}
+   */
+  static async deleteVault(vaultId: string | number): Promise<void> {
+    await ApiService.delete<void>(API_CONFIG.ENDPOINTS.VAULTS.DELETE(vaultId));
   }
 
   /**

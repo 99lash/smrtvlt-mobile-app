@@ -2,6 +2,7 @@ import React from 'react';
 import { View, Text } from 'react-native';
 import BorderedList from '../lists/BorderedList';
 import { SignalIndicator } from '../signal';
+import { useThemeColors } from '../../context/ThemeContext';
 
 interface DeviceListProps<T> {
   devices: T[];
@@ -30,24 +31,23 @@ const DeviceList = <T,>({
   maxVisibleItems = 5,
   itemHeight = 56,
 }: DeviceListProps<T>) => {
+  const colors = useThemeColors();
   return (
-    <View className="mt-4">
-      <Text className="text-sm font-semibold mb-2 text-text-dark dark:text-text-dark">
+    <View style={{ marginTop: 16 }}>
+      <Text style={{ fontSize: 14, fontWeight: '600', marginBottom: 8, color: colors.text.default }}>
         {title} ({devices.length})
       </Text>
- 
+
       <BorderedList<T>
         data={devices}
         keyExtractor={d => getId(d)}
-        getId={getId} // important
-        selectedId={selectedId} // highlight
+        getId={getId}
+        selectedId={selectedId}
         renderItem={(item, index, isSelected) =>
           renderItem ? (
             renderItem(item, isSelected)
           ) : (
-            <Text
-              className={`font-medium ${isSelected ? 'text-primary-dark' : 'text-text-dark'}`}
-            >
+            <Text style={{ fontWeight: '500', color: isSelected ? colors.accent.default : colors.text.default }}>
               {getName(item)}
             </Text>
           )

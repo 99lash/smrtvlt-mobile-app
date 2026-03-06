@@ -11,6 +11,7 @@ import {
 } from 'react-native';
 import Animated, { FadeInRight } from 'react-native-reanimated';
 import { Search, AlertTriangle, RefreshCw } from 'lucide-react-native';
+import { useFocusEffect } from '@react-navigation/native';
 import { useThemeColors } from '../context/ThemeContext';
 import { ThemeColors } from '../../theme/colors';
 
@@ -101,6 +102,10 @@ export default function ActivityScreen() {
   }, []);
 
   useEffect(() => { loadLogs(); }, [loadLogs]);
+
+  useFocusEffect(
+    useCallback(() => { loadLogs(); }, [loadLogs])
+  );
 
   const handleRefresh = async () => {
     setIsRefreshing(true);

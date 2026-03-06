@@ -1,17 +1,21 @@
 import React from 'react';
 import { View, Text } from 'react-native';
+import { useThemeColors } from '../../context/ThemeContext';
 
 interface ProvisioningHeaderProps {
-  message: string; // the text to display
+  message: string;
 }
 
-const ProvisioningHeader: React.FC<ProvisioningHeaderProps> = ({ message }) => (
-  <View className="mb-4">
-    <View className="border border-border-dark rounded-xl p-3 flex-row items-center gap-x-2">
-      <Text className="text-muted-default dark:text-text-dark text-xs flex-1 text-center">{message}</Text>
+const ProvisioningHeader: React.FC<ProvisioningHeaderProps> = ({ message }) => {
+  const colors = useThemeColors();
+  return (
+    <View style={{ marginBottom: 16 }}>
+      <View style={{ borderWidth: 1, borderColor: colors.border.default, borderRadius: 12, padding: 12, flexDirection: 'row', alignItems: 'center' }}>
+        <Text style={{ color: colors.muted.default, fontSize: 12, flex: 1, textAlign: 'center' }}>{message}</Text>
+      </View>
     </View>
-  </View>
-);
+  );
+};
 
 export default ProvisioningHeader;
 

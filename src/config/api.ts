@@ -57,6 +57,7 @@ export const API_CONFIG = {
       TRANSFER_INITIATE: (vaultId: number) => `/api/v1/vaults/${vaultId}/transfer/initiate`,
       TRANSFER_ACCEPT: (vaultId: number) => `/api/v1/vaults/${vaultId}/transfer/accept`,
       TRANSFER_VALIDATE: (inviteCode: string) => `/api/v1/vaults/transfer/validate/${inviteCode}`,
+      DELETE: (vaultId: string | number) => `/api/v1/vaults/${vaultId}`,
     },
   },
 

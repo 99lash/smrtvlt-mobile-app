@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, Alert, StyleSheet } from 'react-native';
-import { ChevronDown, ChevronUp, Vault, LogOut, Fingerprint, Shield, Cpu, Moon } from 'lucide-react-native';
+import { View, Text, ScrollView, RefreshControl, TouchableOpacity, Alert, StyleSheet } from 'react-native';
+import { useFocusEffect } from '@react-navigation/native';
+import { ChevronDown, ChevronUp, Vault, LogOut, Fingerprint, Shield, Cpu, Moon, Trash2 } from 'lucide-react-native';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 
 import ButtonSecondary from '../component/buttons/ButtonSecondary';
@@ -40,6 +41,8 @@ const SettingsScreen = () => {
   const [pinStatus, setPinStatus] = useState<{ is_set: boolean; pin_set_at: string | null } | null>(null);
   const [setPinModalVisible, setSetPinModalVisible] = useState(false);
 
+  const [isRefreshing, setIsRefreshing] = useState(false);
+
   const loadVaults = useCallback(async () => {
     try {
       const raw = await VaultService.getUserVaults();
@@ -50,7 +53,17 @@ const SettingsScreen = () => {
     }
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
+  const handleRefresh = useCallback(async () => {
+    setIsRefreshing(true);
+    await loadVaults();
+    setIsRefreshing(false);
+  }, [loadVaults]);
+
   useEffect(() => { loadVaults(); }, [loadVaults]);
+
+  useFocusEffect(
+    useCallback(() => { loadVaults(); }, [loadVaults])
+  );
 
   const {
     canPromptBiometrics,
@@ -121,6 +134,31 @@ const SettingsScreen = () => {
     }
   };
 
+  const handleDeleteVault = () => {
+    if (!currentVault) return;
+    Alert.alert(
+      'Delete Vault',
+      `Permanently delete "${currentVault.vault_name ?? `UNIT-${currentVault.vault_id}`}"? This cannot be undone.`,
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Delete',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              await VaultService.deleteVault(currentVault.vault_id);
+              const updated = await VaultService.getUserVaults();
+              setVaults(updated);
+              setCurrentVault(updated.length > 0 ? updated[0] : null);
+            } catch (e) {
+              Alert.alert('Delete failed', e instanceof Error ? e.message : 'Please try again.');
+            }
+          },
+        },
+      ]
+    );
+  };
+
   const initials = getInitials(user);
   const displayName: string = user?.first_name
     ? `${user.first_name} ${user.last_name ?? ''}`.trim()
@@ -133,6 +171,15 @@ const SettingsScreen = () => {
         style={{ flex: 1 }}
         contentContainerStyle={{ paddingBottom: 120, paddingTop: 0 }}
         showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl
+            refreshing={isRefreshing}
+            onRefresh={handleRefresh}
+            colors={[colors.accent.default]}
+            tintColor={colors.accent.default}
+            progressBackgroundColor={colors.cards.default}
+          />
+        }
       >
         {/* ── Profile Card ── */}
         <Animated.View entering={FadeInDown.delay(0).springify()} style={styles.profileCard}>
@@ -297,6 +344,25 @@ const SettingsScreen = () => {
               </View>
               <Text style={styles.accentLabel}>Start</Text>
             </TouchableOpacity>
+
+            {(currentVault?.role as string) === 'OWNER' && (
+              <>
+                <View style={styles.rowDivider} />
+                <TouchableOpacity
+                  onPress={handleDeleteVault}
+                  style={styles.settingRow}
+                  activeOpacity={0.7}
+                >
+                  <View style={[styles.settingIcon, { backgroundColor: `${colors.status.danger}1A` }]}>
+                    <Trash2 size={18} color={colors.status.danger} strokeWidth={2} />
+                  </View>
+                  <View style={{ flex: 1 }}>
+                    <Text style={styles.dangerText}>Delete Vault</Text>
+                    <Text style={styles.settingDesc}>Permanently remove this unit</Text>
+                  </View>
+                </TouchableOpacity>
+              </>
+            )}
           </View>
         </Animated.View>
 
@@ -514,6 +580,11 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
     fontSize: 12,
     fontWeight: '700',
     letterSpacing: 0.5,
+  },
+  dangerText: {
+    color: c.status.danger,
+    fontSize: 14,
+    fontWeight: '600',
   },
   logoutRow: {
     flexDirection: 'row',
