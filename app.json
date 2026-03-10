@@ -5,6 +5,11 @@
     "version": "1.0.0",
     "orientation": "portrait",
     "userInterfaceStyle": "automatic",
+    "runtimeVersion": "1.0.0",
+    "updates": {
+      "url": "https://u.expo.dev/160d2f07-c3ff-489e-b156-2d47b12be09b",
+      "checkAutomatically": "ON_LOAD"
+    },
     "assetBundlePatterns": [
       "**/*"
     ],
