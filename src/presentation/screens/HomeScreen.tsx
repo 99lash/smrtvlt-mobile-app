@@ -2,6 +2,7 @@ import React, { useState, useCallback, useMemo } from 'react';
 import {
   View,
   Text,
+  Image,
   FlatList,
   RefreshControl,
   Alert,
@@ -10,7 +11,15 @@ import {
   StyleSheet,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
-import Animated, { FadeInDown, FadeInRight } from 'react-native-reanimated';
+import Animated, {
+  FadeInDown,
+  FadeInRight,
+  useSharedValue,
+  useAnimatedStyle,
+  withRepeat,
+  withSequence,
+  withTiming,
+} from 'react-native-reanimated';
 import { ChevronRight, AlertTriangle, RefreshCw } from 'lucide-react-native';
 
 import VaultUnlockModal from '../component/vault_access/VaultUnlockModal';
@@ -93,16 +102,45 @@ const VaultCard = ({
   const isActive = vault.is_online;
   const borderColor = isActive ? colors.accent2.default : colors.border.dark;
 
+  const pulseScale = useSharedValue(1);
+  const pulseOpacity = useSharedValue(1);
+
+  React.useEffect(() => {
+    if (isActive) {
+      pulseScale.value = withRepeat(
+        withSequence(withTiming(1.6, { duration: 900 }), withTiming(1, { duration: 900 })),
+        -1
+      );
+      pulseOpacity.value = withRepeat(
+        withSequence(withTiming(0.3, { duration: 900 }), withTiming(1, { duration: 900 })),
+        -1
+      );
+    } else {
+      pulseScale.value = 1;
+      pulseOpacity.value = 1;
+    }
+  }, [isActive]);
+
+  const pulseStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: pulseScale.value }],
+    opacity: pulseOpacity.value,
+  }));
+
   return (
     <Animated.View entering={FadeInDown.delay(delay).springify()}>
       <Pressable
         onPress={onPress}
         style={[
-          { width: 170 },
+          { width: 170, position: 'relative' },
           { backgroundColor: colors.cards.default, borderColor: colors.border.default, borderLeftColor: borderColor, borderLeftWidth: 3, borderWidth: 1, borderRadius: 20, padding: 16, marginRight: 12 },
         ]}
         android_ripple={{ color: `${colors.accent.default}1A` }}
       >
+        <Image
+          source={require('../../assets/images/VaultLogo.png')}
+          style={{ position: 'absolute', top: 10, right: 10, width: 28, height: 28, opacity: 0.18 }}
+          resizeMode="contain"
+        />
         <Text
           style={{ color: colors.text.default, fontSize: 14, fontWeight: '900', letterSpacing: -0.3 }}
           numberOfLines={1}
@@ -110,8 +148,8 @@ const VaultCard = ({
           {name}
         </Text>
         <View style={{ marginTop: 8, flexDirection: 'row', alignItems: 'center' }}>
-          <View
-            style={[{ width: 6, height: 6, borderRadius: 3 }, { backgroundColor: isActive ? colors.accent2.default : colors.muted.default }]}
+          <Animated.View
+            style={[{ width: 6, height: 6, borderRadius: 3, backgroundColor: isActive ? colors.accent2.default : colors.muted.default }, pulseStyle]}
           />
           <Text
             style={{ fontSize: 10, fontWeight: '700', letterSpacing: 2, marginLeft: 6, color: isActive ? colors.accent2.default : colors.muted.default }}
@@ -230,6 +268,11 @@ export default function HomeScreen() {
             <Text style={{ color: colors.text.default, fontSize: 30, fontWeight: '900', letterSpacing: -0.5, lineHeight: 36 }}>
               {firstName || 'Welcome back'}
             </Text>
+            {availableVaults.length > 0 && (
+              <Text style={{ color: colors.muted.default, fontSize: 11, fontWeight: '500', marginTop: 2 }}>
+                {availableVaults.length} vault{availableVaults.length !== 1 ? 's' : ''} secured
+              </Text>
+            )}
           </View>
           <Text style={{ color: colors.muted.default, fontSize: 12, fontWeight: '500', marginTop: 4 }}>{dateStr}</Text>
         </View>

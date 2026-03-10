@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { View, Text, ScrollView, RefreshControl, TouchableOpacity, Alert, StyleSheet } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
-import { ChevronDown, ChevronUp, Vault, LogOut, Fingerprint, Shield, Cpu, Moon, Trash2 } from 'lucide-react-native';
+import { ChevronDown, ChevronUp, Vault, LogOut, Fingerprint, Shield, Cpu, Moon, Trash2, User } from 'lucide-react-native';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 
 import ButtonSecondary from '../component/buttons/ButtonSecondary';
@@ -15,18 +15,6 @@ import { VaultMembership, VaultService } from '../../service/VaultService';
 import Provisioning from '../component/provisioning/Provisioning';
 import SetPinModal from '../component/vault_access/SetPinModal';
 
-function getInitials(user: any): string {
-  if (!user) return '??';
-  const name: string = user.first_name
-    ? `${user.first_name} ${user.last_name ?? ''}`
-    : user.name ?? user.username ?? '';
-  return name
-    .trim()
-    .split(/\s+/)
-    .slice(0, 2)
-    .map((w: string) => w[0]?.toUpperCase() ?? '')
-    .join('') || '??';
-}
 
 const SettingsScreen = () => {
   const { isDark, toggle, colors } = useTheme();
@@ -159,7 +147,6 @@ const SettingsScreen = () => {
     );
   };
 
-  const initials = getInitials(user);
   const displayName: string = user?.first_name
     ? `${user.first_name} ${user.last_name ?? ''}`.trim()
     : user?.name ?? user?.username ?? 'User';
@@ -183,8 +170,8 @@ const SettingsScreen = () => {
       >
         {/* ── Profile Card ── */}
         <Animated.View entering={FadeInDown.delay(0).springify()} style={styles.profileCard}>
-          <View style={styles.avatar}>
-            <Text style={styles.avatarText}>{initials}</Text>
+          <View style={{ width: 36, height: 36, borderRadius: 10, backgroundColor: colors.surface?.active ?? colors.cards.dark, alignItems: 'center', justifyContent: 'center', marginRight: 12 }}>
+            <User size={18} color={colors.muted.default} strokeWidth={2} />
           </View>
           <View style={{ flex: 1 }}>
             <Text style={styles.profileName} numberOfLines={1}>{displayName}</Text>
@@ -461,21 +448,6 @@ const makeStyles = (c: ThemeColors) => StyleSheet.create({
     padding: 20,
     borderWidth: 1,
     borderColor: c.border.default,
-    gap: 14,
-  },
-  avatar: {
-    width: 52,
-    height: 52,
-    borderRadius: 26,
-    backgroundColor: c.accent.default,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  avatarText: {
-    color: '#000000',
-    fontSize: 18,
-    fontWeight: '900',
-    letterSpacing: 0.5,
   },
   profileName: {
     color: c.text.default,
