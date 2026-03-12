@@ -23,6 +23,7 @@ import Animated, {
 import { ChevronRight, AlertTriangle, RefreshCw } from 'lucide-react-native';
 
 import VaultUnlockModal from '../component/vault_access/VaultUnlockModal';
+import FaceCaptureModal from '../component/biometrics/FaceCaptureModal';
 import { VaultMembership, VaultService, ActivityLogEntry, transformActivity } from '../../service/VaultService';
 import { ActivityLog } from '../../types/ActivityTypes';
 import { useVaultManagement } from '../hooks/VaultContext';
@@ -201,6 +202,9 @@ export default function HomeScreen() {
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [selectedVault, setSelectedVault] = useState<VaultMembership | null>(null);
   const [unlockModalVisible, setUnlockModalVisible] = useState(false);
+  const [faceCaptureVisible, setFaceCaptureVisible] = useState(false);
+  const [faceCaptureMode, setFaceCaptureMode] = useState<'enroll' | 'verify'>('enroll');
+  const [faceCaptureVault, setFaceCaptureVault] = useState<VaultMembership | null>(null);
 
   const firstName: string =
     user?.first_name ?? user?.name?.split(' ')[0] ?? user?.username ?? '';
@@ -249,13 +253,50 @@ export default function HomeScreen() {
   };
 
   const handleUnlockVault = async (vault: VaultMembership, pin: string) => {
-    try {
-      await VaultService.unlockWithPin(String(vault.vault_id), pin);
-      Alert.alert('Access Granted', `${vault.vault_name ?? `UNIT-${vault.vault_id}`} unlocked.`);
-      await loadActivity(availableVaults);
-    } catch (e) {
-      Alert.alert('Unlock Failed', e instanceof Error ? e.message : 'Could not unlock vault.');
+    await VaultService.unlockWithPin(String(vault.vault_id), pin);
+    Alert.alert('Access Granted', `${vault.vault_name ?? `UNIT-${vault.vault_id}`} unlocked.`);
+    if (availableVaults.length > 0) {
+      loadActivity(availableVaults).catch(() => {
+        setActivityError('Could not load activity.');
+      });
     }
+  };
+
+  const handleOpenFaceCapture = (vault: VaultMembership, mode: 'enroll' | 'verify') => {
+    setSelectedVault(vault);
+    setFaceCaptureVault(vault);
+    setFaceCaptureMode(mode);
+    setUnlockModalVisible(false);
+    setTimeout(() => {
+      setFaceCaptureVisible(true);
+    }, 120);
+  };
+
+  const handleFaceCaptureClose = () => {
+    setFaceCaptureVisible(false);
+    if (faceCaptureVault) {
+      setSelectedVault(faceCaptureVault);
+      setTimeout(() => {
+        setUnlockModalVisible(true);
+      }, 0);
+    }
+  };
+
+  const handleFaceCaptureSuccess = () => {
+    const completedMode = faceCaptureMode;
+    const activeVault = faceCaptureVault;
+
+    setFaceCaptureVisible(false);
+
+    if (completedMode === 'enroll' && activeVault) {
+      setSelectedVault(activeVault);
+      setTimeout(() => {
+        setUnlockModalVisible(true);
+      }, 0);
+      return;
+    }
+
+    setUnlockModalVisible(false);
   };
 
   const renderHeader = () => (
@@ -421,8 +462,18 @@ export default function HomeScreen() {
       <VaultUnlockModal
         visible={unlockModalVisible}
         vault={selectedVault}
+        accountEmail={user?.email ?? user?.username ?? undefined}
         onClose={() => setUnlockModalVisible(false)}
         onUnlock={handleUnlockVault}
+        onOpenFaceCapture={handleOpenFaceCapture}
+      />
+
+      <FaceCaptureModal
+        visible={faceCaptureVisible}
+        mode={faceCaptureMode}
+        vaultId={faceCaptureMode === 'verify' && faceCaptureVault ? String(faceCaptureVault.vault_id) : undefined}
+        onSuccess={handleFaceCaptureSuccess}
+        onClose={handleFaceCaptureClose}
       />
     </View>
   );

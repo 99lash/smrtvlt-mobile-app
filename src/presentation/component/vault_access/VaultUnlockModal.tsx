@@ -1,32 +1,37 @@
 import React, { useEffect, useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, Alert } from 'react-native';
 import CustomModal from '../modals/CustomModal';
-import FaceCaptureModal from '../biometrics/FaceCaptureModal';
 import { VaultMembership } from '../../../service/VaultService';
 import { BiometricService } from '../../../service/BiometricService';
+import { AuthService } from '../../../service/AuthService';
 import { useBiometric } from '../../hooks/useBiometric';
 import { useThemeColors } from '../../context/ThemeContext';
 
 interface VaultUnlockModalProps {
   visible: boolean;
   vault: VaultMembership | null;
+  accountEmail?: string;
   onClose: () => void;
   onUnlock: (vault: VaultMembership, pin: string) => Promise<void> | void;
+  onOpenFaceCapture: (vault: VaultMembership, mode: 'enroll' | 'verify') => void;
 }
 
 const VaultUnlockModal: React.FC<VaultUnlockModalProps> = ({
   visible,
   vault,
+  accountEmail,
   onClose,
   onUnlock,
+  onOpenFaceCapture,
 }) => {
   const [pin, setPin] = useState('');
   const [isUnlocking, setIsUnlocking] = useState(false);
   const [vaultBiometricEnabled, setVaultBiometricEnabled] = useState(false);
   const [enableBiometricNextTime, setEnableBiometricNextTime] = useState(false);
   const [faceEnrolled, setFaceEnrolled] = useState(false);
-  const [faceCaptureVisible, setFaceCaptureVisible] = useState(false);
-  const [faceMode, setFaceMode] = useState<'enroll' | 'verify'>('verify');
+  const [pendingSensitiveAction, setPendingSensitiveAction] = useState<'enroll' | 'delete' | null>(null);
+  const [reauthPassword, setReauthPassword] = useState('');
+  const [isReauthenticating, setIsReauthenticating] = useState(false);
 
   const {
     canPromptBiometrics,
@@ -37,7 +42,7 @@ const VaultUnlockModal: React.FC<VaultUnlockModalProps> = ({
   } = useBiometric();
 
   useEffect(() => {
-    if (!vault) return;
+    if (!visible || !vault) return;
     let isMounted = true;
 
     Promise.all([
@@ -54,14 +59,16 @@ const VaultUnlockModal: React.FC<VaultUnlockModalProps> = ({
     return () => {
       isMounted = false;
     };
-  }, [vault, isVaultBiometricEnabled]);
+  }, [visible, vault, isVaultBiometricEnabled]);
 
   useEffect(() => {
     if (!visible) {
       setPin('');
       setIsUnlocking(false);
       setEnableBiometricNextTime(false);
-      setFaceCaptureVisible(false);
+      setPendingSensitiveAction(null);
+      setReauthPassword('');
+      setIsReauthenticating(false);
     }
   }, [visible]);
 
@@ -123,22 +130,89 @@ const VaultUnlockModal: React.FC<VaultUnlockModalProps> = ({
   };
 
   const handleFaceUnlock = () => {
-    setFaceMode('verify');
-    setFaceCaptureVisible(true);
+    if (!vault) return;
+    onOpenFaceCapture(vault, 'verify');
   };
 
   const handleFaceEnroll = () => {
-    setFaceMode('enroll');
-    setFaceCaptureVisible(true);
+    startSensitiveAction('enroll');
   };
 
-  const handleFaceCaptureSuccess = () => {
-    setFaceCaptureVisible(false);
-    if (faceMode === 'enroll') {
-      setFaceEnrolled(true);
-    } else {
-      onClose();
+  const runSensitiveAction = async (action: 'enroll' | 'delete') => {
+    if (!vault) {
+      return;
     }
+
+    if (action === 'enroll') {
+      onOpenFaceCapture(vault, 'enroll');
+      return;
+    }
+
+    await BiometricService.deleteFace();
+    setFaceEnrolled(false);
+  };
+
+  const startSensitiveAction = async (action: 'enroll' | 'delete') => {
+    if (!vault || isReauthenticating) {
+      return;
+    }
+
+    const biometricsConfirmed = await BiometricService.authenticateSensitiveAction(
+      action === 'delete' ? 'Confirm face deletion' : 'Confirm face enrollment update'
+    );
+
+    if (biometricsConfirmed) {
+      try {
+        await runSensitiveAction(action);
+      } catch (error) {
+        Alert.alert('Action failed', error instanceof Error ? error.message : 'Could not complete action.');
+      }
+      return;
+    }
+
+    if (!accountEmail) {
+      Alert.alert('Verification unavailable', 'Account email is missing. Please sign in again.');
+      return;
+    }
+
+    setPendingSensitiveAction(action);
+    setReauthPassword('');
+  };
+
+  const handlePasswordReauth = async () => {
+    if (!pendingSensitiveAction || !accountEmail || !reauthPassword.trim() || isReauthenticating) {
+      return;
+    }
+
+    setIsReauthenticating(true);
+    try {
+      await AuthService.verifyCredentials(accountEmail, reauthPassword.trim());
+      const action = pendingSensitiveAction;
+      setPendingSensitiveAction(null);
+      setReauthPassword('');
+      await runSensitiveAction(action);
+    } catch (error) {
+      Alert.alert('Verification failed', error instanceof Error ? error.message : 'Invalid password.');
+    } finally {
+      setIsReauthenticating(false);
+    }
+  };
+
+  const promptDeleteFace = () => {
+    Alert.alert(
+      'Delete face',
+      'Remove your enrolled face? You can re-enroll at any time.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Delete',
+          style: 'destructive',
+          onPress: () => {
+            startSensitiveAction('delete').catch(() => undefined);
+          },
+        },
+      ]
+    );
   };
 
   const colors = useThemeColors();
@@ -146,14 +220,6 @@ const VaultUnlockModal: React.FC<VaultUnlockModalProps> = ({
   if (!vault) return null;
 
   return (
-    <>
-    <FaceCaptureModal
-      visible={faceCaptureVisible}
-      mode={faceMode}
-      vaultId={faceMode === 'verify' ? String(vault.vault_id) : undefined}
-      onSuccess={handleFaceCaptureSuccess}
-      onClose={() => setFaceCaptureVisible(false)}
-    />
     <CustomModal
       visible={visible}
       onClose={onClose}
@@ -215,8 +281,54 @@ const VaultUnlockModal: React.FC<VaultUnlockModalProps> = ({
         </TouchableOpacity>
       )}
 
+      {pendingSensitiveAction && (
+        <View style={{ marginTop: 16, padding: 16, borderRadius: 16, borderWidth: 1, borderColor: colors.border.default, backgroundColor: colors.cards.default }}>
+          <Text style={{ color: colors.text.default, fontWeight: '900', textTransform: 'uppercase', letterSpacing: 2, fontSize: 10, marginBottom: 8 }}>
+            Confirm identity
+          </Text>
+          <Text style={{ color: colors.muted.default, fontSize: 12, marginBottom: 12 }}>
+            Enter your account password to {pendingSensitiveAction === 'delete' ? 'delete face enrollment' : 're-take face enrollment'}.
+          </Text>
+          <TextInput
+            value={reauthPassword}
+            onChangeText={setReauthPassword}
+            placeholder="Account password"
+            placeholderTextColor={colors.muted.default}
+            secureTextEntry
+            autoCapitalize="none"
+            autoCorrect={false}
+            style={{ backgroundColor: colors.surface.default, color: colors.text.default, paddingHorizontal: 16, paddingVertical: 14, borderRadius: 14, borderWidth: 1, borderColor: colors.border.default, marginBottom: 12 }}
+          />
+          <View style={{ flexDirection: 'row', gap: 8 }}>
+            <TouchableOpacity
+              onPress={() => {
+                if (isReauthenticating) {
+                  return;
+                }
+                setPendingSensitiveAction(null);
+                setReauthPassword('');
+              }}
+              style={{ flex: 1, borderWidth: 1, borderColor: colors.border.default, borderRadius: 12, paddingVertical: 12, alignItems: 'center' }}
+              activeOpacity={0.7}
+            >
+              <Text style={{ color: colors.text.default, fontSize: 12, fontWeight: '700' }}>Cancel</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              onPress={handlePasswordReauth}
+              style={{ flex: 1, borderRadius: 12, paddingVertical: 12, alignItems: 'center', backgroundColor: colors.accent.default, opacity: isReauthenticating || !reauthPassword.trim() ? 0.6 : 1 }}
+              disabled={isReauthenticating || !reauthPassword.trim()}
+              activeOpacity={0.7}
+            >
+              <Text style={{ color: '#000000', fontSize: 12, fontWeight: '900' }}>
+                {isReauthenticating ? 'Verifying...' : 'Verify'}
+              </Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      )}
+
       {/* Face recognition unlock */}
-      {faceEnrolled && (
+      {!pendingSensitiveAction && faceEnrolled && (
         <>
           <TouchableOpacity
             onPress={handleFaceUnlock}
@@ -234,27 +346,7 @@ const VaultUnlockModal: React.FC<VaultUnlockModalProps> = ({
               </Text>
             </TouchableOpacity>
             <TouchableOpacity
-              onPress={() => {
-                Alert.alert(
-                  'Delete face',
-                  'Remove your enrolled face? You can re-enroll at any time.',
-                  [
-                    { text: 'Cancel', style: 'cancel' },
-                    {
-                      text: 'Delete',
-                      style: 'destructive',
-                      onPress: async () => {
-                        try {
-                          await BiometricService.deleteFace();
-                          setFaceEnrolled(false);
-                        } catch (error) {
-                          Alert.alert('Error', error instanceof Error ? error.message : 'Failed to delete face.');
-                        }
-                      },
-                    },
-                  ]
-                );
-              }}
+              onPress={promptDeleteFace}
               activeOpacity={0.7}
             >
               <Text style={{ color: colors.muted.default, fontSize: 10, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 2 }}>
@@ -265,10 +357,10 @@ const VaultUnlockModal: React.FC<VaultUnlockModalProps> = ({
         </>
       )}
 
-      {!faceEnrolled && (
+      {!pendingSensitiveAction && !faceEnrolled && (
         <TouchableOpacity
           onPress={handleFaceEnroll}
-          style={{ paddingHorizontal: 16, paddingVertical: 12, marginTop: 4 }}
+          style={{ paddingHorizontal: 16, paddingVertical: 12, marginTop: 8, borderRadius: 14, borderWidth: 1, borderColor: colors.border.default, backgroundColor: colors.cards.default }}
           activeOpacity={0.7}
         >
           <Text style={{ color: colors.muted.default, textAlign: 'center', fontSize: 10, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 2 }}>
@@ -277,7 +369,6 @@ const VaultUnlockModal: React.FC<VaultUnlockModalProps> = ({
         </TouchableOpacity>
       )}
     </CustomModal>
-    </>
   );
 };
 

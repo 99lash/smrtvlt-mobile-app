@@ -30,14 +30,30 @@ export class NotificationService {
     return status === 'granted';
   }
 
+  static async ensureAndroidChannel(): Promise<void> {
+    if (Platform.OS !== 'android') return;
+    await Notifications.setNotificationChannelAsync('default', {
+      name: 'SmartVault Alerts',
+      importance: Notifications.AndroidImportance.HIGH,
+      vibrationPattern: [0, 250, 250, 250],
+      lightColor: '#FF6B00',
+      sound: 'default',
+    });
+    log.debug('Notifications', 'Android notification channel ensured');
+  }
+
   static async getExpoPushToken(): Promise<string | null> {
     if (!Device.isDevice) return null;
 
+    // Channel must exist before requesting token on Android
+    await this.ensureAndroidChannel();
+
     try {
-      const projectId = Constants.expoConfig?.extra?.eas?.projectId as string | undefined;
-      const tokenData = await Notifications.getExpoPushTokenAsync(
-        projectId ? { projectId } : undefined,
-      );
+      const projectId =
+        (Constants.expoConfig?.extra?.eas?.projectId as string | undefined) ??
+        '160d2f07-c3ff-489e-b156-2d47b12be09b';
+      const tokenData = await Notifications.getExpoPushTokenAsync({ projectId });
+      log.debug('Notifications', 'Got Expo push token', tokenData.data);
       return tokenData.data;
     } catch (err) {
       log.warn('Notifications', 'Failed to get Expo push token', err);

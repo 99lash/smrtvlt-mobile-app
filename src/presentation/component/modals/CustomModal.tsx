@@ -65,6 +65,7 @@ const CustomModal: React.FC<CustomModalProps> = ({
             <ScrollView
                 contentContainerStyle={{ padding: 24 }}
                 showsVerticalScrollIndicator={false}
+                keyboardShouldPersistTaps="handled"
             >
                 {children}
             </ScrollView>

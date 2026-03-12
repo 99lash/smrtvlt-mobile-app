@@ -30,6 +30,9 @@ pnpm-debug.log*
 .env.production.local
 *.pem
 
+# Firebase service account keys (NEVER commit)
+*-firebase-adminsdk-*.json
+
 # React Native / Metro
 .metro/
 coverage/

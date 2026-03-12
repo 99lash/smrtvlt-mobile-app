@@ -85,3 +85,7 @@ AppNavigator (auth gate)
 ## Risk areas
 - Provisioning WS/BLE token flow: complex device handshake, touches auth
 - Vault biometric unlock wiring: touches PIN storage + SecureStore
+
+## Agent Routing Defaults
+- Building agent: gpt-5.3-codex (high)
+- Planner agent: claude-sonnet-3-5v2

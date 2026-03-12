@@ -15,6 +15,7 @@ export class ApiError extends Error {
 export class ApiService {
   private static isRefreshing = false;
   private static refreshPromise: Promise<boolean> | null = null;
+  private static readonly REQUEST_TIMEOUT_MS = 15000;
 
   /**
    * Attempt to refresh the access token. Deduplicates concurrent refresh calls.
@@ -141,6 +142,9 @@ export class ApiService {
     logPrefix: string,
     isRetry = false
   ): Promise<T> {
+    let timeoutId: ReturnType<typeof setTimeout> | null = null;
+    const controller = new AbortController();
+
     try {
       const url = this.buildUrl(endpoint);
 
@@ -148,7 +152,17 @@ export class ApiService {
         console.log(`[${logPrefix}]`, url);
       }
 
+      if (!options.signal) {
+        timeoutId = setTimeout(() => controller.abort(), this.REQUEST_TIMEOUT_MS);
+        options = { ...options, signal: controller.signal };
+      }
+
       const response = await fetch(url, options);
+
+      if (timeoutId) {
+        clearTimeout(timeoutId);
+        timeoutId = null;
+      }
 
       if (response.status === 401 && !isRetry) {
         if (__DEV__) {
@@ -171,6 +185,12 @@ export class ApiService {
       return await this.handleResponse<T>(response, endpoint);
 
     } catch (error) {
+      if (timeoutId) {
+        clearTimeout(timeoutId);
+      }
+      if (error instanceof Error && error.name === 'AbortError') {
+        throw new Error('Request timed out. Please try again.');
+      }
       if (__DEV__) {
         console.error('[API Request Failed]', endpoint, error);
       }

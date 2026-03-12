@@ -1,10 +1,9 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { View, Text, ScrollView, RefreshControl, TouchableOpacity, Alert, StyleSheet } from 'react-native';
+import { View, Text, ScrollView, RefreshControl, TouchableOpacity, Alert, StyleSheet, TextInput } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { ChevronDown, ChevronUp, Vault, LogOut, Fingerprint, Shield, Cpu, Moon, Trash2, User } from 'lucide-react-native';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 
-import ButtonSecondary from '../component/buttons/ButtonSecondary';
 import CustomModal from '../component/modals/CustomModal';
 import { useTheme } from '../context/ThemeContext';
 import { ThemeColors } from '../../theme/colors';
@@ -14,6 +13,8 @@ import { useBiometric } from '../hooks/useBiometric';
 import { VaultMembership, VaultService } from '../../service/VaultService';
 import Provisioning from '../component/provisioning/Provisioning';
 import SetPinModal from '../component/vault_access/SetPinModal';
+import { BiometricService } from '../../service/BiometricService';
+import { AuthService } from '../../service/AuthService';
 
 
 const SettingsScreen = () => {
@@ -28,6 +29,9 @@ const SettingsScreen = () => {
   const [provisioningModalVisible, setProvisioningModalVisible] = useState(false);
   const [pinStatus, setPinStatus] = useState<{ is_set: boolean; pin_set_at: string | null } | null>(null);
   const [setPinModalVisible, setSetPinModalVisible] = useState(false);
+  const [pinAuthModalVisible, setPinAuthModalVisible] = useState(false);
+  const [pinAuthPassword, setPinAuthPassword] = useState('');
+  const [isPinAuthLoading, setIsPinAuthLoading] = useState(false);
 
   const [isRefreshing, setIsRefreshing] = useState(false);
 
@@ -118,7 +122,45 @@ const SettingsScreen = () => {
         .then(() => setVaultBiometricEnabled(false))
         .catch(error => Alert.alert('Biometric update failed', error instanceof Error ? error.message : 'Please try again.'));
     } else {
+      openSetPinWithAuth().catch(() => undefined);
+    }
+  };
+
+  const openSetPinWithAuth = async () => {
+    if (!currentVault) {
+      return;
+    }
+
+    const biometricOk = await BiometricService.authenticateSensitiveAction('Confirm PIN change');
+    if (biometricOk) {
       setSetPinModalVisible(true);
+      return;
+    }
+
+    if (!email) {
+      Alert.alert('Verification unavailable', 'Account email is missing. Please sign in again.');
+      return;
+    }
+
+    setPinAuthPassword('');
+    setPinAuthModalVisible(true);
+  };
+
+  const handlePinPasswordVerify = async () => {
+    if (!email || !pinAuthPassword.trim() || isPinAuthLoading) {
+      return;
+    }
+
+    setIsPinAuthLoading(true);
+    try {
+      await AuthService.verifyCredentials(email, pinAuthPassword.trim());
+      setPinAuthModalVisible(false);
+      setPinAuthPassword('');
+      setSetPinModalVisible(true);
+    } catch (error) {
+      Alert.alert('Verification failed', error instanceof Error ? error.message : 'Invalid password.');
+    } finally {
+      setIsPinAuthLoading(false);
     }
   };
 
@@ -245,7 +287,9 @@ const SettingsScreen = () => {
                 </Text>
               </View>
               <TouchableOpacity
-                onPress={() => setSetPinModalVisible(true)}
+                onPress={() => {
+                  openSetPinWithAuth().catch(() => undefined);
+                }}
                 disabled={!currentVault}
                 style={styles.settingAction}
                 activeOpacity={0.7}
@@ -428,6 +472,56 @@ const SettingsScreen = () => {
           }
         }}
       />
+
+      <CustomModal
+        visible={pinAuthModalVisible}
+        onClose={() => {
+          if (isPinAuthLoading) {
+            return;
+          }
+          setPinAuthModalVisible(false);
+          setPinAuthPassword('');
+        }}
+        title="CONFIRM IDENTITY"
+        primaryAction={{
+          label: isPinAuthLoading ? 'Verifying...' : 'Verify',
+          onPress: handlePinPasswordVerify,
+          disabled: isPinAuthLoading || !pinAuthPassword.trim(),
+          loading: isPinAuthLoading,
+        }}
+        secondaryAction={{
+          label: 'Cancel',
+          onPress: () => {
+            if (isPinAuthLoading) {
+              return;
+            }
+            setPinAuthModalVisible(false);
+            setPinAuthPassword('');
+          },
+        }}
+      >
+        <Text style={{ color: colors.muted.default, fontSize: 13, marginBottom: 12 }}>
+          Use your account password to continue to PIN setup.
+        </Text>
+        <TextInput
+          value={pinAuthPassword}
+          onChangeText={setPinAuthPassword}
+          placeholder="Account password"
+          placeholderTextColor={colors.muted.default}
+          secureTextEntry
+          autoCapitalize="none"
+          autoCorrect={false}
+          style={{
+            backgroundColor: colors.surface.default,
+            color: colors.text.default,
+            paddingHorizontal: 16,
+            paddingVertical: 14,
+            borderRadius: 14,
+            borderWidth: 1,
+            borderColor: colors.border.default,
+          }}
+        />
+      </CustomModal>
     </View>
   );
 };

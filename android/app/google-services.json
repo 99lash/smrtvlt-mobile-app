@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "41010092194",
+    "project_id": "smartvault-dfc75",
+    "storage_bucket": "smartvault-dfc75.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:41010092194:android:28599da8a4f3697d425ffb",
+        "android_client_info": {
+          "package_name": "com.gablane.smartvaultapp"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyC3TD1moa2I4wbXAtD3-ny-2K9fSbZlLWI"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

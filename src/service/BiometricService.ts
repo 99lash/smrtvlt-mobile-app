@@ -368,19 +368,72 @@ export class BiometricService {
     }
   }
 
+  static async authenticateSensitiveAction(promptMessage: string): Promise<boolean> {
+    const canUse = await this.canUseBiometrics();
+    if (!canUse) {
+      return false;
+    }
+
+    try {
+      const authResult = await LocalAuthentication.authenticateAsync({
+        promptMessage,
+        disableDeviceFallback: true,
+        cancelLabel: 'Use Password',
+      });
+      return authResult.success;
+    } catch (error) {
+      await log.warn('Biometric', 'Sensitive action authentication failed', error);
+      return false;
+    }
+  }
+
   // ─── Server-side face recognition ────────────────────────────────────────
 
-  /**
-   * Returns true if the user has enrolled their face on the backend.
-   * Uses a local SecureStore flag set after successful enrollment.
-   */
-  static async isFaceEnrolled(): Promise<boolean> {
+  private static async getLocalFaceEnrollmentFlag(): Promise<boolean> {
     try {
       const val = await SecureStore.getItemAsync(BIOMETRIC_KEYS.FACE_ENROLLED);
       return val === 'true';
     } catch {
       return false;
     }
+  }
+
+  private static async syncLocalFaceEnrollmentFlag(enrolled: boolean): Promise<void> {
+    if (enrolled) {
+      await SecureStore.setItemAsync(BIOMETRIC_KEYS.FACE_ENROLLED, 'true').catch(() => undefined);
+      return;
+    }
+    await SecureStore.deleteItemAsync(BIOMETRIC_KEYS.FACE_ENROLLED).catch(() => undefined);
+  }
+
+  static async getFaceStatus(): Promise<{ enrolled: boolean; updated_at: string | null }> {
+    const accessToken = await StorageService.getAccessToken();
+    if (!accessToken) {
+      const localEnrolled = await this.getLocalFaceEnrollmentFlag();
+      return { enrolled: localEnrolled, updated_at: null };
+    }
+
+    try {
+      const status = await ApiService.get<{ enrolled: boolean; updated_at: string | null }>(
+        API_CONFIG.ENDPOINTS.BIOMETRICS.FACE_STATUS,
+        accessToken
+      );
+      await this.syncLocalFaceEnrollmentFlag(status.enrolled);
+      return status;
+    } catch (error) {
+      await log.warn('Biometric', 'Failed to fetch face status from backend, using local cache', error);
+      const localEnrolled = await this.getLocalFaceEnrollmentFlag();
+      return { enrolled: localEnrolled, updated_at: null };
+    }
+  }
+
+  /**
+   * Returns true if the user has enrolled their face on the backend.
+   * Backend status is source of truth; local flag is a fallback cache.
+   */
+  static async isFaceEnrolled(): Promise<boolean> {
+    const status = await this.getFaceStatus();
+    return status.enrolled;
   }
 
   /**

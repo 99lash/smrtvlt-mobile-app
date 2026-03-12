@@ -74,6 +74,33 @@ export class AuthService {
   }
 
   /**
+   * Re-authenticate user credentials for sensitive actions.
+   * Validates password without replacing current local tokens.
+   */
+  static async verifyCredentials(email: string, password: string): Promise<void> {
+    if (!email || !password) {
+      throw new Error('Email and password are required');
+    }
+
+    if (MOCK_MODE) {
+      return;
+    }
+
+    try {
+      await ApiService.postPublic<UserLoginResponse>(
+        API_CONFIG.ENDPOINTS.AUTH.LOGIN,
+        { email, password }
+      );
+    } catch (error) {
+      const processed = this.processError(error, 'login');
+      if (processed.message.toLowerCase().includes('invalid')) {
+        throw new Error('Incorrect account password.');
+      }
+      throw processed;
+    }
+  }
+
+  /**
    * Refresh the access token using the stored refresh token
    * Returns a new token pair (atomic rotation — old refresh token is invalidated)
    */
