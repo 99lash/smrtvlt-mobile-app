@@ -2,10 +2,10 @@
   "expo": {
     "name": "SmartVaultApp",
     "slug": "smartvaultapp",
-    "version": "1.0.0",
+    "version": "1.0.1",
     "orientation": "portrait",
     "userInterfaceStyle": "automatic",
-    "runtimeVersion": "1.0.0",
+    "runtimeVersion": "1.0.1",
     "updates": {
       "url": "https://u.expo.dev/160d2f07-c3ff-489e-b156-2d47b12be09b",
       "checkAutomatically": "ON_LOAD"
@@ -36,7 +36,20 @@
     },
     "owner": "gablane",
     "plugins": [
-      "expo-asset"
+      "expo-asset",
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "SmartVault uses your camera for face recognition to unlock vaults.",
+          "recordAudioAndroid": false
+        }
+      ],
+      [
+        "expo-local-authentication",
+        {
+          "faceIDPermission": "SmartVault uses biometric authentication to securely unlock your vaults."
+        }
+      ]
     ]
   }
 }

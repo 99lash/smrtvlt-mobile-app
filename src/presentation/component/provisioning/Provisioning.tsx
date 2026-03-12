@@ -95,6 +95,9 @@ const Provisioning = ({ visible: externalVisible, onClose: externalOnClose }: Pr
                 Connect your phone to the{' '}
                 <Text style={{ fontWeight: 'bold', color: colors.text.default }}>SmartVault-XXYYZZ</Text> WiFi network
               </Text>
+              <Text style={{ color: colors.muted.default, fontSize: 12, marginTop: 8, fontStyle: 'italic' }}>
+                If the setup page does not open automatically, open your browser and go to 192.168.4.1
+              </Text>
             </View>
 
             <View style={{ backgroundColor: colors.surface.default, borderColor: colors.border.default, borderWidth: 1, borderRadius: 16, padding: 16, marginBottom: 20 }}>
